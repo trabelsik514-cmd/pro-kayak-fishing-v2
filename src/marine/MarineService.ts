@@ -179,7 +179,7 @@ export class MarineService {
         ? Number(sea[currentKey])
         : first(seaHourly[hourlyKey]);
 
-    const hasWeather = weatherResult.status === 'fulfilled' || seaResultIsUsable(marineResult);
+    const hasWeather = weatherResult.status === 'fulfilled';
     const hasSea = marineResult.status === 'fulfilled';
     if (!hasWeather && !hasSea) {
       throw new Error('تعذر الوصول إلى مصادر بيانات البحر والطقس');
@@ -211,8 +211,4 @@ export class MarineService {
       fetchedAt: new Date().toISOString()
     };
   }
-}
-
-function seaResultIsUsable(result: PromiseSettledResult<any>): boolean {
-  return result.status === 'fulfilled';
 }
