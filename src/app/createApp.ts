@@ -266,7 +266,7 @@ export function createApp(root: HTMLElement) {
       if (requestId !== pointRequestId) return;
       const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,waveHeight:data.sea.waveHeight,wavePeriod:data.sea.wavePeriod});
       const reportBase = reportHtml(data,placeName);
-      const depthCard = `<div class="depth-card">🪸 العمق التقريبي <b>${depthLabel === '—' ? 'غير متاح' : depthLabel}</b><small>المصدر: GEBCO</small></div>`;
+      const depthCard = `<div class="depth-card">🪸 العمق التقريبي <b>${depthLabel === '—' ? 'غير متاح' : depthLabel}</b><small>المصدر: EMODnet Bathymetry DTM 2024</small></div>`;
       report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + `<hr><div class="kayak-assessment"><b>تقييم ظروف الكياك: ${assessment.level}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(r=>`<li>${r}</li>`).join('')}</ul><small>هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.</small></div>`;
       document.querySelector('#close-report')?.addEventListener('click',closeReport)
     }
