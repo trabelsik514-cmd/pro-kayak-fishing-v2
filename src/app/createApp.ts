@@ -399,7 +399,7 @@ export function createApp(root: HTMLElement) {
   tripRecord.addEventListener('click', () => recording ? stopRecording() : startRecording());
   renderTrips();
 
-  const selectPoint = async (lat:number,lng:number,label:string|null=null) => {
+  const selectPoint = async (lat:number,lng:number,label:string|null=null): Promise<void> => {
     const requestId = ++pointRequestId;
     selectedLocation = {lat, lng, label};
     report.classList.remove('hidden'); marker?.remove(); marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
