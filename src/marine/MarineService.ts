@@ -62,11 +62,14 @@ export class MarineService {
     url.searchParams.set('longitude', String(longitude));
     url.searchParams.set('daily', 'wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max');
     url.searchParams.set('timezone', 'auto');
+    url.searchParams.set('forecast_days', '1');
+    url.searchParams.set('cell_selection', 'sea');
     const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
     weatherUrl.searchParams.set('latitude', String(latitude));
     weatherUrl.searchParams.set('longitude', String(longitude));
     weatherUrl.searchParams.set('daily', 'wind_speed_10m_max,wind_gusts_10m_max');
     weatherUrl.searchParams.set('timezone', 'auto');
+    weatherUrl.searchParams.set('forecast_days', '1');
 
     const [seaResult, weatherResult] = await Promise.allSettled([getJson(url), getJson(weatherUrl)]);
     if (seaResult.status === 'rejected' && weatherResult.status === 'rejected') {
