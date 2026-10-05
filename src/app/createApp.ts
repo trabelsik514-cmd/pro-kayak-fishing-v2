@@ -5,10 +5,12 @@ import { createMap } from '../map/createMap';
 import { assessKayakConditions } from '../kayak/KayakAssessment';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
+const escapeHtml = (v: string) => v.replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch] ?? ch));
+const ltr = (v: string) => `<span dir="ltr">${v}</span>`;
 
 function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']>>, placeName: string|null) {
   return `<div class="report-head"><b>حالة البحر عند النقطة</b><button id="close-report" aria-label="إغلاق">×</button></div>
-    <p>📍 ${placeName ?? 'موقع بحري محدد'}</p><p class="coords">${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}</p>
+    <p>📍 ${escapeHtml(placeName ?? 'موقع بحري محدد')}</p><p class="coords">${ltr(`${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}`)}</p>
     <div class="report-grid">
       <span>🌊 الموج <b>${value(data.sea.waveHeight,' m')}</b></span><span>🧭 اتجاه الموج <b>${value(data.sea.waveDirection,'°')}</b></span>
       <span>〰️ Swell <b>${value(data.sea.swellHeight,' m')}</b></span><span>⏱️ فترة الموج <b>${value(data.sea.wavePeriod,' s')}</b></span>
@@ -27,16 +29,21 @@ export function createApp(root: HTMLElement) {
 
   const { map, geolocate } = createMap('map'); const marine = new MarineService(); const geocoder = new GeocodingService();
   let marker: maplibregl.Marker | null = null; const report = document.querySelector<HTMLElement>('#report')!;
+  let selectedLocation: {lat:number; lng:number; label:string|null} | null = null;
+  let pointRequestId = 0;
   const closeReport = () => report.classList.add('hidden');
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
 
   const selectPoint = async (lat:number,lng:number,label:string|null=null) => {
+    const requestId = ++pointRequestId;
+    selectedLocation = {lat, lng, label};
     report.classList.remove('hidden'); marker?.remove(); marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
     report.innerHTML=`<div class="report-head"><b>جاري جلب آخر البيانات…</b><button id="close-report">×</button></div><p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
     document.querySelector('#close-report')?.addEventListener('click',closeReport);
     let placeName=label; if(!placeName){try{placeName=await reverseCoastalName(lat,lng)}catch{placeName=null}}
     try{
       const data=await marine.getPointConditions(lat,lng);
+      if (requestId !== pointRequestId) return;
       const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,waveHeight:data.sea.waveHeight,wavePeriod:data.sea.wavePeriod});
       report.innerHTML=reportHtml(data,placeName)+`<hr><div class="kayak-assessment"><b>تقييم ظروف الكياك: ${assessment.level}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(r=>`<li>${r}</li>`).join('')}</ul><small>هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.</small></div>`;
       document.querySelector('#close-report')?.addEventListener('click',closeReport)
@@ -58,7 +65,7 @@ export function createApp(root: HTMLElement) {
         <span>〰️ أقصى Swell <b>${value(d.swellMax,' m')}</b></span>
         <span>💨 أقصى رياح <b>${value(d.windMax,' km/h')}</b></span>
         <span>💨 أقصى هبات <b>${value(d.gustMax,' km/h')}</b></span>
-        </div><small>الموقع: ${lat.toFixed(4)}, ${lng.toFixed(4)}</small>`;
+        </div><small>الموقع: ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</small>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     } catch {
       report.innerHTML = `<div class="report-head"><b>تعذر جلب ملخص اليوم</b><button id="close-report">×</button></div><p>حاول مرة أخرى بعد قليل.</p>`;
@@ -67,8 +74,8 @@ export function createApp(root: HTMLElement) {
   };
 
   document.querySelector('#today-sea')?.addEventListener('click', () => {
-    const center = map.getCenter();
-    showTodaySea(center.lat, center.lng);
+    const target = selectedLocation ?? (() => { const center = map.getCenter(); return {lat:center.lat, lng:center.lng}; })();
+    showTodaySea(target.lat, target.lng);
   });
 
   map.on('click',event=>selectPoint(event.lngLat.lat,event.lngLat.lng));
