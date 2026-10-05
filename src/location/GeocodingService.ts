@@ -26,6 +26,11 @@ const LOCAL_TUNISIAN_ALIASES: Array<{aliases: string[]; place: PlaceResult}> = [
     aliases: ['مرسى الأمراء','مرسى الامراء','شاطئ مرسى الأمراء','شاطئ مرسى الامراء','قصر وسيلة','قصر مرسى الأمراء','Marsa El Omra','Marsa El Omraa','Marsa El Omrâ'],
     place: {name:'مرسى الأمراء', latitude:36.87833, longitude:10.67139, country:'Tunisia', admin1:'Nabeul — Takelsa'}
   }
+,
+  {
+    aliases: ['مارينا بنزرت','مارينة بنزرت','مارينا بن زرت','مارينة بن زرت','Marina Bizerte','Marina de Bizerte'],
+    place: {name:'مارينا بنزرت', latitude:37.27618, longitude:9.88123, country:'Tunisia', admin1:'Bizerte'}
+  }
 ];
 
 const localAliasMatches = (normalized: string) => {
