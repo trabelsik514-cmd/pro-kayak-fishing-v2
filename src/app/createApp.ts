@@ -21,7 +21,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
 export function createApp(root: HTMLElement) {
   root.innerHTML = `<main class="shell"><header class="topbar"><strong>🎣 PRO KAYAK FISHING</strong>
     <form id="search-form" class="search"><input id="search-input" placeholder="ابحث عن مدينة أو ساحل تونسي" autocomplete="off"/><button type="submit">بحث</button></form></header>
-    <section id="map" class="map"></section><aside class="report" id="report"><div class="report-head"><b>حالة البحر</b><button id="close-report">×</button></div>
+    <section id="map" class="map"></section><button id="today-sea" class="today-sea">🌊 حالة البحر اليوم</button><aside class="report" id="report"><div class="report-head"><b>حالة البحر</b><button id="close-report">×</button></div>
     <p>اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.</p></aside><div class="search-results hidden" id="search-results"></div></main>`;
 
   const { map, geolocate } = createMap('map'); const marine = new MarineService(); const geocoder = new GeocodingService();
@@ -37,6 +37,33 @@ export function createApp(root: HTMLElement) {
     try{const data=await marine.getPointConditions(lat,lng); report.innerHTML=reportHtml(data,placeName); document.querySelector('#close-report')?.addEventListener('click',closeReport)}
     catch{report.innerHTML=`<div class="report-head"><b>تعذر جلب البيانات</b><button id="close-report">×</button></div><p>تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.</p><button id="retry-report">إعادة المحاولة</button>`;document.querySelector('#close-report')?.addEventListener('click',closeReport);document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,placeName))}
   };
+
+  const showTodaySea = async (lat:number, lng:number) => {
+    report.classList.remove('hidden');
+    report.innerHTML = `<div class="report-head"><b>حالة البحر اليوم</b><button id="close-report">×</button></div><p>جاري حساب ملخص اليوم…</p>`;
+    document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    try {
+      const d = await marine.getTodaySummary(lat, lng);
+      report.innerHTML = `<div class="report-head"><b>حالة البحر اليوم</b><button id="close-report">×</button></div>
+        <p>📅 ${d.date}</p><div class="report-grid">
+        <span>🌊 أقصى موج <b>${value(d.waveMax,' m')}</b></span>
+        <span>🧭 اتجاه الموج السائد <b>${value(d.waveDirection,'°')}</b></span>
+        <span>⏱️ أقصى فترة موج <b>${value(d.wavePeriod,' s')}</b></span>
+        <span>〰️ أقصى Swell <b>${value(d.swellMax,' m')}</b></span>
+        <span>💨 أقصى رياح <b>${value(d.windMax,' km/h')}</b></span>
+        <span>💨 أقصى هبات <b>${value(d.gustMax,' km/h')}</b></span>
+        </div><small>الموقع: ${lat.toFixed(4)}, ${lng.toFixed(4)}</small>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    } catch {
+      report.innerHTML = `<div class="report-head"><b>تعذر جلب ملخص اليوم</b><button id="close-report">×</button></div><p>حاول مرة أخرى بعد قليل.</p>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    }
+  };
+
+  document.querySelector('#today-sea')?.addEventListener('click', () => {
+    const center = map.getCenter();
+    showTodaySea(center.lat, center.lng);
+  });
 
   map.on('click',event=>selectPoint(event.lngLat.lat,event.lngLat.lng));
   document.querySelector('#search-form')?.addEventListener('submit',async event=>{
