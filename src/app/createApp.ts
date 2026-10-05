@@ -106,8 +106,10 @@ export function createApp(root: HTMLElement) {
 
   const updateRoute = () => {
     ensureRouteLayer();
-    const source = map.getSource('kayak-route') as maplibregl.GeoJSONSource | undefined;
-    source?.setData(routeGeoJson());
+    const source = map.getSource('kayak-route');
+    if (source && 'setData' in source && typeof source.setData === 'function') {
+      source.setData(routeGeoJson());
+    }
   };
 
   const fitRoute = (trip: KayakTrip) => {
