@@ -1,9 +1,11 @@
 const EMODNET_URL = 'https://rest.emodnet-bathymetry.eu/depth_sample';
 const GEBCO_URL = 'https://di-elevation.img.arcgis.com/arcgis/rest/services/gebco/ImageServer/identify';
+const OSM_OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
 type DepthResult = {
   depthMeters: number;
-  source: 'EMODnet Bathymetry DTM 2024' | 'GEBCO';
+  source: 'EMODnet Bathymetry DTM 2024' | 'GEBCO' | 'OpenStreetMap coastline';
+  nearShore?: boolean;
 };
 
 function finiteDepth(value: unknown): number | null {
@@ -11,24 +13,21 @@ function finiteDepth(value: unknown): number | null {
   return Number.isFinite(n) && Math.abs(n) > 0 ? Math.abs(n) : null;
 }
 
-function parseEmodnet(data: any): number | null {
+function parseEmodnet(data: any): { depth: number; hasSource: boolean } | null {
   if (!data || typeof data !== 'object') return null;
-  // For a point close to the shoreline, the cell's minimum water depth is
-  // much safer than the smoothed/average value: the EMODnet DTM cell is
-  // about 115 m wide, so a shoreline click can otherwise inherit a deeper
-  // value from the same grid cell. Prefer the shallowest measured/interpolated
-  // value available in that cell, then fall back to smoothed/average values.
-  const candidates = [data.min, data.smoothed, data.avg, data.max];
+  // /depth_sample returns one DTM cell, not a point measurement. Prefer the
+  // measured minimum, then average/smoothed values, exactly as exposed by
+  // EMODnet. The DTM is ~115 m, so it must never be treated as centimetric data.
+  const candidates = [data.min, data.avg, data.smoothed, data.max];
   for (const value of candidates) {
     const depth = finiteDepth(value);
-    if (depth !== null) return depth;
+    if (depth !== null) return { depth, hasSource: Boolean(data.reference) };
   }
   return null;
 }
 
 function parseGebco(data: any): number | null {
   if (!data || typeof data !== 'object') return null;
-
   const candidates: unknown[] = [
     data.value,
     data.pixelValue,
@@ -38,13 +37,10 @@ function parseGebco(data: any): number | null {
     data.pixelData?.pixelBlock?.pixels?.[0]?.[0],
     data.pixelData?.pixelBlock?.pixels?.[0]?.[0]?.[0]
   ];
-
   for (const value of candidates) {
     const n = Number(value);
-    // GEBCO is an elevation grid: negative values are underwater.
     if (Number.isFinite(n) && n < 0) return Math.abs(n);
   }
-
   return null;
 }
 
@@ -56,18 +52,12 @@ async function fetchJson(url: string, signal: AbortSignal): Promise<any | null> 
     },
     signal
   });
-
   if (!response.ok) return null;
-
   const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(text); } catch { return null; }
 }
 
-async function queryEmodnet(lat: number, lng: number, signal: AbortSignal): Promise<number | null> {
+async function queryEmodnet(lat: number, lng: number, signal: AbortSignal): Promise<{depth:number; hasSource:boolean} | null> {
   const geom = `POINT(${lng.toFixed(6)} ${lat.toFixed(6)})`;
   const url = `${EMODNET_URL}?geom=${encodeURIComponent(geom)}`;
   const data = await fetchJson(url, signal);
@@ -75,12 +65,7 @@ async function queryEmodnet(lat: number, lng: number, signal: AbortSignal): Prom
 }
 
 async function queryGebco(lat: number, lng: number, signal: AbortSignal): Promise<number | null> {
-  const geometry = JSON.stringify({
-    x: lng,
-    y: lat,
-    spatialReference: { wkid: 4326 }
-  });
-
+  const geometry = JSON.stringify({x: lng, y: lat, spatialReference: { wkid: 4326 }});
   const params = new URLSearchParams({
     geometry,
     geometryType: 'esriGeometryPoint',
@@ -89,9 +74,52 @@ async function queryGebco(lat: number, lng: number, signal: AbortSignal): Promis
     returnPixelValues: 'true',
     f: 'json'
   });
-
   const data = await fetchJson(`${GEBCO_URL}?${params.toString()}`, signal);
   return parseGebco(data);
+}
+
+function metersPerDegreeLat() { return 111320; }
+function metersPerDegreeLng(lat: number) { return 111320 * Math.cos(lat * Math.PI / 180); }
+
+function pointSegmentDistanceMeters(
+  lat: number, lng: number,
+  aLat: number, aLng: number,
+  bLat: number, bLng: number
+): number {
+  const mx = metersPerDegreeLng(lat);
+  const my = metersPerDegreeLat();
+  const px = lng * mx, py = lat * my;
+  const ax = aLng * mx, ay = aLat * my;
+  const bx = bLng * mx, by = bLat * my;
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px-ax)*dx + (py-ay)*dy) / len2));
+  const qx = ax + t * dx, qy = ay + t * dy;
+  return Math.hypot(px-qx, py-qy);
+}
+
+async function isNearOsmCoastline(lat: number, lng: number, signal: AbortSignal): Promise<boolean> {
+  // Only used for shallow EMODnet cells. OSM's coastline is a land/water
+  // boundary, so it lets us distinguish a shoreline click from an offshore
+  // point even though the EMODnet DTM cell itself is ~115 m wide.
+  const radiusDeg = 0.0012; // ~130 m
+  const south = lat - radiusDeg, north = lat + radiusDeg;
+  const west = lng - radiusDeg, east = lng + radiusDeg;
+  const query = `[out:json][timeout:5];way["natural"="coastline"](${south},${west},${north},${east});out geom;`;
+  const url = `${OSM_OVERPASS_URL}?data=${encodeURIComponent(query)}`;
+  const data = await fetchJson(url, signal);
+  const elements = Array.isArray(data?.elements) ? data.elements : [];
+  let best = Infinity;
+  for (const element of elements) {
+    const geometry = Array.isArray(element.geometry) ? element.geometry : [];
+    for (let i = 1; i < geometry.length; i++) {
+      const a = geometry[i - 1], b = geometry[i];
+      if (!Number.isFinite(a?.lat) || !Number.isFinite(a?.lon) || !Number.isFinite(b?.lat) || !Number.isFinite(b?.lon)) continue;
+      best = Math.min(best, pointSegmentDistanceMeters(lat, lng, lat, lng, a.lat, a.lon, b.lat, b.lon));
+      if (best <= 15) return true;
+    }
+  }
+  return best <= 15;
 }
 
 export default async function handler(req: any, res: any) {
@@ -103,12 +131,7 @@ export default async function handler(req: any, res: any) {
   const lat = Number(req.query?.lat);
   const lng = Number(req.query?.lng);
 
-  if (
-    !Number.isFinite(lat) ||
-    !Number.isFinite(lng) ||
-    lat < 15 || lat > 90 ||
-    lng < -36 || lng > 43
-  ) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 15 || lat > 90 || lng < -36 || lng > 43) {
     return res.status(400).json({ error: 'Invalid coordinates' });
   }
 
@@ -116,47 +139,56 @@ export default async function handler(req: any, res: any) {
   const timer = setTimeout(() => controller.abort(), 12000);
 
   try {
-    // Primary: EMODnet's official point-sampling REST service.
     try {
-      const depth = await queryEmodnet(lat, lng, controller.signal);
-      if (depth !== null) {
+      const result = await queryEmodnet(lat, lng, controller.signal);
+      if (result !== null) {
+        // A shallow DTM cell can still be offshore even when its value is only
+        // a few metres. Check the actual shoreline before applying a shoreline
+        // interpretation; never invent a shallow value merely from the depth.
+        if (result.depth <= 10) {
+          try {
+            if (await isNearOsmCoastline(lat, lng, controller.signal)) {
+              res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
+              return res.status(200).json({
+                depthMeters: 0,
+                source: 'OpenStreetMap coastline',
+                nearShore: true
+              });
+            }
+          } catch {
+            // Coastline lookup is an enhancement only; keep the real DTM value.
+          }
+        }
+
         res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
         return res.status(200).json({
-          depthMeters: Number(depth.toFixed(1)),
-          source: 'EMODnet Bathymetry DTM 2024' satisfies DepthResult['source']
+          depthMeters: Number(result.depth.toFixed(1)),
+          source: 'EMODnet Bathymetry DTM 2024',
+          nearShore: false
         });
       }
     } catch {
-      // Continue to the global fallback below.
+      // Continue to GEBCO.
     }
 
-    // Fallback: ArcGIS-hosted GEBCO elevation service.
-    // Only negative elevations are accepted as water depth; positive values
-    // indicate land and are deliberately not converted to a fake depth.
     try {
       const depth = await queryGebco(lat, lng, controller.signal);
       if (depth !== null) {
         res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
         return res.status(200).json({
           depthMeters: Number(depth.toFixed(1)),
-          source: 'GEBCO' satisfies DepthResult['source']
+          source: 'GEBCO',
+          nearShore: false
         });
       }
     } catch {
-      // Return a clean no-data response rather than exposing upstream details.
+      // Return a clean no-data response.
     }
 
     res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600');
-    return res.status(200).json({
-      depthMeters: null,
-      source: null,
-      error: 'No bathymetry value for this coordinate'
-    });
+    return res.status(200).json({ depthMeters: null, source: null, error: 'No bathymetry value for this coordinate' });
   } catch (error: any) {
-    return res.status(504).json({
-      error: 'Bathymetry request timed out',
-      detail: error?.name || 'unknown'
-    });
+    return res.status(504).json({ error: 'Bathymetry request timed out', detail: error?.name || 'unknown' });
   } finally {
     clearTimeout(timer);
   }
