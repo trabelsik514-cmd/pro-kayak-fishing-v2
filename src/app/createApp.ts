@@ -6,7 +6,10 @@ import { assessKayakConditions } from '../kayak/KayakAssessment';
 import { deleteTrip, loadTrips, makeTrip, type KayakTrip, type TrackPoint, totalDistanceKm, saveTrip, encodeTripForShare, decodeTripFromShare, encodeTripsForShare, decodeTripsFromShare } from '../trips/TripStore';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
-const escapeHtml = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch] ?? ch));
+const escapeHtml = (v: unknown) => {
+  const entities: Record<string, string> = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' };
+  return String(v ?? '').replace(/[&<>"']/g, ch => entities[ch] ?? ch);
+};
 
 function reportHtml(
   data: Awaited<ReturnType<MarineService['getPointConditions']>>,
