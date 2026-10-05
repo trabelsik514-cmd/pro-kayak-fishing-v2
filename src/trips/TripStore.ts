@@ -89,3 +89,24 @@ export function decodeTripFromShare(encoded: string): KayakTrip | null {
     return trip;
   } catch { return null; }
 }
+
+export function encodeTripsForShare(trips: KayakTrip[]): string {
+  const safeTrips = trips.filter(t => Array.isArray(t.points) && t.points.length).slice(0, 6);
+  const json = JSON.stringify(safeTrips);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+export function decodeTripsFromShare(encoded: string): KayakTrip[] {
+  try {
+    const base64 = encoded.replace(/-/g,'+').replace(/_/g,'/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
+    const trips = JSON.parse(new TextDecoder().decode(bytes)) as KayakTrip[];
+    if (!Array.isArray(trips)) return [];
+    return trips.filter(t => t && Array.isArray(t.points) && t.points.length).slice(0, 6);
+  } catch { return []; }
+}
