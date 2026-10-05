@@ -3,6 +3,7 @@ import { MarineService } from '../marine/MarineService';
 import { GeocodingService, reverseCoastalName } from '../location/GeocodingService';
 import { createMap } from '../map/createMap';
 import { assessKayakConditions } from '../kayak/KayakAssessment';
+import { deleteTrip, loadTrips, makeTrip, type KayakTrip, type TrackPoint, totalDistanceKm, saveTrip } from '../trips/TripStore';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 
@@ -59,7 +60,12 @@ function reportHtml(
 export function createApp(root: HTMLElement) {
   root.innerHTML = `<main class="shell"><header class="topbar"><strong>🎣 PRO KAYAK FISHING</strong>
     <form id="search-form" class="search"><input id="search-input" placeholder="ابحث عن مدينة أو ساحل تونسي" autocomplete="off"/><button type="submit">بحث</button></form></header>
-    <section id="map" class="map"></section><button id="today-sea" class="today-sea">🌊 حالة البحر اليوم</button><aside class="report hidden" id="report"></aside><div class="search-results hidden" id="search-results"></div></main>`;
+    <section id="map" class="map"></section>
+    <button id="today-sea" class="today-sea">🌊 حالة البحر اليوم</button>
+    <button id="trip-toggle" class="trip-toggle">🛶 رحلات الكاياك</button>
+    <aside class="report hidden" id="report"></aside>
+    <aside class="trip-panel hidden" id="trip-panel"></aside>
+    <div class="search-results hidden" id="search-results"></div></main>`;
 
   const { map, geolocate } = createMap('map');
   const marine = new MarineService();
@@ -68,6 +74,167 @@ export function createApp(root: HTMLElement) {
   const report = document.querySelector<HTMLElement>('#report')!;
 
   const bindClose = () => document.querySelector('#close-report')?.addEventListener('click', () => report.classList.add('hidden'));
+
+  const tripPanel = document.querySelector<HTMLElement>('#trip-panel')!;
+  const tripToggle = document.querySelector<HTMLButtonElement>('#trip-toggle')!;
+  let trips = loadTrips();
+  let recording = false;
+  let watchId: number | null = null;
+  let trackPoints: TrackPoint[] = [];
+  let routeSourceReady = false;
+
+  const routeGeoJson = () => ({
+    type: 'Feature' as const,
+    properties: {},
+    geometry: {
+      type: 'LineString' as const,
+      coordinates: trackPoints.map(p => [p.lng, p.lat])
+    }
+  });
+
+  const ensureRouteLayer = () => {
+    if (routeSourceReady || !map.isStyleLoaded()) return;
+    map.addSource('kayak-route', { type: 'geojson', data: routeGeoJson() });
+    map.addLayer({
+      id: 'kayak-route-line',
+      type: 'line',
+      source: 'kayak-route',
+      paint: { 'line-color': '#e11d48', 'line-width': 5, 'line-opacity': 0.9 }
+    });
+    routeSourceReady = true;
+  };
+
+  const updateRoute = () => {
+    ensureRouteLayer();
+    const source = map.getSource('kayak-route') as maplibregl.GeoJSONSource | undefined;
+    source?.setData(routeGeoJson());
+  };
+
+  const fitRoute = (trip: KayakTrip) => {
+    if (!trip.points.length) return;
+    const bounds = new maplibregl.LngLatBounds();
+    trip.points.forEach(p => bounds.extend([p.lng, p.lat]));
+    if (trip.points.length === 1) {
+      map.flyTo({ center: [trip.points[0].lng, trip.points[0].lat], zoom: 14 });
+    } else {
+      map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 700 });
+    }
+  };
+
+  const showTripRoute = (trip: KayakTrip) => {
+    trackPoints = trip.points;
+    ensureRouteLayer();
+    updateRoute();
+    fitRoute(trip);
+    tripPanel.classList.remove('hidden');
+    renderTrips();
+  };
+
+  const googleRouteUrl = (trip: KayakTrip) => {
+    if (!trip.points.length) return '#';
+    const start = trip.points[0];
+    const end = trip.points[trip.points.length - 1];
+    return `https://www.google.com/maps/dir/?api=1&origin=${start.lat},${start.lng}&destination=${end.lat},${end.lng}`;
+  };
+
+  const renderTrips = () => {
+    const activeDistance = totalDistanceKm(trackPoints);
+    const status = recording
+      ? `<div class="trip-recording"><b>🔴 تسجيل الرحلة جارٍ</b><span>${activeDistance.toFixed(2)} كم · ${trackPoints.length} نقطة</span></div>`
+      : `<div class="trip-idle"><b>سجل رحلات الكاياك</b><span>يُحفظ المسار على هذا الجهاز.</span></div>`;
+
+    const controls = recording
+      ? `<button id="stop-trip" class="trip-primary">⏹ إيقاف وحفظ الرحلة</button>`
+      : `<button id="start-trip" class="trip-primary">▶ بدء تسجيل رحلة</button>`;
+
+    const list = trips.length ? trips.map(trip => `
+      <article class="trip-card">
+        <div><b>${trip.name}</b><small>${new Date(trip.startedAt).toLocaleString('ar-TN')}</small></div>
+        <div class="trip-stats"><span>📏 ${trip.distanceKm.toFixed(2)} كم</span><span>⏱️ ${Math.round(trip.durationMin)} د</span></div>
+        <div class="trip-actions">
+          <button data-view-trip="${trip.id}">🗺️ مشاهدة المسار</button>
+          <a href="${googleRouteUrl(trip)}" target="_blank" rel="noopener">Google Maps</a>
+          <button data-delete-trip="${trip.id}" class="danger-action">حذف</button>
+        </div>
+      </article>`).join('') : '<p class="trip-empty">لا توجد رحلات محفوظة بعد.</p>';
+
+    tripPanel.innerHTML = `
+      <div class="trip-head"><b>🛶 رحلات الكاياك</b><button id="close-trips" aria-label="إغلاق">×</button></div>
+      ${status}
+      ${controls}
+      <div class="trip-list">${list}</div>`;
+    
+    document.querySelector('#close-trips')?.addEventListener('click', () => tripPanel.classList.add('hidden'));
+    document.querySelector('#start-trip')?.addEventListener('click', startTrip);
+    document.querySelector('#stop-trip')?.addEventListener('click', stopTrip);
+    tripPanel.querySelectorAll<HTMLButtonElement>('[data-view-trip]').forEach(btn => btn.addEventListener('click', () => {
+      const trip = trips.find(t => t.id === btn.dataset.viewTrip);
+      if (trip) showTripRoute(trip);
+    }));
+    tripPanel.querySelectorAll<HTMLButtonElement>('[data-delete-trip]').forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.dataset.deleteTrip;
+      if (!id) return;
+      trips = deleteTrip(id);
+      renderTrips();
+    }));
+  };
+
+  const addTrackPosition = (position: GeolocationPosition) => {
+    const point: TrackPoint = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      timestamp: position.timestamp || Date.now()
+    };
+    const previous = trackPoints[trackPoints.length - 1];
+    if (previous && Math.abs(point.lat - previous.lat) < 0.00005 && Math.abs(point.lng - previous.lng) < 0.00005) return;
+    trackPoints.push(point);
+    updateRoute();
+    renderTrips();
+  };
+
+  const startTrip = () => {
+    if (!navigator.geolocation) {
+      tripPanel.insertAdjacentHTML('beforeend', '<p class="trip-error">GPS غير متوفر في هذا المتصفح.</p>');
+      return;
+    }
+    if (recording) return;
+    recording = true;
+    trackPoints = [];
+    renderTrips();
+    navigator.geolocation.getCurrentPosition(
+      addTrackPosition,
+      () => {
+        recording = false;
+        renderTrips();
+        tripPanel.insertAdjacentHTML('beforeend', '<p class="trip-error">تعذر الوصول إلى GPS. اسمح للموقع بالوصول ثم أعد المحاولة.</p>');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+    watchId = navigator.geolocation.watchPosition(
+      addTrackPosition,
+      () => {},
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 }
+    );
+  };
+
+  const stopTrip = () => {
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+    recording = false;
+    if (trackPoints.length) {
+      const trip = makeTrip(trackPoints);
+      trips = saveTrip(trip);
+      showTripRoute(trip);
+    }
+    renderTrips();
+  };
+
+  tripToggle.addEventListener('click', () => {
+    tripPanel.classList.toggle('hidden');
+    if (!tripPanel.classList.contains('hidden')) renderTrips();
+  );
+
+
 
   const selectPoint = async (lat:number,lng:number,label:string|null=null) => {
     report.classList.remove('hidden');
@@ -152,5 +319,5 @@ export function createApp(root: HTMLElement) {
     }
   });
 
-  map.on('load',()=>geolocate.trigger());
+  map.on('load',()=>{ ensureRouteLayer(); geolocate.trigger(); });
 }
