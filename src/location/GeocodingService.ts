@@ -33,7 +33,7 @@ const stripCoastalPrefix = (value: string) => normalizeText(value)
   .replace(/^(?:شاطئ|شاطي|شط|plage|beach|marina|port|ميناء|مرسى|راس|رأس|cap|cape)\s+/i, '')
   .trim();
 
-type LocalPlace = { aliases: string[]; query: string };
+type LocalPlace = { aliases: string[]; query: string; latitude?: number; longitude?: number; displayName?: string };
 
 const LOCAL_TUNISIAN_QUERIES: LocalPlace[] = [
   // Bizerte / Cap Blanc / north coast
@@ -76,7 +76,7 @@ const LOCAL_TUNISIAN_QUERIES: LocalPlace[] = [
   {aliases:['ياسمين الحمامات','Yasmine Hammamet'],query:'Yasmine Hammamet, Tunisia'},
   {aliases:['حمامات الجنوبية','Hammamet Sud'],query:'Hammamet Sud, Tunisia'},
   {aliases:['مرسى الأمراء','مرسى الامراء','شاطئ مرسى الأمراء','شاطئ مرسى الامراء','Marsa El Omra','Marsa El Omraa'],query:'Marsa El Omra, Takelsa, Nabeul, Tunisia'},
-  {aliases:['المنڨع','المنقع','المنقاع','El Mangaa','El Mngaa','El Menga'],query:'El Mangaa, Takelsa, Nabeul, Tunisia'},
+  {aliases:['المنڨع','المنقع','المنقاع','El Mangaa','El Mngaa','El Menga'],query:'El Mangaa, Takelsa, Nabeul, Tunisia',latitude:36.8758,longitude:10.62527,displayName:'شاطئ المنڨع — تاكلسة، ولاية نابل، تونس'},
   {aliases:['موزرڨية','موزرقية','Mouzerquia','Mouzerka'],query:'Mouzerquia, Takelsa, Nabeul, Tunisia'},
   {aliases:['تازركة','تازركا','Tazarka','Tazarka Beach','Plage Tazarka'],query:'Tazarka, Tunisia'},
   {aliases:['قليبية','قليبيا','Kélibia','Kelibia','Kelibia Beach'],query:'Kelibia, Tunisia'},
@@ -164,6 +164,18 @@ const localQueryFor = (normalized: string) => {
       a.includes(stripped) || stripped.includes(a);
   }));
   return hit?.query ?? null;
+};
+
+const localPlaceFor = (raw: string): LocalPlace | null => {
+  const normalized = normalizeText(raw);
+  const stripped = stripCoastalPrefix(raw);
+  return LOCAL_TUNISIAN_QUERIES.find(entry => entry.latitude != null && entry.longitude != null &&
+    entry.aliases.some(alias => {
+      const a = normalizeText(alias);
+      return a === normalized || a === stripped || a.includes(normalized) || normalized.includes(a) ||
+        a.includes(stripped) || stripped.includes(a);
+    })
+  ) ?? null;
 };
 
 const localAliasesFor = (raw: string) => {
@@ -306,6 +318,22 @@ export class GeocodingService {
     if (!raw) return [];
 
     const normalized = normalizeText(raw);
+
+    // Exact local Tunisian places with verified coordinates must not depend on
+    // external geocoders. This is critical for popular local beach names such
+    // as المنڨع, which may be missing from city-oriented geocoders.
+    const pinned = localPlaceFor(raw);
+    if (pinned?.latitude != null && pinned?.longitude != null) {
+      return [{
+        name: pinned.displayName ?? pinned.aliases[0] ?? raw,
+        latitude: pinned.latitude,
+        longitude: pinned.longitude,
+        country: 'Tunisia',
+        admin1: 'Nabeul',
+        source: 'local'
+      }];
+    }
+
     const variants = variantsFor(raw);
 
     // Query independent providers in parallel. A provider failing must not
