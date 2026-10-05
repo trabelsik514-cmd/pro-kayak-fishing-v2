@@ -115,7 +115,7 @@ async function isNearOsmCoastline(lat: number, lng: number, signal: AbortSignal)
     for (let i = 1; i < geometry.length; i++) {
       const a = geometry[i - 1], b = geometry[i];
       if (!Number.isFinite(a?.lat) || !Number.isFinite(a?.lon) || !Number.isFinite(b?.lat) || !Number.isFinite(b?.lon)) continue;
-      best = Math.min(best, pointSegmentDistanceMeters(lat, lng, lat, lng, a.lat, a.lon, b.lat, b.lon));
+      best = Math.min(best, pointSegmentDistanceMeters(lat, lng, a.lat, a.lon, b.lat, b.lon));
       if (best <= 15) return true;
     }
   }
