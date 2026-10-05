@@ -16,8 +16,10 @@ const getLang = (): UiLang => localStorage.getItem('pkf-lang') === 'fr' ? 'fr' :
 const FR: Record<string,string> = {
   'ابحث عن مدينة أو ساحل تونسي':'Rechercher une ville ou une côte tunisienne',
   'بحث':'Rechercher',
+  'العربية':'Français',
   'حالة البحر اليوم':"État de la mer aujourd'hui",
   '📏 قياس المسافة':'📏 Mesurer la distance',
+  '✖️ إيقاف القياس':'✖️ Arrêter la mesure',
   '🛶 رحلاتي':'🛶 Mes voyages',
   '🛶 سجل الرحلات':'🛶 Journal des sorties',
   'لا توجد رحلة قيد التسجيل':'Aucune sortie en cours',
@@ -35,9 +37,20 @@ const FR: Record<string,string> = {
   '🗺️ عرض المسار':'🗺️ Voir le parcours',
   '🗑️ حذف':'🗑️ Supprimer',
   'حالة البحر عند النقطة':'État de la mer au point',
+  'جاري جلب آخر البيانات…':'Chargement des dernières données…',
+  'جاري حساب ملخص اليوم…':'Calcul du résumé du jour…',
+  'تعذر جلب البيانات':'Impossible de récupérer les données',
+  'تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.':'Point sélectionné, mais les sources de données ne répondent pas pour le moment.',
+  'حالة البحر اليوم عند النقطة':"État de la mer aujourd'hui au point",
+  'تعذر جلب ملخص اليوم':"Impossible de récupérer le résumé du jour",
+  'حاول مرة أخرى بعد قليل.':'Réessayez dans quelques instants.',
+  'لم يتم العثور على موقع تونسي مطابق.':'Aucun lieu tunisien correspondant trouvé.',
+  'جاري البحث…':'Recherche…',
+  'تعذر الاتصال بخدمة البحث. حاول مرة أخرى.':'Impossible de joindre le service de recherche. Réessayez.',
   'الموج':'Vagues',
   'اتجاه الموج':'Direction des vagues',
   'فترة الموج':'Période des vagues',
+  'Swell':'Swell',
   'الرياح':'Vent',
   'الهبات':'Rafales',
   'اتجاه الرياح':'Direction du vent',
@@ -48,52 +61,76 @@ const FR: Record<string,string> = {
   'اتجاه التيار':'Direction du courant',
   'العمق التقريبي':'Profondeur approximative',
   'غير متاح':'Indisponible',
+  'لا توجد قراءة متاحة':'Aucune lecture disponible',
   'المصدر:':'Source :',
-  'آخر جلب:':'Dernière mise à jour :'
+  'آخر جلب:':'Dernière mise à jour :',
+  'الموقع:':'Position :',
+  'أقصى موج':'Hauteur maximale des vagues',
+  'اتجاه الموج السائد':'Direction dominante des vagues',
+  'أقصى فترة موج':'Période maximale des vagues',
+  'أقصى Swell':'Swell maximal',
+  'أقصى رياح':'Vent maximal',
+  'أقصى هبات':'Rafales maximales',
+  'العمق':'Profondeur',
+  'التقريبي':'approximative',
+  'تقييم ظروف الكياك':'Évaluation des conditions du kayak',
+  'ممتاز':'Excellent',
+  'جيد':'Bon',
+  'حذر':'Prudence',
+  'غير مناسب':'Déconseillé',
+  'الرياح قوية جداً للكياك':'Le vent est très fort pour le kayak',
+  'الرياح قوية للكياك':'Le vent est fort pour le kayak',
+  'الرياح مرتفعة للكياك':'Le vent est élevé pour le kayak',
+  'الرياح متوسطة إلى مرتفعة':'Le vent est modéré à fort',
+  'الرياح خفيفة إلى متوسطة':'Le vent est faible à modéré',
+  'الهبات قوية جداً وقد تجعل التحكم بالكياك صعباً':'Les rafales sont très fortes et peuvent rendre le kayak difficile à contrôler',
+  'الهبات قوية للكياك':'Les rafales sont fortes pour le kayak',
+  'الهبات مرتفعة وتحتاج حذراً':'Les rafales sont élevées et demandent de la prudence',
+  'الهبات مرتفعة نسبياً وتؤثر على التحكم':'Les rafales sont assez élevées et affectent le contrôle',
+  'توجد هبات ملحوظة':'Des rafales notables sont présentes',
+  'ارتفاع الموج غير مناسب للكياك':'La hauteur des vagues est inadaptée au kayak',
+  'ارتفاع الموج كبير للكياك':'La hauteur des vagues est élevée pour le kayak',
+  'الموج مرتفع نسبياً للكياك':'Les vagues sont relativement élevées pour le kayak',
+  'الموج متوسط':'Les vagues sont modérées',
+  'فترة الموج طويلة مع ارتفاع ملحوظ':'La période des vagues est longue avec une hauteur notable',
+  'الرياح والهبات والموج ضمن الحدود الهادئة في البيانات المتاحة':'Le vent, les rafales et les vagues restent dans des niveaux calmes selon les données disponibles',
+  'بيانات غير مكتملة':'Données incomplètes',
+  'هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.':"Évaluation automatique basée sur les données météo et marines disponibles ; elle ne garantit pas la sécurité de la sortie.",
+  'الظروف تبدو ملائمة للكياك وفق البيانات المتاحة. راقب تغير الرياح والموج قبل الانطلاق.':'Les conditions semblent adaptées au kayak selon les données disponibles. Surveillez l’évolution du vent et des vagues avant de partir.',
+  'الظروف قد تكون مناسبة، لكن راقب الرياح والهبات والموج وأعد التحقق قبل الانطلاق.':'Les conditions peuvent être favorables, mais surveillez le vent, les rafales et les vagues avant le départ.',
+  'ينصح بالحذر. افحص تغير الظروف واختَر مساراً قريباً من الشاطئ إذا قررت الخروج.':'La prudence est recommandée. Vérifiez l’évolution des conditions et restez près de la côte si vous sortez.',
+  'الظروف الحالية غير ملائمة للكياك وفق البيانات المتاحة. يفضّل تأجيل الرحلة وإعادة التحقق لاحقاً.':'Les conditions actuelles sont défavorables au kayak selon les données disponibles. Il est préférable de reporter la sortie et de vérifier plus tard.'
 };
 
-function translateNode(root: Node) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes: Text[] = [];
-  let node: Node | null;
-  while ((node = walker.nextNode())) nodes.push(node as Text);
-  for (const text of nodes) {
-    const raw = text.nodeValue || '';
-    const key = raw.trim();
-    if (FR[key]) text.nodeValue = raw.replace(key, FR[key]);
+const t = (ar: string) => getLang() === 'fr' ? (FR[ar] ?? ar) : ar;
+const translateReason = (reason: string) => {
+  if (getLang() !== 'fr') return reason;
+  if (reason.startsWith('بيانات غير مكتملة:')) {
+    return `${t('بيانات غير مكتملة')}: ${reason.replace('بيانات غير مكتملة:', '').trim().split('، ').map(t).join(', ')}`;
   }
-  if (root instanceof HTMLElement) {
-    root.querySelectorAll<HTMLElement>('[placeholder],[aria-label]').forEach(el => {
-      for (const attr of ['placeholder','aria-label']) {
-        const value = el.getAttribute(attr);
-        if (value && FR[value]) el.setAttribute(attr, FR[value]);
-      }
-    });
-  }
-}
+  return t(reason);
+};
+const translateLevel = (level: string) => t(level);
+const locale = () => getLang() === 'fr' ? 'fr-TN' : 'ar-TN';
 
-function applyLanguage(root: HTMLElement) {
+function setDocumentLanguage() {
   const lang = getLang();
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  root.dataset.lang = lang;
-  const button = root.querySelector<HTMLButtonElement>('#lang-toggle');
-  if (button) button.textContent = lang === 'ar' ? '🌐 FR' : '🌐 العربية';
-  if (lang === 'fr') translateNode(root);
 }
 
 
 function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']>>, placeName: string|null) {
-  return `<div class="report-head"><b>حالة البحر عند النقطة</b><button id="close-report" aria-label="إغلاق">×</button></div>
-    <p>📍 ${escapeHtml(placeName ?? 'موقع بحري محدد')}</p><p class="coords">${ltr(`${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}`)}</p>
+  return `<div class="report-head"><b>${t('حالة البحر عند النقطة')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
+    <p>📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</p><p class="coords">${ltr(`${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}`)}</p>
     <div class="report-grid">
-      <span>🌊 الموج <b>${value(data.sea.waveHeight,' m')}</b></span><span>🧭 اتجاه الموج <b>${value(data.sea.waveDirection,'°')}</b></span>
-      <span>〰️ Swell <b>${value(data.sea.swellHeight,' m')}</b></span><span>⏱️ فترة الموج <b>${value(data.sea.wavePeriod,' s')}</b></span>
-      <span>💨 الرياح <b>${value(data.weather.windSpeed,' km/h')}</b></span><span>💨 الهبات <b>${value(data.weather.windGusts,' km/h')}</b></span>
-      <span>🧭 اتجاه الرياح <b>${value(data.weather.windDirection,'°')}</b></span><span>🌡️ الهواء <b>${value(data.weather.temperature,' °C')}</b></span>
-      <span>🌊 حرارة البحر <b>${value(data.sea.seaTemperature,' °C')}</b></span><span>📈 الضغط <b>${value(data.weather.pressure,' hPa')}</b></span>
-      <span>🌊 التيار <b>${value(data.sea.currentVelocity,' km/h')}</b></span><span>🧭 اتجاه التيار <b>${value(data.sea.currentDirection,'°')}</b></span>
-    </div><small>آخر جلب: ${new Date(data.fetchedAt).toLocaleTimeString('ar-TN')}</small>`;
+      <span>🌊 ${t('الموج')} <b>${value(data.sea.waveHeight,' m')}</b></span><span>🧭 ${t('اتجاه الموج')} <b>${value(data.sea.waveDirection,'°')}</b></span>
+      <span>〰️ ${t('Swell')} <b>${value(data.sea.swellHeight,' m')}</b></span><span>⏱️ ${t('فترة الموج')} <b>${value(data.sea.wavePeriod,' s')}</b></span>
+      <span>💨 ${t('الرياح')} <b>${value(data.weather.windSpeed,' km/h')}</b></span><span>💨 ${t('الهبات')} <b>${value(data.weather.windGusts,' km/h')}</b></span>
+      <span>🧭 ${t('اتجاه الرياح')} <b>${value(data.weather.windDirection,'°')}</b></span><span>🌡️ ${t('الهواء')} <b>${value(data.weather.temperature,' °C')}</b></span>
+      <span>🌊 ${t('حرارة البحر')} <b>${value(data.sea.seaTemperature,' °C')}</b></span><span>📈 ${t('الضغط')} <b>${value(data.weather.pressure,' hPa')}</b></span>
+      <span>🌊 ${t('التيار')} <b>${value(data.sea.currentVelocity,' km/h')}</b></span><span>🧭 ${t('اتجاه التيار')} <b>${value(data.sea.currentDirection,'°')}</b></span>
+    </div><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small>`;
 }
 
 export function createApp(root: HTMLElement) {
