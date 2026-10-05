@@ -147,7 +147,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
 
 export function createApp(root: HTMLElement) {
   setDocumentLanguage();
-  root.innerHTML = `<main class="shell"><header class="topbar"><a class="brand" href="#" aria-label="PRO KAYAK FISHING V2"><img class="brand-logo" src="/brand/logo-original.jpg?v=20261005-2155" alt="PRO KAYAK FISHING V2"/></a>
+  root.innerHTML = `<main class="shell"><header class="topbar"><a class="brand" href="#" aria-label="PRO KAYAK FISHING V2"><img class="brand-logo" src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/></a>
     <button id="lang-toggle" class="lang-toggle" type="button">🌐 ${getLang() === 'ar' ? 'FR' : 'العربية'}</button>
     <form id="search-form" class="search"><input id="search-input" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}" autocomplete="off"/><button type="submit">${t('بحث')}</button></form></header>
     <section id="map" class="map"></section>
@@ -167,7 +167,7 @@ export function createApp(root: HTMLElement) {
   if (!sessionStorage.getItem('pkf-v2-splash-seen')) {
     const splash = document.createElement('div');
     splash.className = 'brand-splash';
-    splash.innerHTML = '<div class="brand-splash-card"><img src="/brand/logo-original.jpg?v=20261005-2155" alt="PRO KAYAK FISHING V2"/></div>';
+    splash.innerHTML = '<div class="brand-splash-card"><img src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/></div>';
     root.appendChild(splash);
     sessionStorage.setItem('pkf-v2-splash-seen', '1');
     window.setTimeout(() => splash.classList.add('brand-splash-hide'), 1600);
