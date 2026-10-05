@@ -1,0 +1,2 @@
+export function registerOffline(){if(!('serviceWorker' in navigator))return;window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>undefined));}
+export function watchConnection(onChange:(online:boolean)=>void){const update=()=>onChange(navigator.onLine);window.addEventListener('online',update);window.addEventListener('offline',update);update();return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);};}
