@@ -33,6 +33,7 @@ const FR: Record<string,string> = {
   '✖️ إيقاف القياس':'✖️ Arrêter la mesure',
   '🛶 رحلاتي':'🛶 Mes voyages',
   '🛶 سجل الرحلات':'🛶 Journal des sorties',
+  'سجل الرحلات':'Journal des sorties',
   'لا توجد رحلة قيد التسجيل':'Aucune sortie en cours',
   'ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.':'Commencez l’enregistrement pour suivre le parcours du kayak via GPS.',
   '▶️ بدء تسجيل رحلة':'▶️ Démarrer une sortie',
@@ -278,6 +279,13 @@ export function createApp(root: HTMLElement) {
 
   const renderTrips = () => {
     const trips = loadTrips();
+    const tripName = (trip: KayakTrip) => {
+      if (getLang() === 'fr' && trip.name.startsWith('رحلة ')) {
+        const date = new Date(trip.startedAt).toLocaleDateString('fr-TN');
+        return 'Sortie ' + date;
+      }
+      return trip.name;
+    };
     if (!trips.length) {
       tripList.innerHTML = '<div class="trip-empty">'+t('لا توجد رحلات محفوظة بعد.')+'</div>';
       return;
@@ -286,7 +294,7 @@ export function createApp(root: HTMLElement) {
       const distance = Number.isFinite(trip.distanceKm) ? trip.distanceKm.toFixed(2) : '0.00';
       const duration = Math.round(trip.durationMin);
       return `<article class="trip-card">
-        <b>${escapeHtml(trip.name)}</b>
+        <b>${escapeHtml(tripName(trip))}</b>
         <small>${new Date(trip.startedAt).toLocaleString(locale())}</small>
         <div class="trip-stats"><span>📍 ${distance} ${getLang()==="fr" ? "km" : "كم"}</span><span>⏱️ ${duration} ${getLang()==="fr" ? "min" : "د"}</span><span>🧭 ${trip.points.length} ${getLang()==="fr" ? "points" : "نقطة"}</span></div>
         <div class="trip-actions">
