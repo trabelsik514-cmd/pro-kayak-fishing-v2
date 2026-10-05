@@ -77,7 +77,7 @@ export function createApp(root: HTMLElement) {
     results.classList.remove('hidden'); results.innerHTML='<div>جاري البحث…</div>';
     try{const places=await geocoder.search(query); if(!places.length){results.innerHTML='<div>لم يتم العثور على موقع تونسي مطابق.</div>';return}
       results.innerHTML=places.map((p,i)=>`<button data-index="${i}"><b>${p.name}</b><small>${p.admin1??''} ${p.country??''}</small></button>`).join('');
-      results.querySelectorAll<HTMLButtonElement>('button').forEach(button=>button.addEventListener('click',()=>{const p=places[Number(button.dataset.index)];results.classList.add('hidden');const label=[p.name,p.admin1].filter(Boolean).join(' — ');map.stop();map.jumpTo({center:[p.longitude,p.latitude],zoom:13.5,offset:[0,-140]});selectPoint(p.latitude,p.longitude,label)}))
+      results.querySelectorAll<HTMLButtonElement>('button').forEach(button=>button.addEventListener('click',()=>{const p=places[Number(button.dataset.index)];results.classList.add('hidden');const label=[p.name,p.admin1].filter(Boolean).join(' — ');map.stop();map.jumpTo({center:[p.longitude,p.latitude],zoom:13.5});selectPoint(p.latitude,p.longitude,label)}))
     }catch{results.innerHTML='<div>تعذر الاتصال بخدمة البحث. حاول مرة أخرى.</div>'}
   });
   map.on('load',()=>geolocate.trigger());
