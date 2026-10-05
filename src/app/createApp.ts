@@ -318,8 +318,8 @@ export function createApp(root: HTMLElement) {
       ? recordedPoints.slice(1).reduce((sum, p, i) => sum + distanceMetersSafe(recordedPoints[i], p), 0)
       : 0;
     tripStatus.className = 'trip-recording';
-    tripStatus.innerHTML = `<b>🔴 التسجيل جارٍ</b><span>${recordedPoints.length} نقطة • ${(distance / 1000).toFixed(2)} كم</span>`;
-    tripRecord.textContent = '⏹️ إيقاف وحفظ الرحلة';
+    tripStatus.innerHTML = `<b>🔴 ${getLang()==='fr' ? 'Enregistrement en cours' : 'التسجيل جارٍ'}</b><span>${recordedPoints.length} ${getLang()==='fr' ? 'points' : 'نقطة'} • ${(distance / 1000).toFixed(2)} ${getLang()==='fr' ? 'km' : 'كم'}</span>`;
+    tripRecord.textContent = getLang()==='fr' ? '⏹️ Arrêter et enregistrer' : '⏹️ إيقاف وحفظ الرحلة';
   };
 
   const distanceMetersSafe = (a: TrackPoint, b: TrackPoint) => {
@@ -350,7 +350,7 @@ export function createApp(root: HTMLElement) {
     if (recordedPoints.length < 2) {
       recordedPoints = [];
       setRecordingStatus();
-      tripStatus.innerHTML = '<b>لم يتم حفظ الرحلة</b><span>نحتاج إلى نقطتين GPS على الأقل لتكوين مسار.</span>';
+      tripStatus.innerHTML = getLang()==='fr' ? '<b>Sortie non enregistrée</b><span>Au moins deux points GPS sont nécessaires pour créer un parcours.</span>' : '<b>لم يتم حفظ الرحلة</b><span>نحتاج إلى نقطتين GPS على الأقل لتكوين مسار.</span>';
       return;
     }
     const trip = makeTrip(recordedPoints);
@@ -406,7 +406,7 @@ export function createApp(root: HTMLElement) {
       report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + `<hr><div class="kayak-assessment"><b>${t('تقييم ظروف الكياك')}: ${translateLevel(assessment.level)}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
       document.querySelector('#close-report')?.addEventListener('click',closeReport)
     }
-    catch{report.innerHTML=`<div class="report-head"><b>تعذر جلب البيانات</b><button id="close-report">×</button></div><p>تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.</p><button id="retry-report">إعادة المحاولة</button>`;document.querySelector('#close-report')?.addEventListener('click',closeReport);document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,placeName))}
+    catch{report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب البيانات')}</b><button id="close-report">×</button></div><p>${t('تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.')}</p><button id="retry-report">${getLang()==='fr' ? 'Réessayer' : 'إعادة المحاولة'}</button>`;document.querySelector('#close-report')?.addEventListener('click',closeReport);document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,placeName))}
   };
 
   const showTodaySea = async (lat:number, lng:number) => {
