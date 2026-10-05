@@ -28,7 +28,7 @@ async function getJson(url: URL, timeoutMs = 12000): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+    const response = await fetch(url, { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } finally {
@@ -94,6 +94,7 @@ export class MarineService {
       'wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,ocean_current_velocity,ocean_current_direction,sea_surface_temperature'
     );
     marineUrl.searchParams.set('timezone', 'auto');
+    marineUrl.searchParams.set('cell_selection', 'sea');
 
     const [weatherResult, marineResult] = await Promise.allSettled([
       getJson(weatherUrl),
