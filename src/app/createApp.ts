@@ -10,6 +10,79 @@ const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)
 const escapeHtml = (v: string) => v.replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch] ?? ch));
 const ltr = (v: string) => `<span dir="ltr">${v}</span>`;
 
+type UiLang = 'ar' | 'fr';
+const getLang = (): UiLang => localStorage.getItem('pkf-lang') === 'fr' ? 'fr' : 'ar';
+
+const FR: Record<string,string> = {
+  'ابحث عن مدينة أو ساحل تونسي':'Rechercher une ville ou une côte tunisienne',
+  'بحث':'Rechercher',
+  'حالة البحر اليوم':"État de la mer aujourd'hui",
+  '📏 قياس المسافة':'📏 Mesurer la distance',
+  '🛶 رحلاتي':'🛶 Mes voyages',
+  '🛶 سجل الرحلات':'🛶 Journal des sorties',
+  'لا توجد رحلة قيد التسجيل':'Aucune sortie en cours',
+  'ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.':'Commencez l’enregistrement pour suivre le parcours du kayak via GPS.',
+  '▶️ بدء تسجيل رحلة':'▶️ Démarrer une sortie',
+  'حالة البحر':'État de la mer',
+  'اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.':'Touchez un point pour obtenir les conditions météo et marines de cette position.',
+  'اضغط نقطة في البحر ثم نقطة ثانية على الشاطئ أو أي موقع آخر.':'Touchez un point en mer puis un second point sur la côte ou ailleurs.',
+  'تم تحديد النقطة الأولى. اختر النقطة الثانية.':'Premier point sélectionné. Choisissez le second.',
+  'إلغاء':'Annuler',
+  '📏 المسافة':'📏 Distance',
+  'تم القياس بين النقطتين المحددتين.':'Distance mesurée entre les deux points.',
+  'قياس جديد':'Nouvelle mesure',
+  'لا توجد رحلات محفوظة بعد.':'Aucune sortie enregistrée.',
+  '🗺️ عرض المسار':'🗺️ Voir le parcours',
+  '🗑️ حذف':'🗑️ Supprimer',
+  'حالة البحر عند النقطة':'État de la mer au point',
+  'الموج':'Vagues',
+  'اتجاه الموج':'Direction des vagues',
+  'فترة الموج':'Période des vagues',
+  'الرياح':'Vent',
+  'الهبات':'Rafales',
+  'اتجاه الرياح':'Direction du vent',
+  'الهواء':'Air',
+  'حرارة البحر':'Température de la mer',
+  'الضغط':'Pression',
+  'التيار':'Courant',
+  'اتجاه التيار':'Direction du courant',
+  'العمق التقريبي':'Profondeur approximative',
+  'غير متاح':'Indisponible',
+  'المصدر:':'Source :',
+  'آخر جلب:':'Dernière mise à jour :'
+};
+
+function translateNode(root: Node) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+  let node: Node | null;
+  while ((node = walker.nextNode())) nodes.push(node as Text);
+  for (const text of nodes) {
+    const raw = text.nodeValue || '';
+    const key = raw.trim();
+    if (FR[key]) text.nodeValue = raw.replace(key, FR[key]);
+  }
+  if (root instanceof HTMLElement) {
+    root.querySelectorAll<HTMLElement>('[placeholder],[aria-label]').forEach(el => {
+      for (const attr of ['placeholder','aria-label']) {
+        const value = el.getAttribute(attr);
+        if (value && FR[value]) el.setAttribute(attr, FR[value]);
+      }
+    });
+  }
+}
+
+function applyLanguage(root: HTMLElement) {
+  const lang = getLang();
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  root.dataset.lang = lang;
+  const button = root.querySelector<HTMLButtonElement>('#lang-toggle');
+  if (button) button.textContent = lang === 'ar' ? '🌐 FR' : '🌐 العربية';
+  if (lang === 'fr') translateNode(root);
+}
+
+
 function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']>>, placeName: string|null) {
   return `<div class="report-head"><b>حالة البحر عند النقطة</b><button id="close-report" aria-label="إغلاق">×</button></div>
     <p>📍 ${escapeHtml(placeName ?? 'موقع بحري محدد')}</p><p class="coords">${ltr(`${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}`)}</p>
@@ -24,7 +97,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
 }
 
 export function createApp(root: HTMLElement) {
-  root.innerHTML = `<main class="shell"><header class="topbar"><strong>🎣 PRO KAYAK FISHING</strong>
+  root.innerHTML = `<main class="shell"><header class="topbar"><strong>🎣 PRO KAYAK FISHING</strong><button id="lang-toggle" class="lang-toggle" type="button">🌐 FR</button>
     <form id="search-form" class="search"><input id="search-input" placeholder="ابحث عن مدينة أو ساحل تونسي" autocomplete="off"/><button type="submit">بحث</button></form></header>
     <section id="map" class="map"></section>
     <button id="today-sea" class="today-sea">🌊 حالة البحر اليوم</button>
@@ -39,6 +112,20 @@ export function createApp(root: HTMLElement) {
     </aside>
     <aside class="report" id="report"><div class="report-head"><b>حالة البحر</b><button id="close-report">×</button></div>
     <p>اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.</p></aside><div class="search-results hidden" id="search-results"></div></main>`;
+
+  applyLanguage(root);
+  root.querySelector<HTMLButtonElement>('#lang-toggle')?.addEventListener('click', () => {
+    localStorage.setItem('pkf-lang', getLang() === 'ar' ? 'fr' : 'ar');
+    createApp(root);
+  });
+  const languageObserver = new MutationObserver(mutations => {
+    if (getLang() !== 'fr') return;
+    for (const mutation of mutations) {
+      for (const node of Array.from(mutation.addedNodes)) translateNode(node);
+    }
+  });
+  languageObserver.observe(root, { childList: true, subtree: true });
+
 
   const { map, geolocate } = createMap('map'); const marine = new MarineService(); const geocoder = new GeocodingService();
   let marker: maplibregl.Marker | null = null; const report = document.querySelector<HTMLElement>('#report')!;
