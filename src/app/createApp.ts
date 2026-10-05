@@ -3,7 +3,7 @@ import { MarineService } from '../marine/MarineService';
 import { GeocodingService, reverseCoastalName } from '../location/GeocodingService';
 import { createMap } from '../map/createMap';
 import { assessKayakConditions } from '../kayak/KayakAssessment';
-import { deleteTrip, loadTrips, makeTrip, type KayakTrip, type TrackPoint, totalDistanceKm, saveTrip, encodeTripForShare, decodeTripFromShare } from '../trips/TripStore';
+import { deleteTrip, loadTrips, makeTrip, type KayakTrip, type TrackPoint, totalDistanceKm, saveTrip, encodeTripForShare, decodeTripFromShare, encodeTripsForShare, decodeTripsFromShare } from '../trips/TripStore';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 
@@ -63,8 +63,10 @@ export function createApp(root: HTMLElement) {
     <section id="map" class="map"></section>
     <button id="today-sea" class="today-sea">🌊 حالة البحر اليوم</button>
     <button id="trip-toggle" class="trip-toggle">🛶 رحلات الكاياك</button>
+    <button id="group-toggle" class="group-toggle">👥 المجموعة</button>
     <aside class="report hidden" id="report"></aside>
     <aside class="trip-panel hidden" id="trip-panel"></aside>
+    <aside class="group-panel hidden" id="group-panel"></aside>
     <div class="search-results hidden" id="search-results"></div></main>`;
 
   const { map, geolocate } = createMap('map');
@@ -77,7 +79,10 @@ export function createApp(root: HTMLElement) {
 
   const tripPanel = document.querySelector<HTMLElement>('#trip-panel')!;
   const tripToggle = document.querySelector<HTMLButtonElement>('#trip-toggle')!;
+  const groupPanel = document.querySelector<HTMLElement>('#group-panel')!;
+  const groupToggle = document.querySelector<HTMLButtonElement>('#group-toggle')!;
   let trips = loadTrips();
+  let groupTrips: KayakTrip[] = [];
   let recording = false;
   let watchId: number | null = null;
   let trackPoints: TrackPoint[] = [];
@@ -132,11 +137,64 @@ export function createApp(root: HTMLElement) {
     renderTrips();
   };
 
-  const sharedTrip = new URLSearchParams(location.hash.startsWith('#') ? location.hash.slice(1) : '').get('trip');
+  const groupColors = ['#e11d48','#06b6d4','#f59e0b','#22c55e','#8b5cf6','#f97316'];
+
+  const ensureGroupLayer = () => {
+    if (!map.isStyleLoaded() || map.getSource('kayak-group-routes')) return;
+    map.addSource('kayak-group-routes', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] }
+    });
+    map.addLayer({
+      id: 'kayak-group-route-lines',
+      type: 'line',
+      source: 'kayak-group-routes',
+      paint: {
+        'line-color': ['get', 'color'],
+        'line-width': 4,
+        'line-opacity': 0.9
+      }
+    });
+  };
+
+  const updateGroupRoutes = () => {
+    ensureGroupLayer();
+    const source = map.getSource('kayak-group-routes');
+    if (!source || !('setData' in source) || typeof source.setData !== 'function') return;
+    source.setData({
+      type: 'FeatureCollection',
+      features: groupTrips.map((trip, index) => ({
+        type: 'Feature',
+        properties: { id: trip.id, name: trip.name, color: groupColors[index % groupColors.length] },
+        geometry: { type: 'LineString', coordinates: trip.points.map(p => [p.lng, p.lat]) }
+      }))
+    });
+  };
+
+  const showGroupRoutes = (selected: KayakTrip[]) => {
+    groupTrips = selected.filter(t => t.points.length);
+    updateGroupRoutes();
+    if (groupTrips.length) {
+      const bounds = new maplibregl.LngLatBounds();
+      groupTrips.forEach(trip => trip.points.forEach(p => bounds.extend([p.lng, p.lat])));
+      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 90, maxZoom: 15, duration: 700 });
+    }
+    groupPanel.classList.remove('hidden');
+    renderGroup();
+  };
+
+  const sharedParams = new URLSearchParams(location.hash.startsWith('#') ? location.hash.slice(1) : '');
+  const sharedTrip = sharedParams.get('trip');
+  const sharedGroup = sharedParams.get('group');
 
   if (sharedTrip) {
     const imported = decodeTripFromShare(sharedTrip);
     if (imported) setTimeout(() => showTripRoute(imported), 0);
+  }
+
+  if (sharedGroup) {
+    const importedGroup = decodeTripsFromShare(sharedGroup);
+    if (importedGroup.length) setTimeout(() => showGroupRoutes(importedGroup), 0);
   }
 
   const googleRouteUrl = (trip: KayakTrip) => {
@@ -144,6 +202,57 @@ export function createApp(root: HTMLElement) {
     const start = trip.points[0];
     const end = trip.points[trip.points.length - 1];
     return `https://www.google.com/maps/dir/?api=1&origin=${start.lat},${start.lng}&destination=${end.lat},${end.lng}`;
+  };
+
+  const renderGroup = () => {
+    const selectedIds = new Set(groupTrips.map(t => t.id));
+    const list = trips.length
+      ? trips.map((trip, index) => `
+        <label class="group-trip-row">
+          <input type="checkbox" data-group-trip="${trip.id}" ${selectedIds.has(trip.id) ? 'checked' : ''}>
+          <span class="group-color" style="background:${groupColors[index % groupColors.length]}"></span>
+          <span><b>${trip.name}</b><small>${trip.distanceKm.toFixed(2)} كم · ${Math.round(trip.durationMin)} د</small></span>
+        </label>`).join('')
+      : '<p class="trip-empty">احفظ رحلة واحدة على الأقل لإضافتها إلى المجموعة.</p>';
+
+    groupPanel.innerHTML = `
+      <div class="trip-head"><b>👥 مجموعة الكاياك</b><button id="close-group" aria-label="إغلاق">×</button></div>
+      <p class="group-help">اختر عدة رحلات لإظهار مسارات الكاياك معاً على الخريطة. تعمل هذه الصفحة أيضاً دون خادم خارجي.</p>
+      <div class="group-list">${list}</div>
+      <div class="group-actions">
+        <button id="show-group" class="trip-primary">🗺️ عرض المجموعة</button>
+        <button id="share-group" class="trip-secondary">📤 مشاركة المجموعة</button>
+      </div>`;
+
+    groupPanel.querySelector('#close-group')?.addEventListener('click', () => groupPanel.classList.add('hidden'));
+    groupPanel.querySelector('#show-group')?.addEventListener('click', () => {
+      const selected = Array.from(groupPanel.querySelectorAll<HTMLInputElement>('[data-group-trip]:checked'))
+        .map(input => trips.find(t => t.id === input.dataset.groupTrip))
+        .filter((t): t is KayakTrip => Boolean(t))
+        .slice(0, 6);
+      showGroupRoutes(selected);
+    });
+    groupPanel.querySelector('#share-group')?.addEventListener('click', async () => {
+      const selected = Array.from(groupPanel.querySelectorAll<HTMLInputElement>('[data-group-trip]:checked'))
+        .map(input => trips.find(t => t.id === input.dataset.groupTrip))
+        .filter((t): t is KayakTrip => Boolean(t))
+        .slice(0, 6);
+      if (!selected.length) return;
+      const url = new URL(location.href);
+      url.hash = 'group=' + encodeTripsForShare(selected);
+      try {
+        if (navigator.share) await navigator.share({
+          title: 'مجموعة كاياك',
+          text: `مجموعة من ${selected.length} رحلات كاياك`,
+          url: url.toString()
+        });
+        else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(url.toString());
+          const button = groupPanel.querySelector<HTMLButtonElement>('#share-group');
+          if (button) { button.textContent = '✅ تم نسخ رابط المجموعة'; setTimeout(() => { button.textContent = '📤 مشاركة المجموعة'; }, 1800); }
+        } else window.prompt('انسخ رابط المجموعة:', url.toString());
+      } catch {}
+    });
   };
 
   const renderTrips = () => {
@@ -253,8 +362,15 @@ export function createApp(root: HTMLElement) {
   };
 
   tripToggle.addEventListener('click', () => {
+    groupPanel.classList.add('hidden');
     tripPanel.classList.toggle('hidden');
     if (!tripPanel.classList.contains('hidden')) renderTrips();
+  });
+
+  groupToggle.addEventListener('click', () => {
+    tripPanel.classList.add('hidden');
+    groupPanel.classList.toggle('hidden');
+    if (!groupPanel.classList.contains('hidden')) renderGroup();
   });
 
 
@@ -342,5 +458,5 @@ export function createApp(root: HTMLElement) {
     }
   });
 
-  map.on('load',()=>{ ensureRouteLayer(); geolocate.trigger(); });
+  map.on('load',()=>{ ensureRouteLayer(); ensureGroupLayer(); updateGroupRoutes(); geolocate.trigger(); });
 }
