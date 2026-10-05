@@ -134,34 +134,28 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
 }
 
 export function createApp(root: HTMLElement) {
-  root.innerHTML = `<main class="shell"><header class="topbar"><strong>🎣 PRO KAYAK FISHING</strong><button id="lang-toggle" class="lang-toggle" type="button">🌐 FR</button>
-    <form id="search-form" class="search"><input id="search-input" placeholder="ابحث عن مدينة أو ساحل تونسي" autocomplete="off"/><button type="submit">بحث</button></form></header>
+  setDocumentLanguage();
+  root.innerHTML = `<main class="shell"><header class="topbar"><strong>🎣 PRO KAYAK FISHING</strong>
+    <button id="lang-toggle" class="lang-toggle" type="button">🌐 ${getLang() === 'ar' ? 'FR' : 'العربية'}</button>
+    <form id="search-form" class="search"><input id="search-input" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}" autocomplete="off"/><button type="submit">${t('بحث')}</button></form></header>
     <section id="map" class="map"></section>
-    <button id="today-sea" class="today-sea">🌊 حالة البحر اليوم</button>
-    <button id="measure-toggle" class="measure-toggle">📏 قياس المسافة</button>
+    <button id="today-sea" class="today-sea">🌊 ${t('حالة البحر اليوم')}</button>
+    <button id="measure-toggle" class="measure-toggle">📏 ${t('قياس المسافة')}</button>
     <aside class="measure-panel hidden" id="measure-panel"></aside>
-    <button id="trip-toggle" class="trip-toggle">🛶 رحلاتي</button>
+    <button id="trip-toggle" class="trip-toggle">🛶 ${t('رحلاتي')}</button>
     <aside class="trip-panel hidden" id="trip-panel">
-      <div class="trip-head"><b>🛶 سجل الرحلات</b><button id="close-trips" aria-label="إغلاق">×</button></div>
-      <div id="trip-status" class="trip-idle"><b>لا توجد رحلة قيد التسجيل</b><span>ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.</span></div>
-      <button id="trip-record" class="trip-primary">▶️ بدء تسجيل رحلة</button>
+      <div class="trip-head"><b>🛶 ${t('سجل الرحلات')}</b><button id="close-trips" aria-label="${t('إغلاق')}">×</button></div>
+      <div id="trip-status" class="trip-idle"><b>${t('لا توجد رحلة قيد التسجيل')}</b><span>${t('ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.')}</span></div>
+      <button id="trip-record" class="trip-primary">▶️ ${t('بدء تسجيل رحلة')}</button>
       <div id="trip-list" class="trip-list"></div>
     </aside>
-    <aside class="report" id="report"><div class="report-head"><b>حالة البحر</b><button id="close-report">×</button></div>
-    <p>اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.</p></aside><div class="search-results hidden" id="search-results"></div></main>`;
+    <aside class="report" id="report"><div class="report-head"><b>${t('حالة البحر')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
+    <p>${t('اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.')}</p></aside><div class="search-results hidden" id="search-results"></div></main>`;
 
-  applyLanguage(root);
   root.querySelector<HTMLButtonElement>('#lang-toggle')?.addEventListener('click', () => {
     localStorage.setItem('pkf-lang', getLang() === 'ar' ? 'fr' : 'ar');
     createApp(root);
   });
-  const languageObserver = new MutationObserver(mutations => {
-    if (getLang() !== 'fr') return;
-    for (const mutation of mutations) {
-      for (const node of Array.from(mutation.addedNodes)) translateNode(node);
-    }
-  });
-  languageObserver.observe(root, { childList: true, subtree: true });
 
 
   const { map, geolocate } = createMap('map'); const marine = new MarineService(); const geocoder = new GeocodingService();
@@ -209,16 +203,16 @@ export function createApp(root: HTMLElement) {
 
   const renderMeasurement = () => {
     if (!measurePoints.length) {
-      measurePanel.innerHTML='<b>📏 قياس المسافة</b><p>اضغط نقطة في البحر ثم نقطة ثانية على الشاطئ أو أي موقع آخر.</p>';
+      measurePanel.innerHTML='<b>📏 '+t('قياس المسافة')+'</b><p>'+t('اضغط نقطة في البحر ثم نقطة ثانية على الشاطئ أو أي موقع آخر.')+'</p>';
       return;
     }
     if (measurePoints.length===1) {
-      measurePanel.innerHTML='<b>📏 قياس المسافة</b><p>تم تحديد النقطة الأولى. اختر النقطة الثانية.</p><button id="measure-cancel">إلغاء</button>';
+      measurePanel.innerHTML='<b>📏 '+t('قياس المسافة')+'</b><p>'+t('تم تحديد النقطة الأولى. اختر النقطة الثانية.')+'</p><button id="measure-cancel">'+t('إلغاء')+'</button>';
       measurePanel.querySelector('#measure-cancel')?.addEventListener('click',()=>{clearMeasurement();renderMeasurement();});
       return;
     }
     const km=measureDistanceKm(measurePoints[0],measurePoints[1]);
-    measurePanel.innerHTML='<b>📏 المسافة</b><strong>'+ (km<1 ? Math.round(km*1000)+' متر' : km.toFixed(2)+' كم') +'</strong><p>تم القياس بين النقطتين المحددتين.</p><button id="measure-new">قياس جديد</button>';
+    measurePanel.innerHTML='<b>📏 '+t('المسافة')+'</b><strong>'+ (km<1 ? Math.round(km*1000)+' '+(getLang()==='fr'?'m':'متر') : km.toFixed(2)+' '+(getLang()==='fr'?'km':'كم')) +'</strong><p>'+t('تم القياس بين النقطتين المحددتين.')+'</p><button id="measure-new">'+t('قياس جديد')+'</button>';
     measurePanel.querySelector('#measure-new')?.addEventListener('click',()=>{clearMeasurement();renderMeasurement();});
   };
 
@@ -226,7 +220,7 @@ export function createApp(root: HTMLElement) {
     measuring=true;
     clearMeasurement();
     measurePanel.classList.remove('hidden');
-    measureToggle.textContent='✖️ إيقاف القياس';
+    measureToggle.textContent='✖️ '+t('إيقاف القياس');
     renderMeasurement();
   };
 
@@ -234,7 +228,7 @@ export function createApp(root: HTMLElement) {
     measuring=false;
     clearMeasurement();
     measurePanel.classList.add('hidden');
-    measureToggle.textContent='📏 قياس المسافة';
+    measureToggle.textContent='📏 '+t('قياس المسافة');
   };
 
   measureToggle.addEventListener('click',()=>measuring ? stopMeasurement() : startMeasurement());
@@ -274,7 +268,7 @@ export function createApp(root: HTMLElement) {
   const renderTrips = () => {
     const trips = loadTrips();
     if (!trips.length) {
-      tripList.innerHTML = '<div class="trip-empty">لا توجد رحلات محفوظة بعد.</div>';
+      tripList.innerHTML = '<div class="trip-empty">'+t('لا توجد رحلات محفوظة بعد.')+'</div>';
       return;
     }
     tripList.innerHTML = trips.map(trip => {
@@ -282,11 +276,11 @@ export function createApp(root: HTMLElement) {
       const duration = Math.round(trip.durationMin);
       return `<article class="trip-card">
         <b>${escapeHtml(trip.name)}</b>
-        <small>${new Date(trip.startedAt).toLocaleString('ar-TN')}</small>
+        <small>${new Date(trip.startedAt).toLocaleString(locale())}</small>
         <div class="trip-stats"><span>📍 ${distance} كم</span><span>⏱️ ${duration} د</span><span>🧭 ${trip.points.length} نقطة</span></div>
         <div class="trip-actions">
-          <button data-view-trip="${trip.id}">🗺️ عرض المسار</button>
-          <button data-delete-trip="${trip.id}" class="danger-action">🗑️ حذف</button>
+          <button data-view-trip="${trip.id}">🗺️ ${t('عرض المسار')}</button>
+          <button data-delete-trip="${trip.id}" class="danger-action">🗑️ ${t('حذف')}</button>
         </div>
       </article>`;
     }).join('');
@@ -305,8 +299,8 @@ export function createApp(root: HTMLElement) {
   const setRecordingStatus = () => {
     if (!recording) {
       tripStatus.className = 'trip-idle';
-      tripStatus.innerHTML = '<b>لا توجد رحلة قيد التسجيل</b><span>ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.</span>';
-      tripRecord.textContent = '▶️ بدء تسجيل رحلة';
+      tripStatus.innerHTML = '<b>'+t('لا توجد رحلة قيد التسجيل')+'</b><span>'+t('ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.')+'</span>';
+      tripRecord.textContent = '▶️ '+t('بدء تسجيل رحلة');
       return;
     }
     const distance = recordedPoints.length > 1
@@ -360,7 +354,7 @@ export function createApp(root: HTMLElement) {
   const startRecording = () => {
     if (!navigator.geolocation) {
       tripStatus.className = 'trip-error';
-      tripStatus.textContent = 'هذا الجهاز لا يوفر GPS.';
+      tripStatus.textContent = getLang()==='fr' ? 'Cet appareil ne fournit pas de GPS.' : 'هذا الجهاز لا يوفر GPS.';
       return;
     }
     recording = true;
@@ -369,7 +363,7 @@ export function createApp(root: HTMLElement) {
     setRecordingStatus();
     watchId = navigator.geolocation.watchPosition(recordPosition, () => {
       tripStatus.className = 'trip-error';
-      tripStatus.innerHTML = '<b>تعذر الوصول إلى GPS</b><span>فعّل الموقع من إعدادات الهاتف ثم حاول مرة أخرى.</span>';
+      tripStatus.innerHTML = getLang()==='fr' ? '<b>Accès au GPS impossible</b><span>Activez la localisation dans les réglages du téléphone puis réessayez.</span>' : '<b>تعذر الوصول إلى GPS</b><span>فعّل الموقع من إعدادات الهاتف ثم حاول مرة أخرى.</span>';
     }, {enableHighAccuracy: true, maximumAge: 5000, timeout: 15000});
   };
 
@@ -380,9 +374,9 @@ export function createApp(root: HTMLElement) {
     const requestId = ++pointRequestId;
     selectedLocation = {lat, lng, label};
     report.classList.remove('hidden'); marker?.remove(); marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
-    report.innerHTML=`<div class="report-head"><b>جاري جلب آخر البيانات…</b><button id="close-report">×</button></div><p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
+    report.innerHTML=`<div class="report-head"><b>${t('جاري جلب آخر البيانات…')}</b><button id="close-report">×</button></div><p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
     document.querySelector('#close-report')?.addEventListener('click',closeReport);
-    let placeName=label; if(!placeName){try{placeName=await reverseCoastalName(lat,lng)}catch{placeName=null}}
+    let placeName=label; if(!placeName){try{placeName=await reverseCoastalName(lat,lng,getLang())}catch{placeName=null}}
     try{
       const data=await marine.getPointConditions(lat,lng);
       let depthLabel='غير متاح';
@@ -397,8 +391,8 @@ export function createApp(root: HTMLElement) {
       if (requestId !== pointRequestId) return;
       const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,waveHeight:data.sea.waveHeight,wavePeriod:data.sea.wavePeriod});
       const reportBase = reportHtml(data,placeName);
-      const depthCard = `<div class="depth-card">🪸 العمق التقريبي <b>${depthLabel}</b><small>المصدر: ${escapeHtml(depthSource)}</small></div>`;
-      report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + `<hr><div class="kayak-assessment"><b>تقييم ظروف الكياك: ${assessment.level}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(r=>`<li>${r}</li>`).join('')}</ul><small>هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.</small></div>`;
+      const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${depthLabel}</b><small>${t('المصدر:')} ${escapeHtml(depthSource)}</small></div>`;
+      report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + `<hr><div class="kayak-assessment"><b>${t('تقييم ظروف الكياك')}: ${translateLevel(assessment.level)}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
       document.querySelector('#close-report')?.addEventListener('click',closeReport)
     }
     catch{report.innerHTML=`<div class="report-head"><b>تعذر جلب البيانات</b><button id="close-report">×</button></div><p>تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.</p><button id="retry-report">إعادة المحاولة</button>`;document.querySelector('#close-report')?.addEventListener('click',closeReport);document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,placeName))}
@@ -406,22 +400,22 @@ export function createApp(root: HTMLElement) {
 
   const showTodaySea = async (lat:number, lng:number) => {
     report.classList.remove('hidden');
-    report.innerHTML = `<div class="report-head"><b>حالة البحر اليوم عند النقطة</b><button id="close-report">×</button></div><p>جاري حساب ملخص اليوم…</p>`;
+    report.innerHTML = `<div class="report-head"><b>${t('حالة البحر اليوم عند النقطة')}</b><button id="close-report">×</button></div><p>${t('جاري حساب ملخص اليوم…')}</p>`;
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
       const d = await marine.getTodaySummary(lat, lng);
-      report.innerHTML = `<div class="report-head"><b>حالة البحر اليوم عند النقطة</b><button id="close-report">×</button></div>
+      report.innerHTML = `<div class="report-head"><b>${t('حالة البحر اليوم عند النقطة')}</b><button id="close-report">×</button></div>
         <p>📅 ${d.date}</p><div class="report-grid">
-        <span>🌊 أقصى موج <b>${value(d.waveMax,' m')}</b></span>
-        <span>🧭 اتجاه الموج السائد <b>${value(d.waveDirection,'°')}</b></span>
-        <span>⏱️ أقصى فترة موج <b>${value(d.wavePeriod,' s')}</b></span>
-        <span>〰️ أقصى Swell <b>${value(d.swellMax,' m')}</b></span>
-        <span>💨 أقصى رياح <b>${value(d.windMax,' km/h')}</b></span>
-        <span>💨 أقصى هبات <b>${value(d.gustMax,' km/h')}</b></span>
-        </div><small>الموقع: ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</small>`;
+        <span>🌊 ${t('أقصى موج')} <b>${value(d.waveMax,' m')}</b></span>
+        <span>🧭 ${t('اتجاه الموج السائد')} <b>${value(d.waveDirection,'°')}</b></span>
+        <span>⏱️ ${t('أقصى فترة موج')} <b>${value(d.wavePeriod,' s')}</b></span>
+        <span>〰️ ${t('أقصى Swell')} <b>${value(d.swellMax,' m')}</b></span>
+        <span>💨 ${t('أقصى رياح')} <b>${value(d.windMax,' km/h')}</b></span>
+        <span>💨 ${t('أقصى هبات')} <b>${value(d.gustMax,' km/h')}</b></span>
+        </div><small>${t('الموقع:')} ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</small>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     } catch {
-      report.innerHTML = `<div class="report-head"><b>تعذر جلب ملخص اليوم</b><button id="close-report">×</button></div><p>حاول مرة أخرى بعد قليل.</p>`;
+      report.innerHTML = `<div class="report-head"><b>${t('تعذر جلب ملخص اليوم')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     }
   };
@@ -452,11 +446,11 @@ export function createApp(root: HTMLElement) {
   });
   document.querySelector('#search-form')?.addEventListener('submit',async event=>{
     event.preventDefault(); const input=document.querySelector<HTMLInputElement>('#search-input')!; const results=document.querySelector<HTMLElement>('#search-results')!; const query=input.value.trim(); if(!query)return;
-    results.classList.remove('hidden'); results.innerHTML='<div>جاري البحث…</div>';
-    try{const places=await geocoder.search(query); if(!places.length){results.innerHTML='<div>لم يتم العثور على موقع تونسي مطابق.</div>';return}
+    results.classList.remove('hidden'); results.innerHTML='<div>'+t('جاري البحث…')+'</div>';
+    try{const places=await geocoder.search(query,getLang()); if(!places.length){results.innerHTML='<div>'+t('لم يتم العثور على موقع تونسي مطابق.')+'</div>';return}
       results.innerHTML=places.map((p,i)=>`<button data-index="${i}"><b>${p.name}</b><small>${p.admin1??''} ${p.country??''}</small></button>`).join('');
       results.querySelectorAll<HTMLButtonElement>('button').forEach(button=>button.addEventListener('click',()=>{const p=places[Number(button.dataset.index)];results.classList.add('hidden');const label=[p.name,p.admin1].filter(Boolean).join(' — ');map.stop();map.jumpTo({center:[p.longitude,p.latitude],zoom:13.5});selectPoint(p.latitude,p.longitude,label)}))
-    }catch{results.innerHTML='<div>تعذر الاتصال بخدمة البحث. حاول مرة أخرى.</div>'}
+    }catch{results.innerHTML='<div>'+t('تعذر الاتصال بخدمة البحث. حاول مرة أخرى.')+'</div>'}
   });
   map.on('load',()=>geolocate.trigger());
 }
