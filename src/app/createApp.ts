@@ -439,7 +439,7 @@ export function createApp(root: HTMLElement) {
         }
       } catch { /* depth is optional */ }
       if (requestId !== pointRequestId) return;
-      const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,waveHeight:data.sea.waveHeight,wavePeriod:data.sea.wavePeriod});
+      const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,waveHeight:data.sea.waveHeight,wavePeriod:data.sea.wavePeriod,swellHeight:data.sea.swellHeight});
       const reportBase = reportHtml(data,placeName);
       const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${depthLabel}</b><small>${t('المصدر:')} ${escapeHtml(depthSource)}</small></div>`;
       report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + `<hr><div class="kayak-assessment"><b>${t('تقييم ظروف الكياك')}: ${translateLevel(assessment.level)}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
@@ -460,12 +460,12 @@ export function createApp(root: HTMLElement) {
       const d = await marine.getTodaySummary(lat, lng);
       report.innerHTML = `<div class="report-head"><b>${t('حالة البحر اليوم عند النقطة')}</b><button id="close-report">×</button></div>
         <p>📅 ${d.date}</p><div class="report-grid">
-        <span>🌊 ${t('أقصى موج')} <b>${value(d.waveMax,' m')}</b></span>
-        <span>🧭 ${t('اتجاه الموج السائد')} <b>${value(d.waveDirection,'°')}</b></span>
-        <span>⏱️ ${t('أقصى فترة موج')} <b>${value(d.wavePeriod,' s')}</b></span>
-        <span>〰️ ${t('أقصى Swell')} <b>${value(d.swellMax,' m')}</b></span>
-        <span>💨 ${t('أقصى رياح')} <b>${value(d.windMax,' km/h')}</b></span>
-        <span>💨 ${t('أقصى هبات')} <b>${value(d.gustMax,' km/h')}</b></span>
+        <span>🌊 ${t('الموج اليوم')} <b>${value(d.waveMin,' m')} – ${value(d.waveMax,' m')}</b></span>
+        <span>🧭 ${t('اتجاه الموج')} <b>${value(d.waveDirection,'°')}</b></span>
+        <span>⏱️ ${t('فترة الموج')} <b>${value(d.wavePeriodMin,' s')} – ${value(d.wavePeriodMax,' s')}</b></span>
+        <span>〰️ ${t('Swell اليوم')} <b>${value(d.swellMin,' m')} – ${value(d.swellMax,' m')}</b></span>
+        <span>💨 ${t('الرياح اليوم')} <b>${value(d.windMin,' km/h')} – ${value(d.windMax,' km/h')}</b></span>
+        <span>💨 ${t('الهبات اليوم')} <b>${value(d.gustMin,' km/h')} – ${value(d.gustMax,' km/h')}</b></span>
         </div><small>${t('الموقع:')} ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</small>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     } catch {
