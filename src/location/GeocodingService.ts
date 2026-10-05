@@ -21,6 +21,20 @@ const normalizeArabic = (value: string) => value
   .trim()
   .toLowerCase();
 
+const LOCAL_TUNISIAN_ALIASES: Array<{aliases: string[]; place: PlaceResult}> = [
+  {
+    aliases: ['مرسى الأمراء','مرسى الامراء','شاطئ مرسى الأمراء','شاطئ مرسى الامراء','قصر وسيلة','قصر مرسى الأمراء','Marsa El Omra','Marsa El Omraa','Marsa El Omrâ'],
+    place: {name:'مرسى الأمراء', latitude:36.87833, longitude:10.67139, country:'Tunisia', admin1:'Nabeul — Takelsa'}
+  }
+];
+
+const localAliasMatches = (normalized: string) => {
+  if (!normalized) return [] as PlaceResult[];
+  return LOCAL_TUNISIAN_ALIASES
+    .filter(entry => entry.aliases.some(alias => normalizeArabic(alias) === normalized || normalizeArabic(alias).includes(normalized) || normalized.includes(normalizeArabic(alias))))
+    .map(entry => entry.place);
+};
+
 const uniquePlaces = (places: PlaceResult[]) => {
   const seen = new Set<string>();
   return places.filter(p => {
@@ -81,7 +95,18 @@ export class GeocodingService {
     if (!raw) return [];
 
     const normalized = normalizeArabic(raw);
-    const variants = Array.from(new Set([raw, normalized, `${raw}, Tunisia`].filter(Boolean)));
+
+    // Curated aliases cover important Tunisian coastal names that may be
+    // missing or indexed differently in public geocoders.
+    const localMatches = localAliasMatches(normalized);
+    if (localMatches.length) return localMatches;
+
+    const variants = Array.from(new Set([
+      raw,
+      normalized,
+      `${raw}, Takelsa, Nabeul, Tunisia`,
+      `${raw}, Tunisia`
+    ].filter(Boolean)));
 
     const primary = await Promise.all(
       variants.slice(0, 2).flatMap(q => [
