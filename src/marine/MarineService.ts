@@ -31,8 +31,7 @@ async function getJson(url: URL, timeoutMs = 20000): Promise<any> {
     const response = await fetch(url, {
       signal: controller.signal,
       cache: 'no-store',
-      headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
-    });
+      });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } finally {
