@@ -200,11 +200,14 @@ export function createApp(root: HTMLElement) {
   let measurePoints: [number, number][] = [];
   let measureMarkers: maplibregl.Marker[] = [];
 
-  const closeReport = () => report.classList.add('hidden');
+  const shell = root.querySelector<HTMLElement>('.shell')!;
+  const setReportOpen = (open:boolean) => shell.classList.toggle('report-open', open);
+  const closeReport = () => { report.classList.add('hidden'); setReportOpen(false); };
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
   document.querySelector('#trip-toggle')?.addEventListener('click', () => {
+    const opening = tripPanel.classList.contains('hidden');
     tripPanel.classList.toggle('hidden');
-    if (!tripPanel.classList.contains('hidden')) renderTrips();
+    if (opening) { closeReport(); measurePanel.classList.add('hidden'); measuring = false; renderTrips(); }
   });
   document.querySelector('#close-trips')?.addEventListener('click', () => tripPanel.classList.add('hidden'));
   const measurePanel = document.querySelector<HTMLElement>('#measure-panel')!;
@@ -241,6 +244,8 @@ export function createApp(root: HTMLElement) {
   };
 
   const startMeasurement = () => {
+    closeReport();
+    tripPanel.classList.add('hidden');
     measuring=true;
     clearMeasurement();
     measurePanel.classList.remove('hidden');
@@ -404,7 +409,12 @@ export function createApp(root: HTMLElement) {
   const selectPoint = async (lat:number,lng:number,label:string|null=null): Promise<void> => {
     const requestId = ++pointRequestId;
     selectedLocation = {lat, lng, label};
-    report.classList.remove('hidden'); marker?.remove(); marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
+    report.classList.remove('hidden');
+    setReportOpen(true);
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
+    marker?.remove(); marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
     report.innerHTML=`<div class="report-head"><b>${t('جاري جلب آخر البيانات…')}</b><button id="close-report">×</button></div><p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
     document.querySelector('#close-report')?.addEventListener('click',closeReport);
     let placeNamePromise: Promise<string|null> = Promise.resolve(label);
@@ -440,6 +450,10 @@ export function createApp(root: HTMLElement) {
 
   const showTodaySea = async (lat:number, lng:number) => {
     report.classList.remove('hidden');
+    setReportOpen(true);
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
     report.innerHTML = `<div class="report-head"><b>${t('حالة البحر اليوم عند النقطة')}</b><button id="close-report">×</button></div><p>${t('جاري حساب ملخص اليوم…')}</p>`;
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
