@@ -265,7 +265,9 @@ export function createApp(root: HTMLElement) {
       try { const bathy=await getBathymetryDepth(map,lng,lat); if(bathy) depthLabel=`${bathy.depthMeters.toFixed(1)} m`; } catch { /* depth is optional */ }
       if (requestId !== pointRequestId) return;
       const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,waveHeight:data.sea.waveHeight,wavePeriod:data.sea.wavePeriod});
-      report.innerHTML=reportHtml(data,placeName).replace('</div><small>',`<div class="depth-card">🪸 العمق التقريبي <b>${depthLabel}</b><small>المصدر: GEBCO</small></div></div><small>`)+`<hr>`<div class="kayak-assessment"><b>تقييم ظروف الكياك: ${assessment.level}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(r=>`<li>${r}</li>`).join('')}</ul><small>هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.</small></div>`;
+      const reportBase = reportHtml(data,placeName);
+      const depthCard = `<div class="depth-card">🪸 العمق التقريبي <b>${depthLabel === '—' ? 'غير متاح' : depthLabel}</b><small>المصدر: GEBCO</small></div>`;
+      report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + `<hr><div class="kayak-assessment"><b>تقييم ظروف الكياك: ${assessment.level}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(r=>`<li>${r}</li>`).join('')}</ul><small>هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.</small></div>`;
       document.querySelector('#close-report')?.addEventListener('click',closeReport)
     }
     catch{report.innerHTML=`<div class="report-head"><b>تعذر جلب البيانات</b><button id="close-report">×</button></div><p>تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.</p><button id="retry-report">إعادة المحاولة</button>`;document.querySelector('#close-report')?.addEventListener('click',closeReport);document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,placeName))}
