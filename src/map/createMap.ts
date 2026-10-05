@@ -8,7 +8,6 @@ export function createMap(container: string) {
     maxZoom: 18,
     minZoom: 5,
     maxBounds: [[7.0, 30.0], [12.5, 38.5]],
-    attributionControl: true,
     style: {
       version: 8,
       sources: {
