@@ -3,7 +3,7 @@ import { MarineService } from '../marine/MarineService';
 import { GeocodingService, reverseCoastalName } from '../location/GeocodingService';
 import { createMap } from '../map/createMap';
 import { assessKayakConditions } from '../kayak/KayakAssessment';
-import { deleteTrip, loadTrips, makeTrip, type KayakTrip, type TrackPoint, totalDistanceKm, saveTrip } from '../trips/TripStore';
+import { deleteTrip, loadTrips, makeTrip, type KayakTrip, type TrackPoint, totalDistanceKm, saveTrip, encodeTripForShare, decodeTripFromShare } from '../trips/TripStore';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 
@@ -76,6 +76,11 @@ export function createApp(root: HTMLElement) {
   const bindClose = () => document.querySelector('#close-report')?.addEventListener('click', () => report.classList.add('hidden'));
 
   const tripPanel = document.querySelector<HTMLElement>('#trip-panel')!;
+  const sharedTrip = new URLSearchParams(location.hash.startsWith('#') ? location.hash.slice(1) : '').get('trip');
+  if (sharedTrip) {
+    const imported = decodeTripFromShare(sharedTrip);
+    if (imported) setTimeout(() => showTripRoute(imported), 0);
+  }
   const tripToggle = document.querySelector<HTMLButtonElement>('#trip-toggle')!;
   let trips = loadTrips();
   let recording = false;
@@ -155,6 +160,7 @@ export function createApp(root: HTMLElement) {
         <div class="trip-stats"><span>📏 ${trip.distanceKm.toFixed(2)} كم</span><span>⏱️ ${Math.round(trip.durationMin)} د</span></div>
         <div class="trip-actions">
           <button data-view-trip="${trip.id}">🗺️ مشاهدة المسار</button>
+          <button data-share-trip="${trip.id}">📤 مشاركة</button>
           <a href="${googleRouteUrl(trip)}" target="_blank" rel="noopener">Google Maps</a>
           <button data-delete-trip="${trip.id}" class="danger-action">حذف</button>
         </div>
@@ -172,6 +178,17 @@ export function createApp(root: HTMLElement) {
     tripPanel.querySelectorAll<HTMLButtonElement>('[data-view-trip]').forEach(btn => btn.addEventListener('click', () => {
       const trip = trips.find(t => t.id === btn.dataset.viewTrip);
       if (trip) showTripRoute(trip);
+    }));
+    tripPanel.querySelectorAll<HTMLButtonElement>('[data-share-trip]').forEach(btn => btn.addEventListener('click', async () => {
+      const trip = trips.find(t => t.id === btn.dataset.shareTrip);
+      if (!trip) return;
+      const url = new URL(location.href);
+      url.hash = 'trip=' + encodeTripForShare(trip);
+      try {
+        if (navigator.share) await navigator.share({ title: 'رحلة كاياك', text: 'رحلة ' + trip.distanceKm.toFixed(2) + ' كم', url: url.toString() });
+        else if (navigator.clipboard) { await navigator.clipboard.writeText(url.toString()); btn.textContent = '✅ تم نسخ الرابط'; setTimeout(() => { btn.textContent = '📤 مشاركة'; }, 1800); }
+        else window.prompt('انسخ رابط الرحلة:', url.toString());
+      } catch {}
     }));
     tripPanel.querySelectorAll<HTMLButtonElement>('[data-delete-trip]').forEach(btn => btn.addEventListener('click', () => {
       const id = btn.dataset.deleteTrip;
