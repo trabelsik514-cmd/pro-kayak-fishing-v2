@@ -307,3 +307,99 @@
   backdrop-filter:blur(16px);
   border:1px solid rgba(255,255,255,.10);
 }
+
+
+/* PKF PROFESSIONAL UI PASS 3 — unified map action dock */
+.map-actions{
+  position:absolute;
+  z-index:12;
+  right:16px;
+  bottom:18px;
+  width:176px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  background:rgba(5,17,28,.78);
+  box-shadow:0 16px 38px rgba(0,0,0,.42);
+  backdrop-filter:blur(16px);
+}
+.map-action{
+  width:100%;
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:9px;
+  padding:0 13px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:12px;
+  color:#fff;
+  background:rgba(255,255,255,.055);
+  box-shadow:none;
+  font:inherit;
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  transition:transform .16s ease,background .16s ease,border-color .16s ease;
+}
+.map-action:hover{
+  background:rgba(255,255,255,.11);
+  border-color:rgba(255,255,255,.18);
+}
+.map-action:active{
+  transform:scale(.98);
+}
+.map-action span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.map-action-sea{
+  background:rgba(225,29,72,.94);
+  border-color:rgba(255,255,255,.10);
+}
+.map-action-sea:hover{
+  background:#e11d48;
+}
+.map-action-trip{
+  background:rgba(15,118,110,.90);
+}
+.map-action-trip:hover{
+  background:#0f766e;
+}
+.map-action-measure{
+  background:rgba(51,65,85,.94);
+}
+.map-action-measure:hover{
+  background:#475569;
+}
+@media(max-width:700px){
+  .map-actions{
+    right:10px;
+    bottom:54px;
+    width:164px;
+    padding:7px;
+    gap:7px;
+    border-radius:16px;
+  }
+  .map-action{
+    min-height:44px;
+    padding:0 11px;
+    border-radius:11px;
+    font-size:13px;
+  }
+}
+@media(max-width:390px){
+  .map-actions{
+    right:8px;
+    bottom:52px;
+    width:154px;
+  }
+  .map-action{
+    min-height:42px;
+    font-size:12.5px;
+  }
+}
