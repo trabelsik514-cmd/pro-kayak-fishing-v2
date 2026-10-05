@@ -75,7 +75,7 @@ export function encodeTripForShare(trip: KayakTrip): string {
   const bytes = new TextEncoder().encode(json);
   let binary = '';
   bytes.forEach(b => binary += String.fromCharCode(b));
-  return btoa(binary).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
 
 export function decodeTripFromShare(encoded: string): KayakTrip | null {
