@@ -6,6 +6,7 @@ import { assessKayakConditions } from '../kayak/KayakAssessment';
 import { deleteTrip, loadTrips, makeTrip, type KayakTrip, type TrackPoint, totalDistanceKm, saveTrip, encodeTripForShare, decodeTripFromShare, encodeTripsForShare, decodeTripsFromShare } from '../trips/TripStore';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
+const escapeHtml = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch] ?? ch));
 
 function reportHtml(
   data: Awaited<ReturnType<MarineService['getPointConditions']>>,
@@ -17,7 +18,7 @@ function reportHtml(
     assessment.level === 'حذر' ? 'caution' : 'danger';
 
   return `<div class="report-head"><b>تقرير الكاياك التفصيلي</b><button id="close-report" aria-label="إغلاق">×</button></div>
-    <div class="place-title">📍 ${placeName ?? 'موقع بحري محدد'}</div>
+    <div class="place-title">📍 ${escapeHtml(placeName ?? 'موقع بحري محدد')}</div>
     <p class="coords">${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}</p>
 
     <section class="kayak-summary ${levelClass}">
@@ -305,6 +306,8 @@ export function createApp(root: HTMLElement) {
       const id = btn.dataset.deleteTrip;
       if (!id) return;
       trips = deleteTrip(id);
+      groupTrips = groupTrips.filter(trip => trip.id !== id);
+      updateGroupRoutes();
       renderTrips();
     }));
   };
@@ -444,7 +447,7 @@ export function createApp(root: HTMLElement) {
     try{
       const places=await geocoder.search(query);
       if(!places.length){results.innerHTML='<div>لم يتم العثور على موقع تونسي مطابق.</div>';return}
-      results.innerHTML=places.map((p,i)=>`<button data-index="${i}"><b>${p.name}</b><small>${p.admin1??''} ${p.country??''}</small></button>`).join('');
+      results.innerHTML=places.map((p,i)=>`<button data-index="${i}"><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.admin1??'')} ${escapeHtml(p.country??'')}</small></button>`).join('');
       results.querySelectorAll<HTMLButtonElement>('button').forEach(button=>button.addEventListener('click',()=>{
         const p=places[Number(button.dataset.index)];
         results.classList.add('hidden');
