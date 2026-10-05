@@ -204,6 +204,8 @@ export function createApp(root: HTMLElement) {
     navigator.geolocation.getCurrentPosition(
       addTrackPosition,
       () => {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        watchId = null;
         recording = false;
         renderTrips();
         tripPanel.insertAdjacentHTML('beforeend', '<p class="trip-error">تعذر الوصول إلى GPS. اسمح للموقع بالوصول ثم أعد المحاولة.</p>');
