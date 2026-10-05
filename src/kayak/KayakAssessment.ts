@@ -13,6 +13,7 @@ export function assessKayakConditions(data: {
   windGusts:number|null;
   waveHeight:number|null;
   wavePeriod:number|null;
+  swellHeight?:number|null;
 }): KayakAssessment {
   let score = 100;
   const reasons:string[] = [];
@@ -65,6 +66,10 @@ export function assessKayakConditions(data: {
   } else if (data.wavePeriod >= 8 && (data.waveHeight ?? 0) > 0.8) {
     score -= 10;
     reasons.push('فترة الموج طويلة مع ارتفاع ملحوظ');
+  }
+  if (data.swellHeight != null && data.swellHeight > 1.0) {
+    score -= data.swellHeight > 1.5 ? 20 : 10;
+    reasons.push('الـSwell مرتفع ويزيد اضطراب البحر');
   }
 
   const dataComplete = missing.length === 0;
