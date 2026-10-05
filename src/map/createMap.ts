@@ -7,6 +7,7 @@ export function createMap(container: string) {
     zoom: 6.5,
     maxZoom: 18,
     minZoom: 5,
+    maxBounds: [[7.0, 30.0], [12.5, 38.5]],
     attributionControl: true,
     style: {
       version: 8,
@@ -18,12 +19,18 @@ export function createMap(container: string) {
           attribution: '© Esri'
         }
       },
-      layers: [
-        { id: 'satellite', type: 'raster', source: 'esri-satellite' }
-      ]
+      layers: [{ id: 'satellite', type: 'raster', source: 'esri-satellite' }]
     }
   });
 
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-  return map;
+  const geolocate = new maplibregl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
+    trackUserLocation: true,
+    showUserLocation: true,
+    showAccuracyCircle: true
+  });
+  map.addControl(geolocate, 'top-right');
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
+
+  return { map, geolocate };
 }
