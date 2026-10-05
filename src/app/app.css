@@ -403,3 +403,67 @@
     font-size:12.5px;
   }
 }
+
+/* PKF PROFESSIONAL UI PASS 4 — safe action dock while a report is open */
+.map-actions{
+  z-index:12;
+}
+.report-open .map-actions{
+  top:74px;
+  right:14px;
+  bottom:auto;
+  width:auto;
+  flex-direction:row;
+  gap:6px;
+  padding:6px;
+  border-radius:14px;
+}
+.report-open .map-action{
+  width:44px;
+  min-width:44px;
+  min-height:40px;
+  height:40px;
+  padding:0;
+  justify-content:center;
+  gap:0;
+  border-radius:10px;
+}
+.report-open .map-action span{
+  display:none;
+}
+.report-open .map-action-sea{
+  background:rgba(225,29,72,.94);
+}
+.report-open .map-action-measure{
+  background:rgba(51,65,85,.94);
+}
+.report-open .map-action-trip{
+  background:rgba(15,118,110,.92);
+}
+@media(max-width:700px){
+  .report-open .map-actions{
+    top:118px;
+    right:10px;
+    width:auto;
+    padding:6px;
+    gap:5px;
+    border-radius:14px;
+  }
+  .report-open .map-action{
+    width:42px;
+    min-width:42px;
+    min-height:40px;
+    height:40px;
+    border-radius:9px;
+  }
+}
+@media(max-width:390px){
+  .report-open .map-actions{
+    top:116px;
+    right:8px;
+  }
+  .report-open .map-action{
+    width:40px;
+    min-width:40px;
+  }
+}
