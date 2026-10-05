@@ -69,3 +69,23 @@ export function makeTrip(points: TrackPoint[]): KayakTrip {
     durationMin: Math.max(0, (endedAt - startedAt) / 60000)
   };
 }
+
+export function encodeTripForShare(trip: KayakTrip): string {
+  const json = JSON.stringify(trip);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+}
+
+export function decodeTripFromShare(encoded: string): KayakTrip | null {
+  try {
+    const base64 = encoded.replace(/-/g,'+').replace(/_/g,'/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
+    const trip = JSON.parse(new TextDecoder().decode(bytes)) as KayakTrip;
+    if (!trip || !Array.isArray(trip.points) || !trip.points.length) return null;
+    return trip;
+  } catch { return null; }
+}
