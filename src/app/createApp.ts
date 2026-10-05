@@ -27,6 +27,8 @@ export function createApp(root: HTMLElement) {
     <form id="search-form" class="search"><input id="search-input" placeholder="ابحث عن مدينة أو ساحل تونسي" autocomplete="off"/><button type="submit">بحث</button></form></header>
     <section id="map" class="map"></section>
     <button id="today-sea" class="today-sea">🌊 حالة البحر اليوم</button>
+    <button id="measure-toggle" class="measure-toggle">📏 قياس المسافة</button>
+    <aside class="measure-panel hidden" id="measure-panel"></aside>
     <button id="trip-toggle" class="trip-toggle">🛶 رحلاتي</button>
     <aside class="trip-panel hidden" id="trip-panel">
       <div class="trip-head"><b>🛶 سجل الرحلات</b><button id="close-trips" aria-label="إغلاق">×</button></div>
@@ -51,6 +53,9 @@ export function createApp(root: HTMLElement) {
   let recordedPoints: TrackPoint[] = [];
   let lastRecordedAt = 0;
   let routeTripId: string | null = null;
+  let measuring = false;
+  let measurePoints: [number, number][] = [];
+  let measureMarkers: maplibregl.Marker[] = [];
 
   const closeReport = () => report.classList.add('hidden');
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
@@ -59,6 +64,57 @@ export function createApp(root: HTMLElement) {
     if (!tripPanel.classList.contains('hidden')) renderTrips();
   });
   document.querySelector('#close-trips')?.addEventListener('click', () => tripPanel.classList.add('hidden'));
+  const measurePanel = document.querySelector<HTMLElement>('#measure-panel')!;
+  const measureToggle = document.querySelector<HTMLButtonElement>('#measure-toggle')!;
+
+  const measureDistanceKm = (a:[number,number], b:[number,number]) => {
+    const R=6371, p1=a[1]*Math.PI/180, p2=b[1]*Math.PI/180;
+    const dp=(b[1]-a[1])*Math.PI/180, dl=(b[0]-a[0])*Math.PI/180;
+    const h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+    return 2*R*Math.asin(Math.sqrt(h));
+  };
+
+  const clearMeasurement = () => {
+    if (map.getLayer('measure-line')) map.removeLayer('measure-line');
+    if (map.getSource('measure-source')) map.removeSource('measure-source');
+    measureMarkers.forEach(m=>m.remove());
+    measureMarkers=[];
+    measurePoints=[];
+  };
+
+  const renderMeasurement = () => {
+    if (!measurePoints.length) {
+      measurePanel.innerHTML='<b>📏 قياس المسافة</b><p>اضغط نقطة في البحر ثم نقطة ثانية على الشاطئ أو أي موقع آخر.</p>';
+      return;
+    }
+    if (measurePoints.length===1) {
+      measurePanel.innerHTML='<b>📏 قياس المسافة</b><p>تم تحديد النقطة الأولى. اختر النقطة الثانية.</p><button id="measure-cancel">إلغاء</button>';
+      measurePanel.querySelector('#measure-cancel')?.addEventListener('click',()=>{clearMeasurement();renderMeasurement();});
+      return;
+    }
+    const km=measureDistanceKm(measurePoints[0],measurePoints[1]);
+    measurePanel.innerHTML='<b>📏 المسافة</b><strong>'+ (km<1 ? Math.round(km*1000)+' متر' : km.toFixed(2)+' كم') +'</strong><p>تم القياس بين النقطتين المحددتين.</p><button id="measure-new">قياس جديد</button>';
+    measurePanel.querySelector('#measure-new')?.addEventListener('click',()=>{clearMeasurement();renderMeasurement();});
+  };
+
+  const startMeasurement = () => {
+    measuring=true;
+    clearMeasurement();
+    measurePanel.classList.remove('hidden');
+    measureToggle.textContent='✖️ إيقاف القياس';
+    renderMeasurement();
+  };
+
+  const stopMeasurement = () => {
+    measuring=false;
+    clearMeasurement();
+    measurePanel.classList.add('hidden');
+    measureToggle.textContent='📏 قياس المسافة';
+  };
+
+  measureToggle.addEventListener('click',()=>measuring ? stopMeasurement() : startMeasurement());
+  renderMeasurement();
+
 
   const removeRoute = () => {
     if (map.getLayer('trip-route-line')) map.removeLayer('trip-route-line');
@@ -242,7 +298,22 @@ export function createApp(root: HTMLElement) {
     showTodaySea(target.lat, target.lng);
   });
 
-  map.on('click',event=>selectPoint(event.lngLat.lat,event.lngLat.lng));
+  map.on('click',event=>{
+    if (measuring) {
+      if (measurePoints.length>=2) return;
+      const point:[number,number]=[event.lngLat.lng,event.lngLat.lat];
+      measurePoints.push(point);
+      const marker=new maplibregl.Marker({color: measurePoints.length===1 ? '#f59e0b' : '#22c55e'}).setLngLat(point).addTo(map);
+      measureMarkers.push(marker);
+      if (measurePoints.length===2) {
+        map.addSource('measure-source',{type:'geojson',data:{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:measurePoints}}});
+        map.addLayer({id:'measure-line',type:'line',source:'measure-source',paint:{'line-color':'#f59e0b','line-width':4,'line-dasharray':[1,1]}});
+      }
+      renderMeasurement();
+      return;
+    }
+    selectPoint(event.lngLat.lat,event.lngLat.lng);
+  });
   document.querySelector('#search-form')?.addEventListener('submit',async event=>{
     event.preventDefault(); const input=document.querySelector<HTMLInputElement>('#search-input')!; const results=document.querySelector<HTMLElement>('#search-results')!; const query=input.value.trim(); if(!query)return;
     results.classList.remove('hidden'); results.innerHTML='<div>جاري البحث…</div>';
