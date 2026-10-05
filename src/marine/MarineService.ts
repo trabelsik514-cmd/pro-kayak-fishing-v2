@@ -36,7 +36,46 @@ async function getJson(url: URL, timeoutMs = 12000): Promise<any> {
   }
 }
 
+export type DailySeaSummary = {
+  date: string;
+  waveMax: number|null;
+  waveDirection: number|null;
+  wavePeriod: number|null;
+  swellMax: number|null;
+  windMax: number|null;
+  gustMax: number|null;
+};
+
 export class MarineService {
+  async getTodaySummary(latitude: number, longitude: number): Promise<DailySeaSummary> {
+    const url = new URL('https://marine-api.open-meteo.com/v1/marine');
+    url.searchParams.set('latitude', String(latitude));
+    url.searchParams.set('longitude', String(longitude));
+    url.searchParams.set('daily', 'wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max');
+    url.searchParams.set('timezone', 'auto');
+    const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
+    weatherUrl.searchParams.set('latitude', String(latitude));
+    weatherUrl.searchParams.set('longitude', String(longitude));
+    weatherUrl.searchParams.set('daily', 'wind_speed_10m_max,wind_gusts_10m_max');
+    weatherUrl.searchParams.set('timezone', 'auto');
+
+    const [seaResult, weatherResult] = await Promise.allSettled([getJson(url), getJson(weatherUrl)]);
+    if (seaResult.status === 'rejected' && weatherResult.status === 'rejected') {
+      throw new Error('تعذر الوصول إلى توقعات اليوم');
+    }
+    const sea = seaResult.status === 'fulfilled' ? seaResult.value.daily ?? {} : {};
+    const weather = weatherResult.status === 'fulfilled' ? weatherResult.value.daily ?? {} : {};
+    return {
+      date: sea.time?.[0] ?? weather.time?.[0] ?? new Date().toISOString().slice(0,10),
+      waveMax: sea.wave_height_max?.[0] ?? null,
+      waveDirection: sea.wave_direction_dominant?.[0] ?? null,
+      wavePeriod: sea.wave_period_max?.[0] ?? null,
+      swellMax: sea.swell_wave_height_max?.[0] ?? null,
+      windMax: weather.wind_speed_10m_max?.[0] ?? null,
+      gustMax: weather.wind_gusts_10m_max?.[0] ?? null
+    };
+  }
+
   async getPointConditions(latitude: number, longitude: number): Promise<PointConditions> {
     const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
     weatherUrl.searchParams.set('latitude', String(latitude));
