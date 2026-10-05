@@ -160,13 +160,13 @@ const fromOpenMeteo = async (query: string, language: 'ar'|'fr') => {
     .filter((item: PlaceResult) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude));
 };
 
-const fromNominatim = async (query: string) => {
+const fromNominatim = async (query: string, language: 'ar'|'fr' = 'ar') => {
   const url = new URL('https://nominatim.openstreetmap.org/search');
   url.searchParams.set('q', query);
   url.searchParams.set('format', 'jsonv2');
   url.searchParams.set('limit', '10');
   url.searchParams.set('countrycodes', 'tn');
-  url.searchParams.set('accept-language', 'ar,fr,en');
+  url.searchParams.set('accept-language', language === 'fr' ? 'fr,en,ar' : 'ar,fr,en');
   const response = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!response.ok) return [] as PlaceResult[];
   const data = await response.json();
@@ -207,7 +207,7 @@ const scorePlace = (place: PlaceResult, normalizedQuery: string) => {
 };
 
 export class GeocodingService {
-  async search(query: string): Promise<PlaceResult[]> {
+  async search(query: string, language: 'ar'|'fr' = 'ar'): Promise<PlaceResult[]> {
     const raw = query.trim();
     if (!raw) return [];
 
@@ -232,8 +232,7 @@ export class GeocodingService {
     const openQueries = variants.slice(0, 4);
     const primary = await Promise.all(
       openQueries.flatMap(q => [
-        fromOpenMeteo(q, 'ar').catch(() => [] as PlaceResult[]),
-        fromOpenMeteo(q, 'fr').catch(() => [] as PlaceResult[])
+        fromOpenMeteo(q, language).catch(() => [] as PlaceResult[])
       ])
     );
     let places = uniquePlaces(primary.flat());
@@ -242,7 +241,7 @@ export class GeocodingService {
       !places.some(p => scorePlace(p, normalized) <= 2);
     if (needsFallback) {
       const fallback = await Promise.all(
-        variants.slice(0, 5).map(q => fromNominatim(q).catch(() => [] as PlaceResult[]))
+        variants.slice(0, 5).map(q => fromNominatim(q, language).catch(() => [] as PlaceResult[]))
       );
       places = uniquePlaces([...places, ...fallback.flat()]);
     }
@@ -254,13 +253,13 @@ export class GeocodingService {
   }
 }
 
-export async function reverseCoastalName(latitude: number, longitude: number): Promise<string|null> {
+export async function reverseCoastalName(latitude: number, longitude: number, language: 'ar'|'fr' = 'ar'): Promise<string|null> {
   const url = new URL('https://nominatim.openstreetmap.org/reverse');
   url.searchParams.set('lat', String(latitude));
   url.searchParams.set('lon', String(longitude));
   url.searchParams.set('format', 'jsonv2');
   url.searchParams.set('zoom', '14');
-  url.searchParams.set('accept-language', 'ar,fr');
+  url.searchParams.set('accept-language', language === 'fr' ? 'fr,en,ar' : 'ar,fr,en');
 
   const response = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!response.ok) return null;
