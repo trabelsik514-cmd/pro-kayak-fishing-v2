@@ -2,14 +2,16 @@ import maplibregl from 'maplibre-gl';
 
 export type BathymetryResult = {
   depthMeters: number;
-  source: 'EMODnet Bathymetry DTM 2024' | 'GEBCO';
+  source: 'EMODnet Bathymetry DTM 2024' | 'GEBCO' | 'OpenStreetMap coastline';
+  nearShore?: boolean;
 };
 
 const CLIENT_API = '/api/bathymetry';
 
 type BathymetryApiResponse = {
   depthMeters?: number | null;
-  source?: 'EMODnet Bathymetry DTM 2024' | 'GEBCO' | null;
+  source?: 'EMODnet Bathymetry DTM 2024' | 'GEBCO' | 'OpenStreetMap coastline' | null;
+  nearShore?: boolean;
 };
 
 export async function getBathymetryDepth(
@@ -24,11 +26,7 @@ export async function getBathymetryDepth(
   const timer = setTimeout(() => controller.abort(), 13000);
 
   try {
-    const params = new URLSearchParams({
-      lat: lat.toFixed(6),
-      lng: lng.toFixed(6)
-    });
-
+    const params = new URLSearchParams({ lat: lat.toFixed(6), lng: lng.toFixed(6) });
     const res = await fetch(`${CLIENT_API}?${params.toString()}`, {
       signal: controller.signal,
       headers: { Accept: 'application/json' },
@@ -36,17 +34,17 @@ export async function getBathymetryDepth(
     });
 
     if (!res.ok) return null;
-
     const data = await res.json() as BathymetryApiResponse;
     const depth = Number(data.depthMeters);
 
-    if (!Number.isFinite(depth) || depth <= 0) return null;
-    if (data.source !== 'EMODnet Bathymetry DTM 2024' && data.source !== 'GEBCO') return null;
+    if (!Number.isFinite(depth) || depth < 0) return null;
+    if (
+      data.source !== 'EMODnet Bathymetry DTM 2024' &&
+      data.source !== 'GEBCO' &&
+      data.source !== 'OpenStreetMap coastline'
+    ) return null;
 
-    return {
-      depthMeters: depth,
-      source: data.source
-    };
+    return { depthMeters: depth, source: data.source, nearShore: Boolean(data.nearShore) };
   } finally {
     clearTimeout(timer);
   }
