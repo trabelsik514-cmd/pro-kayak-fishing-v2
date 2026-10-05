@@ -29,6 +29,8 @@ export function createApp(root: HTMLElement) {
 
   const { map, geolocate } = createMap('map'); const marine = new MarineService(); const geocoder = new GeocodingService();
   let marker: maplibregl.Marker | null = null; const report = document.querySelector<HTMLElement>('#report')!;
+  // Keep the last explicitly selected/search result point independently of the map center.
+  // This prevents the daily-sea report from silently falling back to Tunisia's default center.
   let selectedLocation: {lat:number; lng:number; label:string|null} | null = null;
   let pointRequestId = 0;
   const closeReport = () => report.classList.add('hidden');
@@ -57,7 +59,7 @@ export function createApp(root: HTMLElement) {
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
       const d = await marine.getTodaySummary(lat, lng);
-      report.innerHTML = `<div class="report-head"><b>حالة البحر اليوم</b><button id="close-report">×</button></div>
+      report.innerHTML = `<div class="report-head"><b>حالة البحر اليوم عند النقطة</b><button id="close-report">×</button></div>
         <p>📅 ${d.date}</p><div class="report-grid">
         <span>🌊 أقصى موج <b>${value(d.waveMax,' m')}</b></span>
         <span>🧭 اتجاه الموج السائد <b>${value(d.waveDirection,'°')}</b></span>
@@ -74,7 +76,10 @@ export function createApp(root: HTMLElement) {
   };
 
   document.querySelector('#today-sea')?.addEventListener('click', () => {
-    const target = selectedLocation ?? (() => { const center = map.getCenter(); return {lat:center.lat, lng:center.lng}; })();
+    const markerPoint = marker?.getLngLat();
+    const target = selectedLocation
+      ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null)
+      ?? (() => { const center = map.getCenter(); return {lat:center.lat, lng:center.lng}; })();
     showTodaySea(target.lat, target.lng);
   });
 
