@@ -483,3 +483,5 @@ export function createApp(root: HTMLElement) {
   });
   map.on('load',()=>geolocate.trigger());
 }
+
+// Production deployment refresh: 2026-10-05T20:39:12.734Z
