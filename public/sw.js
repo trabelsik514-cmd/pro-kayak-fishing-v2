@@ -1,0 +1,5 @@
+const CACHE='pkf-offline-v1';
+const TILE_CACHE='pkf-map-tiles-v1';
+self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/','/index.html'])).then(()=>self.skipWaiting()));});
+self.addEventListener('activate',event=>{event.waitUntil(self.clients.claim());});
+self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET')return;if(url.hostname==='server.arcgisonline.com'&&url.pathname.includes('/ArcGIS/rest/services/World_Imagery/MapServer/tile/')){event.respondWith(caches.open(TILE_CACHE).then(async cache=>{const hit=await cache.match(event.request);if(hit)return hit;try{const res=await fetch(event.request);if(res.ok)cache.put(event.request,res.clone());return res;}catch{return new Response('',{status:503});}}));return;}if(url.origin===location.origin){event.respondWith(caches.open(CACHE).then(async cache=>{const hit=await cache.match(event.request);if(hit)return hit;try{const res=await fetch(event.request);if(res.ok)cache.put(event.request,res.clone());return res;}catch{return new Response('Offline',{status:503});}}));}});
