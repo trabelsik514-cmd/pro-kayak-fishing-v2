@@ -15,6 +15,17 @@ const getLang = (): UiLang => localStorage.getItem('pkf-lang') === 'fr' ? 'fr' :
 
 const FR: Record<string,string> = {
   'ابحث عن مدينة أو ساحل تونسي':'Rechercher une ville ou une côte tunisienne',
+  'إغلاق':'Fermer',
+  'قياس المسافة':'Mesurer la distance',
+  'إيقاف القياس':'Arrêter la mesure',
+  'المسافة':'Distance',
+  'عرض المسار':'Voir le parcours',
+  'حذف':'Supprimer',
+  'بدء تسجيل رحلة':'Démarrer une sortie',
+  'موقع بحري محدد':'Position maritime sélectionnée',
+  'كم':'km',
+  'د':'min',
+  'نقطة':'points',
   'بحث':'Rechercher',
   'العربية':'Français',
   'حالة البحر اليوم':"État de la mer aujourd'hui",
@@ -277,7 +288,7 @@ export function createApp(root: HTMLElement) {
       return `<article class="trip-card">
         <b>${escapeHtml(trip.name)}</b>
         <small>${new Date(trip.startedAt).toLocaleString(locale())}</small>
-        <div class="trip-stats"><span>📍 ${distance} كم</span><span>⏱️ ${duration} د</span><span>🧭 ${trip.points.length} نقطة</span></div>
+        <div class="trip-stats"><span>📍 ${distance} ${getLang()==="fr" ? "km" : "كم"}</span><span>⏱️ ${duration} ${getLang()==="fr" ? "min" : "د"}</span><span>🧭 ${trip.points.length} ${getLang()==="fr" ? "points" : "نقطة"}</span></div>
         <div class="trip-actions">
           <button data-view-trip="${trip.id}">🗺️ ${t('عرض المسار')}</button>
           <button data-delete-trip="${trip.id}" class="danger-action">🗑️ ${t('حذف')}</button>
