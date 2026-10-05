@@ -15,6 +15,23 @@ export type KayakTrip = {
 };
 
 const KEY = 'pro-kayak-fishing.trips.v1';
+const MAX_SHARED_POINTS = 5000;
+
+const isValidPoint = (point: unknown): point is TrackPoint => {
+  if (!point || typeof point !== 'object') return false;
+  const p = point as Partial<TrackPoint>;
+  return Number.isFinite(p.lat) && Number.isFinite(p.lng) &&
+    Number.isFinite(p.timestamp) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
+};
+
+const isValidTrip = (trip: unknown): trip is KayakTrip => {
+  if (!trip || typeof trip !== 'object') return false;
+  const t = trip as Partial<KayakTrip>;
+  return typeof t.id === 'string' && typeof t.name === 'string' &&
+    Number.isFinite(t.startedAt) && Number.isFinite(t.endedAt) &&
+    Array.isArray(t.points) && t.points.length > 0 && t.points.every(isValidPoint) &&
+    Number.isFinite(t.distanceKm) && Number.isFinite(t.durationMin);
+};
 
 export function distanceMeters(a: TrackPoint, b: TrackPoint): number {
   const R = 6371000;
@@ -37,8 +54,8 @@ export function loadTrips(): KayakTrip[] {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as KayakTrip[];
-    return Array.isArray(parsed) ? parsed.filter(t => Array.isArray(t.points)) : [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter(isValidTrip) : [];
   } catch {
     return [];
   }
@@ -46,13 +63,19 @@ export function loadTrips(): KayakTrip[] {
 
 export function saveTrip(trip: KayakTrip): KayakTrip[] {
   const trips = [trip, ...loadTrips()].slice(0, 30);
-  localStorage.setItem(KEY, JSON.stringify(trips));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(trips));
+  } catch {
+    // Keep the in-memory result usable if storage is full or unavailable.
+  }
   return trips;
 }
 
 export function deleteTrip(id: string): KayakTrip[] {
   const trips = loadTrips().filter(t => t.id !== id);
-  localStorage.setItem(KEY, JSON.stringify(trips));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(trips));
+  } catch {}
   return trips;
 }
 
@@ -84,14 +107,18 @@ export function decodeTripFromShare(encoded: string): KayakTrip | null {
     const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
     const binary = atob(padded);
     const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
-    const trip = JSON.parse(new TextDecoder().decode(bytes)) as KayakTrip;
-    if (!trip || !Array.isArray(trip.points) || !trip.points.length) return null;
+    const trip = JSON.parse(new TextDecoder().decode(bytes)) as unknown;
+    if (!isValidTrip(trip)) return null;
+    if (trip.points.length > MAX_SHARED_POINTS) trip.points = trip.points.slice(0, MAX_SHARED_POINTS);
     return trip;
   } catch { return null; }
 }
 
 export function encodeTripsForShare(trips: KayakTrip[]): string {
-  const safeTrips = trips.filter(t => Array.isArray(t.points) && t.points.length).slice(0, 6);
+  const safeTrips = trips.filter(isValidTrip).slice(0, 6).map(trip => ({
+    ...trip,
+    points: trip.points.slice(0, MAX_SHARED_POINTS)
+  }));
   const json = JSON.stringify(safeTrips);
   const bytes = new TextEncoder().encode(json);
   let binary = '';
@@ -105,8 +132,11 @@ export function decodeTripsFromShare(encoded: string): KayakTrip[] {
     const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
     const binary = atob(padded);
     const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
-    const trips = JSON.parse(new TextDecoder().decode(bytes)) as KayakTrip[];
+    const trips = JSON.parse(new TextDecoder().decode(bytes)) as unknown;
     if (!Array.isArray(trips)) return [];
-    return trips.filter(t => t && Array.isArray(t.points) && t.points.length).slice(0, 6);
+    return trips.filter(isValidTrip).slice(0, 6).map(trip => ({
+      ...trip,
+      points: trip.points.slice(0, MAX_SHARED_POINTS)
+    }));
   } catch { return []; }
 }
