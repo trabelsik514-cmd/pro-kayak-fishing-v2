@@ -2,6 +2,7 @@ import maplibregl from 'maplibre-gl';
 import { MarineService } from '../marine/MarineService';
 import { GeocodingService, reverseCoastalName } from '../location/GeocodingService';
 import { createMap } from '../map/createMap';
+import { assessKayakConditions } from '../kayak/KayakAssessment';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 
@@ -34,7 +35,12 @@ export function createApp(root: HTMLElement) {
     report.innerHTML=`<div class="report-head"><b>جاري جلب آخر البيانات…</b><button id="close-report">×</button></div><p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
     document.querySelector('#close-report')?.addEventListener('click',closeReport);
     let placeName=label; if(!placeName){try{placeName=await reverseCoastalName(lat,lng)}catch{placeName=null}}
-    try{const data=await marine.getPointConditions(lat,lng); report.innerHTML=reportHtml(data,placeName); document.querySelector('#close-report')?.addEventListener('click',closeReport)}
+    try{
+      const data=await marine.getPointConditions(lat,lng);
+      const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,waveHeight:data.sea.waveHeight,wavePeriod:data.sea.wavePeriod});
+      report.innerHTML=reportHtml(data,placeName)+`<hr><div class="kayak-assessment"><b>تقييم ظروف الكياك: ${assessment.level}</b><strong>${assessment.score}/100</strong><ul>${assessment.reasons.map(r=>`<li>${r}</li>`).join('')}</ul><small>هذا تقييم آلي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.</small></div>`;
+      document.querySelector('#close-report')?.addEventListener('click',closeReport)
+    }
     catch{report.innerHTML=`<div class="report-head"><b>تعذر جلب البيانات</b><button id="close-report">×</button></div><p>تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.</p><button id="retry-report">إعادة المحاولة</button>`;document.querySelector('#close-report')?.addEventListener('click',closeReport);document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,placeName))}
   };
 
