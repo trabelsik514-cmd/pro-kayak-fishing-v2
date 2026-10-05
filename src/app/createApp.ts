@@ -132,12 +132,12 @@ export function createApp(root: HTMLElement) {
     renderTrips();
   };
 
+  const sharedTrip = new URLSearchParams(location.hash.startsWith('#') ? location.hash.slice(1) : '').get('trip');
+
   if (sharedTrip) {
     const imported = decodeTripFromShare(sharedTrip);
     if (imported) setTimeout(() => showTripRoute(imported), 0);
   }
-
-  const sharedTrip = new URLSearchParams(location.hash.startsWith('#') ? location.hash.slice(1) : '').get('trip');
 
   const googleRouteUrl = (trip: KayakTrip) => {
     if (!trip.points.length) return '#';
