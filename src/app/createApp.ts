@@ -151,10 +151,12 @@ export function createApp(root: HTMLElement) {
     <button id="lang-toggle" class="lang-toggle" type="button">🌐 ${getLang() === 'ar' ? 'FR' : 'العربية'}</button>
     <form id="search-form" class="search"><input id="search-input" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}" autocomplete="off"/><button type="submit">${t('بحث')}</button></form></header>
     <section id="map" class="map"></section>
-    <button id="today-sea" class="today-sea">🌊 ${t('حالة البحر اليوم')}</button>
-    <button id="measure-toggle" class="measure-toggle">📏 ${t('قياس المسافة')}</button>
+    <nav class="map-actions" aria-label="أدوات الخريطة">
+      <button id="today-sea" class="map-action map-action-sea" type="button">🌊 <span>${t('حالة البحر اليوم')}</span></button>
+      <button id="measure-toggle" class="map-action map-action-measure" type="button">📏 <span>${t('قياس المسافة')}</span></button>
+      <button id="trip-toggle" class="map-action map-action-trip" type="button">🛶 <span>${t('رحلاتي')}</span></button>
+    </nav>
     <aside class="measure-panel hidden" id="measure-panel"></aside>
-    <button id="trip-toggle" class="trip-toggle">🛶 ${t('رحلاتي')}</button>
     <aside class="trip-panel hidden" id="trip-panel">
       <div class="trip-head"><b>🛶 ${t('سجل الرحلات')}</b><button id="close-trips" aria-label="${t('إغلاق')}">×</button></div>
       <div id="trip-status" class="trip-idle"><b>${t('لا توجد رحلة قيد التسجيل')}</b><span>${t('ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.')}</span></div>
