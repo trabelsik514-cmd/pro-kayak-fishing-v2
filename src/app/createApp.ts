@@ -405,9 +405,18 @@ export function createApp(root: HTMLElement) {
     report.classList.remove('hidden'); marker?.remove(); marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
     report.innerHTML=`<div class="report-head"><b>${t('جاري جلب آخر البيانات…')}</b><button id="close-report">×</button></div><p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
     document.querySelector('#close-report')?.addEventListener('click',closeReport);
-    let placeName=label; if(!placeName){try{placeName=await reverseCoastalName(lat,lng,getLang())}catch{placeName=null}}
+    let placeNamePromise: Promise<string|null> = Promise.resolve(label);
+    if(!label){
+      placeNamePromise = Promise.race([
+        reverseCoastalName(lat,lng,getLang()).catch(() => null),
+        new Promise<string|null>(resolve => window.setTimeout(() => resolve(null), 3500))
+      ]);
+    }
     try{
+      // Fetch the marine/weather data first. Reverse geocoding is secondary and
+      // must never block the latest sea-state report on a slow mobile connection.
       const data=await marine.getPointConditions(lat,lng);
+      const placeName=await placeNamePromise;
       let depthLabel='غير متاح';
       let depthSource='لا توجد قراءة متاحة';
       try {
