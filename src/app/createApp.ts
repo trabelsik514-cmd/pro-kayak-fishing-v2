@@ -236,7 +236,7 @@ export function createApp(root: HTMLElement) {
   tripToggle.addEventListener('click', () => {
     tripPanel.classList.toggle('hidden');
     if (!tripPanel.classList.contains('hidden')) renderTrips();
-  );
+  });
 
 
 
