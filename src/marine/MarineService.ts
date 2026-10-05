@@ -24,17 +24,27 @@ export type PointConditions = {
   fetchedAt: string;
 };
 
-async function getJson(url: URL, timeoutMs = 12000): Promise<any> {
+async function getJson(url: URL, timeoutMs = 20000): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' } });
+    const response = await fetch(url, {
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } finally {
     clearTimeout(timer);
   }
 }
+
+const first = (value: unknown): number|null => {
+  if (!Array.isArray(value)) return null;
+  const n = Number(value[0]);
+  return Number.isFinite(n) ? n : null;
+};
 
 export type DailySeaSummary = {
   date: string;
@@ -63,10 +73,12 @@ export class MarineService {
     if (seaResult.status === 'rejected' && weatherResult.status === 'rejected') {
       throw new Error('تعذر الوصول إلى توقعات اليوم');
     }
+
     const sea = seaResult.status === 'fulfilled' ? seaResult.value.daily ?? {} : {};
     const weather = weatherResult.status === 'fulfilled' ? weatherResult.value.daily ?? {} : {};
+
     return {
-      date: sea.time?.[0] ?? weather.time?.[0] ?? new Date().toISOString().slice(0,10),
+      date: sea.time?.[0] ?? weather.time?.[0] ?? new Date().toISOString().slice(0, 10),
       waveMax: sea.wave_height_max?.[0] ?? null,
       waveDirection: sea.wave_direction_dominant?.[0] ?? null,
       wavePeriod: sea.wave_period_max?.[0] ?? null,
@@ -85,6 +97,7 @@ export class MarineService {
       'temperature_2m,relative_humidity_2m,precipitation,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m'
     );
     weatherUrl.searchParams.set('timezone', 'auto');
+    weatherUrl.searchParams.set('cell_selection', 'nearest');
 
     const marineUrl = new URL('https://marine-api.open-meteo.com/v1/marine');
     marineUrl.searchParams.set('latitude', String(latitude));
@@ -96,41 +109,111 @@ export class MarineService {
     marineUrl.searchParams.set('timezone', 'auto');
     marineUrl.searchParams.set('cell_selection', 'sea');
 
-    const [weatherResult, marineResult] = await Promise.allSettled([
+    // The first request uses the current endpoint. If a mobile connection,
+    // coastal grid-cell selection, or a transient API issue causes it to fail,
+    // retry with a small hourly response instead of failing the whole report.
+    const weatherFallbackUrl = new URL(weatherUrl);
+    weatherFallbackUrl.searchParams.delete('current');
+    weatherFallbackUrl.searchParams.set(
+      'hourly',
+      'temperature_2m,relative_humidity_2m,precipitation,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m'
+    );
+    weatherFallbackUrl.searchParams.set('forecast_hours', '1');
+
+    const marineFallbackUrl = new URL(marineUrl);
+    marineFallbackUrl.searchParams.delete('current');
+    marineFallbackUrl.searchParams.set(
+      'hourly',
+      'wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,ocean_current_velocity,ocean_current_direction,sea_surface_temperature'
+    );
+    marineFallbackUrl.searchParams.set('forecast_hours', '1');
+
+    const [weatherPrimary, marinePrimary] = await Promise.allSettled([
       getJson(weatherUrl),
       getJson(marineUrl)
     ]);
 
-    const weather = weatherResult.status === 'fulfilled' ? weatherResult.value.current ?? {} : {};
-    const sea = marineResult.status === 'fulfilled' ? marineResult.value.current ?? {} : {};
+    let weatherResult = weatherPrimary;
+    let marineResult = marinePrimary;
 
-    const hasData = weatherResult.status === 'fulfilled' || marineResult.status === 'fulfilled';
-    if (!hasData) throw new Error('تعذر الوصول إلى مصادر بيانات البحر والطقس');
+    if (weatherResult.status === 'rejected') {
+      weatherResult = await Promise.resolve(getJson(weatherFallbackUrl))
+        .then(value => ({ status: 'fulfilled' as const, value }))
+        .catch(reason => ({ status: 'rejected' as const, reason }));
+    }
+
+    if (marineResult.status === 'rejected') {
+      // A sea cell is preferred for a point on/near the coast. If that
+      // selection is unavailable, retry using the nearest marine cell.
+      const marineNearest = new URL(marineFallbackUrl);
+      marineNearest.searchParams.set('cell_selection', 'nearest');
+      marineResult = await Promise.resolve(getJson(marineFallbackUrl))
+        .then(value => ({ status: 'fulfilled' as const, value }))
+        .catch(async () =>
+          Promise.resolve(getJson(marineNearest))
+            .then(value => ({ status: 'fulfilled' as const, value }))
+            .catch(reason => ({ status: 'rejected' as const, reason }))
+        );
+    }
+
+    const weather = weatherResult.status === 'fulfilled'
+      ? weatherResult.value.current ?? {}
+      : {};
+    const sea = marineResult.status === 'fulfilled'
+      ? marineResult.value.current ?? {}
+      : {};
+
+    const weatherHourly = weatherResult.status === 'fulfilled'
+      ? weatherResult.value.hourly ?? {}
+      : {};
+    const seaHourly = marineResult.status === 'fulfilled'
+      ? marineResult.value.hourly ?? {}
+      : {};
+
+    const getWeather = (currentKey: string, hourlyKey: string): number|null =>
+      Number.isFinite(Number(weather[currentKey]))
+        ? Number(weather[currentKey])
+        : first(weatherHourly[hourlyKey]);
+
+    const getSea = (currentKey: string, hourlyKey: string): number|null =>
+      Number.isFinite(Number(sea[currentKey]))
+        ? Number(sea[currentKey])
+        : first(seaHourly[hourlyKey]);
+
+    const hasWeather = weatherResult.status === 'fulfilled' || seaResultIsUsable(marineResult);
+    const hasSea = marineResult.status === 'fulfilled';
+    if (!hasWeather && !hasSea) {
+      throw new Error('تعذر الوصول إلى مصادر بيانات البحر والطقس');
+    }
 
     return {
       latitude,
       longitude,
       weather: {
-        temperature: weather.temperature_2m ?? null,
-        windSpeed: weather.wind_speed_10m ?? null,
-        windGusts: weather.wind_gusts_10m ?? null,
-        windDirection: weather.wind_direction_10m ?? null,
-        pressure: weather.pressure_msl ?? null,
-        humidity: weather.relative_humidity_2m ?? null,
-        precipitation: weather.precipitation ?? null
+        temperature: getWeather('temperature_2m', 'temperature_2m'),
+        windSpeed: getWeather('wind_speed_10m', 'wind_speed_10m'),
+        windGusts: getWeather('wind_gusts_10m', 'wind_gusts_10m'),
+        windDirection: getWeather('wind_direction_10m', 'wind_direction_10m'),
+        pressure: getWeather('pressure_msl', 'pressure_msl'),
+        humidity: getWeather('relative_humidity_2m', 'relative_humidity_2m'),
+        precipitation: getWeather('precipitation', 'precipitation')
       },
       sea: {
-        waveHeight: sea.wave_height ?? null,
-        waveDirection: sea.wave_direction ?? null,
-        wavePeriod: sea.wave_period ?? null,
-        swellHeight: sea.swell_wave_height ?? null,
-        swellDirection: sea.swell_wave_direction ?? null,
-        swellPeriod: sea.swell_wave_period ?? null,
-        currentVelocity: sea.ocean_current_velocity ?? null,
-        currentDirection: sea.ocean_current_direction ?? null,
-        seaTemperature: sea.sea_surface_temperature ?? null
+        waveHeight: getSea('wave_height', 'wave_height'),
+        waveDirection: getSea('wave_direction', 'wave_direction'),
+        wavePeriod: getSea('wave_period', 'wave_period'),
+        swellHeight: getSea('swell_wave_height', 'swell_wave_height'),
+        swellDirection: getSea('swell_wave_direction', 'swell_wave_direction'),
+        swellPeriod: getSea('swell_wave_period', 'swell_wave_period'),
+        currentVelocity: getSea('ocean_current_velocity', 'ocean_current_velocity'),
+        currentDirection: getSea('ocean_current_direction', 'ocean_current_direction'),
+        seaTemperature: getSea('sea_surface_temperature', 'sea_surface_temperature')
       },
       fetchedAt: new Date().toISOString()
     };
   }
+}
+
+function seaResultIsUsable(result: PromiseSettledResult<any>): boolean {
+  return result.status === 'fulfilled';
 }
