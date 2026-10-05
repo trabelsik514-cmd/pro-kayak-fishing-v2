@@ -13,7 +13,12 @@ function finiteDepth(value: unknown): number | null {
 
 function parseEmodnet(data: any): number | null {
   if (!data || typeof data !== 'object') return null;
-  const candidates = [data.smoothed, data.avg, data.min, data.max];
+  // For a point close to the shoreline, the cell's minimum water depth is
+  // much safer than the smoothed/average value: the EMODnet DTM cell is
+  // about 115 m wide, so a shoreline click can otherwise inherit a deeper
+  // value from the same grid cell. Prefer the shallowest measured/interpolated
+  // value available in that cell, then fall back to smoothed/average values.
+  const candidates = [data.min, data.smoothed, data.avg, data.max];
   for (const value of candidates) {
     const depth = finiteDepth(value);
     if (depth !== null) return depth;
