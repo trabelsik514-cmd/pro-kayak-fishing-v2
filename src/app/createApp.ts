@@ -879,13 +879,14 @@ export function createApp(root: HTMLElement) {
           {id:'seagrass',ar:'أعشاب بحرية',fr:'Herbier marin',icon:'🌿',color:'#22c55e',descAr:'موطن بحري محتمل',descFr:'Habitat marin potentiel'},
           {id:'bank',ar:'بنك بحري',fr:'Banc marin',icon:'🔵',color:'#38bdf8',descAr:'تغير مهم في القاع أو العمق',descFr:'Variation notable du fond ou de la profondeur'},
           {id:'channel',ar:'قناة',fr:'Chenal',icon:'🟠',color:'#fb923c',descAr:'ممر مائي / تغير في حركة المياه',descFr:'Passage d’eau / variation du courant'},
-          {id:'artificial-reef',ar:'شعاب اصطناعية',fr:'Récif artificiel',icon:'🔴',color:'#ef4444',descAr:'سيتم إدراج المواقع الموثقة في المرحلة التالية',descFr:'Les sites vérifiés seront ajoutés à l’étape suivante'}
+          {id:'artificial-reef',ar:'شعاب اصطناعية',fr:'Récif artificiel',icon:'🔴',color:'#ef4444',descAr:'سيتم إدراج المواقع الموثقة في المرحلة التالية',descFr:'Les sites vérifiés seront ajoutés à l’étape suivante'},
+          {id:'scientific-area',ar:'منطقة دراسة علمية',fr:'Zone d’étude scientifique',icon:'🔬',color:'#a78bfa',descAr:'مرجع بيئي موثق في منطقة Port aux Princes؛ ليست نقطة صيد مؤكدة',descFr:'Référence écologique documentée à Port aux Princes; pas un spot de pêche confirmé'}
         ];
         const layer = L.layerGroup();
         (window as any).__rlxMarinePointsLayer = layer;
         marinePoints.forEach((p:any) => {
-          const lat = 36.879 + ({reef:0.004,seagrass:-0.003,bank:0.001,channel:-0.006,'artificial-reef':0.007} as any)[p.id];
-          const lng = 10.669 + ({reef:0.006,seagrass:-0.005,bank:-0.008,channel:0.004,'artificial-reef':-0.003} as any)[p.id];
+          const lat = 36.879 + ({reef:0.004,seagrass:-0.003,bank:0.001,channel:-0.006,'artificial-reef':0.007,'scientific-area':0.000} as any)[p.id];
+          const lng = 10.669 + ({reef:0.006,seagrass:-0.005,bank:-0.008,channel:0.004,'artificial-reef':-0.003,'scientific-area':0.000} as any)[p.id];
           const m = L.circleMarker([lat,lng],{radius:7,weight:2,color:p.color,fillColor:p.color,fillOpacity:.85});
           m.bindPopup(`<b>${p.icon} ${getLang()==='fr'?p.fr:p.ar}</b><br><small>${getLang()==='fr'?p.descFr:p.descAr}</small><br><small style="opacity:.65">${lat.toFixed(5)}, ${lng.toFixed(5)}</small>`);
           m.addTo(layer);
