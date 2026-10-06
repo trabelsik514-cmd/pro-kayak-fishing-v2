@@ -336,7 +336,7 @@ export class MarineService {
     weatherUrl.searchParams.set('longitude',String(longitude));
     weatherUrl.searchParams.set('hourly','wind_speed_10m,wind_gusts_10m,wind_direction_10m');
     weatherUrl.searchParams.set('timezone','auto');
-    weatherUrl.searchParams.set('forecast_days','2');
+    weatherUrl.searchParams.set('forecast_days','7');
     weatherUrl.searchParams.set('cell_selection','nearest');
 
     const seaUrl=new URL('https://marine-api.open-meteo.com/v1/marine');
@@ -344,7 +344,7 @@ export class MarineService {
     seaUrl.searchParams.set('longitude',String(longitude));
     seaUrl.searchParams.set('hourly','wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,ocean_current_velocity');
     seaUrl.searchParams.set('timezone','auto');
-    seaUrl.searchParams.set('forecast_days','2');
+    seaUrl.searchParams.set('forecast_days','7');
     seaUrl.searchParams.set('cell_selection','sea');
 
     const [wr,sr]=await Promise.all([getJson(weatherUrl),getJson(seaUrl)]);
