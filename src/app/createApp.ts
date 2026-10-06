@@ -1,5 +1,5 @@
 import maplibregl from 'maplibre-gl';
-import { MarineService, type HourlyKayakPoint } from '../marine/MarineService';
+import { MarineService, type HourlyKayakPoint, type WeeklySeaSummary } from '../marine/MarineService';
 import { GeocodingService, reverseCoastalName } from '../location/GeocodingService';
 import { createMap } from '../map/createMap';
 import { assessKayakConditions } from '../kayak/KayakAssessment';
@@ -29,6 +29,20 @@ const FR: Record<string,string> = {
   'بحث':'Rechercher',
   'العربية':'Français',
   'حالة البحر اليوم':"État de la mer aujourd'hui",
+  'حالة البحر 7 أيام':'État de la mer — 7 jours',
+  'الأسبوع القادم':'7 prochains jours',
+  'جاري حساب توقعات الأسبوع…':'Calcul des prévisions sur 7 jours…',
+  'تعذر جلب توقعات الأسبوع':"Impossible de récupérer les prévisions sur 7 jours",
+  'لا توجد بيانات أسبوعية متاحة':'Aucune donnée hebdomadaire disponible',
+  'اليوم':'Aujourd’hui',
+  'غداً':'Demain',
+  'بعد غد':'Après-demain',
+  'التقييم':'Évaluation',
+  'أقصى موج':'Hauteur max.',
+  'أقصى رياح':'Vent max.',
+  'أقصى هبات':'Rafales max.',
+  'اتجاه الموج السائد':'Direction dominante',
+
   'أفضل نافذة للرحلة':'Meilleure fenêtre pour la sortie',
   'ملاءمة ظروف الكياك':'Adéquation des conditions du kayak',
   'تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.':'Évaluation indicative basée sur les données météo et marines disponibles ; elle ne constitue pas une garantie de sécurité.',
@@ -170,6 +184,7 @@ export function createApp(root: HTMLElement) {
         <span class="map-action-label">${t('البحر والرحلات')}</span>
         <div class="map-action-row">
           <button id="today-sea" class="map-action map-action-sea" type="button" aria-label="${t('حالة البحر اليوم')}">🌊 <span>${t('حالة البحر')}</span></button>
+          <button id="weekly-sea" class="map-action map-action-weekly-sea" type="button" aria-label="${t('حالة البحر 7 أيام')}">📅 <span>7 ${getLang()==='fr'?'jours':'أيام'}</span></button>
           <button id="measure-toggle" class="map-action map-action-measure" type="button" aria-label="${t('قياس المسافة')}">📏 <span>${t('قياس')}</span></button>
           <button id="trip-toggle" class="map-action map-action-trip" type="button" aria-label="${t('رحلاتي')}">🛶 <span>${t('رحلاتي')}</span></button>
         </div>
@@ -513,6 +528,60 @@ export function createApp(root: HTMLElement) {
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     }
   };
+
+  const showWeeklySea = async (lat:number, lng:number) => {
+    if (routeTripId) removeRoute();
+    report.classList.remove('hidden');
+    setReportOpen(true);
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
+    report.innerHTML = \`<div class="report-head"><b>\${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div><p>\${t('جاري حساب توقعات الأسبوع…')}</p>\`;
+    document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    try {
+      const days = await marine.getWeeklySeaSummary(lat,lng);
+      const dayLabel=(date:string,index:number)=>{
+        if(index===0) return t('اليوم');
+        if(index===1) return t('غداً');
+        if(index===2) return t('بعد غد');
+        return new Date(date+'T12:00:00').toLocaleDateString(locale(),{weekday:'short',day:'numeric',month:'short'});
+      };
+      const score=(d:WeeklySeaSummary)=>{
+        let s=100;
+        if(d.waveMax!=null) s-=d.waveMax<=0.5?0:d.waveMax<=0.8?10:d.waveMax<=1.2?25:45;
+        if(d.windMax!=null) s-=d.windMax<=15?0:d.windMax<=25?10:d.windMax<=35?25:40;
+        if(d.gustMax!=null) s-=d.gustMax<=25?0:d.gustMax<=40?10:25;
+        return Math.max(0,Math.min(100,Math.round(s)));
+      };
+      const level=(s:number)=>s>=82?'ممتاز':s>=65?'جيد':s>=45?'حذر':'غير مناسب';
+      const cards=days.map((d,i)=>{
+        const s=score(d);
+        return \`<article class="weekly-sea-card">
+          <div class="weekly-sea-day"><b>\${dayLabel(d.date,i)}</b><strong>\${translateLevel(level(s))}</strong></div>
+          <div class="weekly-sea-values">
+            <span>🌊 \${t('أقصى موج')} <b>\${value(d.waveMax,' m')}</b></span>
+            <span>🧭 \${t('اتجاه الموج السائد')} <b>\${value(d.waveDirection,'°')}</b></span>
+            <span>💨 \${t('أقصى رياح')} <b>\${value(d.windMax,' km/h')}</b></span>
+            <span>💨 \${t('أقصى هبات')} <b>\${value(d.gustMax,' km/h')}</b></span>
+          </div>
+        </article>\`;
+      }).join('');
+      report.innerHTML=\`<div class="report-head"><b>\${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div>
+        <p>📍 \${ltr(\`\${lat.toFixed(4)}, \${lng.toFixed(4)}\`)}</p>
+        <div class="weekly-sea-list">\${cards || \`<p>\${t('لا توجد بيانات أسبوعية متاحة')}</p>\`}</div>
+        <small>\${t('المصدر:')} Open-Meteo · \${t('الأسبوع القادم')}</small>\`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    } catch {
+      report.innerHTML=\`<div class="report-head"><b>\${t('تعذر جلب توقعات الأسبوع')}</b><button id="close-report">×</button></div><p>\${t('حاول مرة أخرى بعد قليل.')}</p>\`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    }
+  };
+
+  document.querySelector('#weekly-sea')?.addEventListener('click', () => {
+    const markerPoint = marker?.getLngLat();
+    const target = selectedLocation ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null) ?? (() => { const center=map.getCenter(); return {lat:center.lat,lng:center.lng}; })();
+    showWeeklySea(target.lat,target.lng);
+  });
 
   document.querySelector('#today-sea')?.addEventListener('click', () => {
     const markerPoint = marker?.getLngLat();
