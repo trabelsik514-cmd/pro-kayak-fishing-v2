@@ -91,6 +91,7 @@ export class MarineService {
     url.searchParams.set('longitude', String(longitude));
     url.searchParams.set('hourly', 'wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period');
     url.searchParams.set('current', 'wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period');
+    url.searchParams.set('daily', 'wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max,swell_wave_direction_dominant,swell_wave_period_max');
     url.searchParams.set('timezone', 'auto');
     url.searchParams.set('forecast_days', '1');
     url.searchParams.set('cell_selection', 'sea');
@@ -112,6 +113,7 @@ export class MarineService {
     const seaPayload = seaResult.status === 'fulfilled' ? seaResult.value : {};
     const weatherPayload = weatherResult.status === 'fulfilled' ? weatherResult.value : {};
     const sea = seaPayload.hourly ?? {};
+    const seaDaily = seaPayload.daily ?? {};
     const weather = weatherPayload.hourly ?? {};
     const seaTimes = Array.isArray(sea.time) ? sea.time.filter((v: unknown): v is string => typeof v === 'string') : [];
     const weatherTimes = Array.isArray(weather.time) ? weather.time.filter((v: unknown): v is string => typeof v === 'string') : [];
@@ -131,12 +133,16 @@ export class MarineService {
     };
 
     const [waveMin,waveMax] = range(sea.wave_height, seaDay);
+    const dailyWaveMax = Array.isArray(seaDaily.wave_height_max) ? Number(seaDaily.wave_height_max[0]) : NaN;
+    const dailyPeriodMax = Array.isArray(seaDaily.wave_period_max) ? Number(seaDaily.wave_period_max[0]) : NaN;
+    const dailySwellMax = Array.isArray(seaDaily.swell_wave_height_max) ? Number(seaDaily.swell_wave_height_max[0]) : NaN;
     const [wavePeriodMin,wavePeriodMax] = range(sea.wave_period, seaDay);
     const [swellMin,swellMax] = range(sea.swell_wave_height, seaDay);
     const [windMin,windMax] = range(weather.wind_speed_10m, weatherDay);
     const [gustMin,gustMax] = range(weather.wind_gusts_10m, weatherDay);
     const directions = valuesFor(sea.wave_direction, seaDay);
-    const waveDirection = directions.length ? directions[0] : null;
+    const dailyDominant = Array.isArray(seaDaily.wave_direction_dominant) ? Number(seaDaily.wave_direction_dominant[0]) : NaN;
+    const waveDirection = Number.isFinite(dailyDominant) ? dailyDominant : (directions.length ? directions[0] : null);
     const allTimes = [...seaDay.map(x => x.time), ...weatherDay.map(x => x.time)].sort();
     const dataFrom = allTimes[0] ?? null;
     const dataTo = allTimes.at(-1) ?? null;
@@ -144,7 +150,10 @@ export class MarineService {
 
     return {
       date,
-      waveMin,waveMax,waveDirection,wavePeriodMin,wavePeriodMax,swellMin,swellMax,
+      waveMin, waveMax: Number.isFinite(dailyWaveMax) ? dailyWaveMax : waveMax,
+      waveDirection,
+      wavePeriodMin, wavePeriodMax: Number.isFinite(dailyPeriodMax) ? dailyPeriodMax : wavePeriodMax,
+      swellMin, swellMax: Number.isFinite(dailySwellMax) ? dailySwellMax : swellMax,
       windMin,windMax,gustMin,gustMax,
       dataFrom,dataTo,timezone,
       generatedAt:new Date().toISOString(),
