@@ -152,9 +152,14 @@ export function createApp(root: HTMLElement) {
     <form id="search-form" class="search"><input id="search-input" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}" autocomplete="off"/><button type="submit">${t('بحث')}</button></form></header>
     <section id="map" class="map"></section>
     <nav class="map-actions" aria-label="أدوات الخريطة">
-      <button id="today-sea" class="map-action map-action-sea" type="button">🌊 <span>${t('حالة البحر اليوم')}</span></button>
-      <button id="measure-toggle" class="map-action map-action-measure" type="button">📏 <span>${t('قياس المسافة')}</span></button>
-      <button id="trip-toggle" class="map-action map-action-trip" type="button">🛶 <span>${t('رحلاتي')}</span></button>
+      <div class="map-action-group">
+        <span class="map-action-label">${t('البحر والرحلات')}</span>
+        <div class="map-action-row">
+          <button id="today-sea" class="map-action map-action-sea" type="button" aria-label="${t('حالة البحر اليوم')}">🌊 <span>${t('حالة البحر')}</span></button>
+          <button id="measure-toggle" class="map-action map-action-measure" type="button" aria-label="${t('قياس المسافة')}">📏 <span>${t('قياس')}</span></button>
+          <button id="trip-toggle" class="map-action map-action-trip" type="button" aria-label="${t('رحلاتي')}">🛶 <span>${t('رحلاتي')}</span></button>
+        </div>
+      </div>
     </nav>
     <aside class="measure-panel hidden" id="measure-panel"></aside>
     <aside class="trip-panel hidden" id="trip-panel">
