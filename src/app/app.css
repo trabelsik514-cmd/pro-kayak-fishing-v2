@@ -1081,3 +1081,41 @@
     padding:11px;
   }
 }
+
+/* PKF FINAL MOBILE REPORT OVERLAP FIX V2 */
+/* Keep the report header in normal flow; the previous negative sticky
+   margins caused scrolled cards to appear behind/through the header. */
+.report{
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scroll-padding-top:0;
+}
+.report > .report-head{
+  position:sticky;
+  top:0;
+  z-index:50;
+  margin:0 0 10px;
+  padding:13px 0 10px;
+  min-height:50px;
+  background:rgb(5,17,28);
+  background-image:none;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  box-shadow:0 8px 16px rgba(5,17,28,.96);
+  isolation:isolate;
+  flex:0 0 auto;
+}
+@media(max-width:700px){
+  .report > .report-head{
+    top:0;
+    margin:0 0 10px;
+    padding:13px 0 10px;
+    min-height:50px;
+  }
+}
+@media(max-width:390px){
+  .report > .report-head{
+    padding:11px 0 9px;
+    min-height:48px;
+  }
+}
