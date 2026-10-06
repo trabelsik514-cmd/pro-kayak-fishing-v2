@@ -70,6 +70,18 @@ export type DailySeaSummary = {
 
 
 
+export type WeeklySeaSummary = {
+  date: string;
+  waveMin: number|null;
+  waveMax: number|null;
+  waveDirection: number|null;
+  wavePeriodMax: number|null;
+  swellMax: number|null;
+  windMin: number|null;
+  windMax: number|null;
+  gustMax: number|null;
+};
+
 export type HourlyKayakPoint = {
   time:string;
   windSpeed:number|null;
@@ -85,6 +97,71 @@ export type HourlyKayakPoint = {
 };
 
 export class MarineService {
+  async getWeeklySeaSummary(latitude:number, longitude:number):Promise<WeeklySeaSummary[]> {
+    const url = new URL('https://marine-api.open-meteo.com/v1/marine');
+    url.searchParams.set('latitude', String(latitude));
+    url.searchParams.set('longitude', String(longitude));
+    url.searchParams.set('hourly', 'wave_height,wave_direction,wave_period,swell_wave_height');
+    url.searchParams.set('daily', 'wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max');
+    url.searchParams.set('timezone', 'auto');
+    url.searchParams.set('forecast_days', '7');
+    url.searchParams.set('cell_selection', 'sea');
+
+    const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
+    weatherUrl.searchParams.set('latitude', String(latitude));
+    weatherUrl.searchParams.set('longitude', String(longitude));
+    weatherUrl.searchParams.set('hourly', 'wind_speed_10m,wind_gusts_10m');
+    weatherUrl.searchParams.set('timezone', 'auto');
+    weatherUrl.searchParams.set('forecast_days', '7');
+    weatherUrl.searchParams.set('cell_selection', 'nearest');
+
+    const [seaResult, weatherResult] = await Promise.allSettled([getJson(url), getJson(weatherUrl)]);
+    if (seaResult.status === 'rejected' && weatherResult.status === 'rejected') {
+      throw new Error('تعذر الوصول إلى توقعات الأسبوع');
+    }
+
+    const seaPayload = seaResult.status === 'fulfilled' ? seaResult.value : {};
+    const weatherPayload = weatherResult.status === 'fulfilled' ? weatherResult.value : {};
+    const daily = seaPayload.daily ?? {};
+    const dailyDates = Array.isArray(daily.time) ? daily.time.filter((v:unknown):v is string=>typeof v==='string') : [];
+    const seaHourly = seaPayload.hourly ?? {};
+    const weatherHourly = weatherPayload.hourly ?? {};
+    const seaTimes = Array.isArray(seaHourly.time) ? seaHourly.time.filter((v:unknown):v is string=>typeof v==='string') : [];
+    const weatherTimes = Array.isArray(weatherHourly.time) ? weatherHourly.time.filter((v:unknown):v is string=>typeof v==='string') : [];
+
+    const dayIndexes = (times:string[], date:string) => times.map((time,i)=>({time,i})).filter(x=>x.time.slice(0,10)===date);
+    const nums = (arr:unknown,indexes:{i:number}[]) => indexes.map(x=>Array.isArray(arr)?Number(arr[x.i]):NaN).filter(Number.isFinite);
+    const range = (arr:unknown,indexes:{i:number}[]) => {
+      const values=nums(arr,indexes);
+      return values.length ? [Math.min(...values),Math.max(...values)] as [number,number] : [null,null] as [number|null,number|null];
+    };
+    const numberAt = (arr:unknown,i:number) => Array.isArray(arr) && Number.isFinite(Number(arr[i])) ? Number(arr[i]) : null;
+
+    return dailyDates.slice(0,7).map((date:string,i:number)=>{
+      const sd=dayIndexes(seaTimes,date);
+      const wd=dayIndexes(weatherTimes,date);
+      const [waveMin,hourlyWaveMax]=range(seaHourly.wave_height,sd);
+      const [windMin,windMax]=range(weatherHourly.wind_speed_10m,wd);
+      const [,gustMax]=range(weatherHourly.wind_gusts_10m,wd);
+      const dailyWaveMax=numberAt(daily.wave_height_max,i);
+      const dailyDirection=numberAt(daily.wave_direction_dominant,i);
+      const dailyPeriod=numberAt(daily.wave_period_max,i);
+      const dailySwell=numberAt(daily.swell_wave_height_max,i);
+      const directions=nums(seaHourly.wave_direction,sd);
+      return {
+        date,
+        waveMin,
+        waveMax: dailyWaveMax ?? hourlyWaveMax,
+        waveDirection: dailyDirection ?? (directions.length ? directions[0] : null),
+        wavePeriodMax: dailyPeriod ?? (()=>{const [,max]=range(seaHourly.wave_period,sd);return max;})(),
+        swellMax: dailySwell ?? (()=>{const [,max]=range(seaHourly.swell_wave_height,sd);return max;})(),
+        windMin,
+        windMax,
+        gustMax
+      };
+    });
+  }
+
   async getTodaySummary(latitude: number, longitude: number): Promise<DailySeaSummary> {
     const url = new URL('https://marine-api.open-meteo.com/v1/marine');
     url.searchParams.set('latitude', String(latitude));
