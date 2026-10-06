@@ -834,19 +834,28 @@ export function createApp(root: HTMLElement) {
             {ar:'الحلوفة / Balistes capriscus',fr:'Baliste gris / Balistes capriscus',min:10,max:100,tmin:18,tmax:24,bottom:['rocky','reef','seagrass','sandy'],season:[5,6,7,8,9,10]}
           ];
           const compatibility = (s:{min:number;max:number;tmin:number;tmax:number,bottom?:string[],season?:number[]}) => {
-            if (depth == null) return 0;
-            const depthScore = depth >= s.min && depth <= s.max ? 35 : Math.max(0, 35 - Math.min(Math.abs(depth-s.min),Math.abs(depth-s.max))*1.2);
+            if (depth == null) return {score:0, reasons:[] as string[]};
+            const reasons:string[]=[];
+            const depthFit = depth >= s.min && depth <= s.max;
+            const depthScore = depthFit ? 35 : Math.max(0, 35 - Math.min(Math.abs(depth-s.min),Math.abs(depth-s.max))*1.2);
+            reasons.push(depthFit ? (getLang()==='fr'?'Profondeur adaptée':'العمق مناسب') : (getLang()==='fr'?'Profondeur moins adaptée':'العمق أقل ملاءمة'));
             const tempScore = seaTemp == null ? 15 : (seaTemp >= s.tmin && seaTemp <= s.tmax ? 25 : Math.max(0,25-Math.min(Math.abs(seaTemp-s.tmin),Math.abs(seaTemp-s.tmax))*4));
-            const seasonScore = s.season?.includes(month) ? 20 : 8;
+            if (seaTemp != null) reasons.push(seaTemp >= s.tmin && seaTemp <= s.tmax ? (getLang()==='fr'?'Température adaptée':'الحرارة مناسبة') : (getLang()==='fr'?'Température moins adaptée':'الحرارة أقل ملاءمة'));
+            const seasonFit = s.season?.includes(month);
+            const seasonScore = seasonFit ? 20 : 8;
+            reasons.push(seasonFit ? (getLang()==='fr'?'Saison favorable':'الموسم مناسب') : (getLang()==='fr'?'Saison moins favorable':'الموسم أقل ملاءمة'));
             const current = Number(data.sea.currentVelocity);
             const currentScore = Number.isFinite(current) ? (current>=0.2&&current<=1.2 ? 10 : current<0.2 ? 5 : 3) : 5;
-            const substrateScore = substrateName && s.bottom?.includes(substrateName) ? 20 : (substrateName ? 6 : 10);
-            return Math.round(Math.min(100,depthScore+tempScore+seasonScore+currentScore+substrateScore));
+            if (Number.isFinite(current)) reasons.push(current>=0.2&&current<=1.2 ? (getLang()==='fr'?'Courant favorable':'التيار مناسب') : (getLang()==='fr'?'Courant moins favorable':'التيار أقل ملاءمة'));
+            const bottomFit = !!(substrateName && s.bottom?.includes(substrateName));
+            const substrateScore = bottomFit ? 20 : (substrateName ? 6 : 10);
+            if (substrateName) reasons.push(bottomFit ? (getLang()==='fr'?'Fond marin adapté':'نوع القاع مناسب') : (getLang()==='fr'?'Fond marin moins adapté':'نوع القاع أقل ملاءمة'));
+            return {score:Math.round(Math.min(100,depthScore+tempScore+seasonScore+currentScore+substrateScore)),reasons};
           };
-          const ranked = species.map(s=>({...s,score:compatibility(s)})).sort((a,b)=>b.score-a.score).slice(0,4);
+          const ranked = species.map(s=>({...s,...compatibility(s)})).sort((a,b)=>b.score-a.score).slice(0,4);
           const card = document.createElement('div');
           card.className='species-compat';
-          card.innerHTML = `<div class="species-compat-head"><b>🐟 ${getLang()==='fr'?'Espèces potentielles':'الأنواع المحتملة'}</b><small>${getLang()==='fr'?'Compatibilité environnementale':'ملاءمة بيئية'}</small></div><div class="species-compat-list">${ranked.map(s=>`<div><span>🐟 ${escapeHtml(getLang()==='fr'?s.fr:s.ar)}</span><strong>${s.score}/100</strong></div>`).join('')}</div><small>${getLang()==='fr'?'Basé sur profondeur, température, saison et courant disponibles. Ce score indique une compatibilité environnementale, pas la présence garantie du poisson.':'اعتمادًا على العمق وحرارة البحر والموسم وحركة التيار المتاحة. الدرجة تعبر عن الملاءمة البيئية وليست تأكيدًا لوجود السمك.'}</small>`;
+          card.innerHTML = `<div class="species-compat-head"><b>🐟 ${getLang()==='fr'?'Espèces potentielles':'الأنواع المحتملة'}</b><small>${getLang()==='fr'?'Compatibilité environnementale':'ملاءمة بيئية'}</small></div><div class="species-compat-list">${ranked.map((s,i)=>`<details ${i===0?'open':''}><summary><span>🐟 ${escapeHtml(getLang()==='fr'?s.fr:s.ar)}</span><strong>${s.score}/100</strong></summary><div class="species-reasons">${s.reasons.map(r=>`<span>• ${escapeHtml(r)}</span>`).join('')}</div></details>`).join('')}</div><small>${getLang()==='fr'?'La note explique la compatibilité environnementale; elle ne garantit pas la présence du poisson.':'الدرجة تشرح الملاءمة البيئية ولا تضمن وجود السمك في النقطة.'}</small>`;
           if (!isCurrent()) return;
           const depthCardEl = report.querySelector('.depth-card');
           if (depthCardEl) {
