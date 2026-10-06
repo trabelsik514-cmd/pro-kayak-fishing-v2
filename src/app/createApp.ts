@@ -274,6 +274,7 @@ export function createApp(root: HTMLElement) {
     tripPanel.classList.add('hidden');
     measurePanel.classList.add('hidden');
     measuring = false;
+
     let panel = document.querySelector<HTMLElement>('#kayak-intelligence');
     if (!panel) {
       panel = document.createElement('aside');
@@ -281,18 +282,60 @@ export function createApp(root: HTMLElement) {
       panel.className = 'kayak-intelligence';
       shell.appendChild(panel);
     }
-    panel.style.cssText = 'position:fixed;z-index:9999;inset:72px 12px 12px auto;width:min(430px,calc(100vw - 24px));max-height:calc(100vh - 84px);overflow:auto;background:rgba(10,18,28,.97);color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.45);display:block;';
-    panel.classList.remove('hidden');
+    panel.classList.add('ki-open');
+    panel.setAttribute('role','dialog');
+    panel.setAttribute('aria-modal','true');
+
+    const isFr = getLang() === 'fr';
+    const tx = (ar:string, fr:string) => isFr ? fr : ar;
+    const scoreLabel = (level:string) => translateLevel(level);
+    const formatTime = (iso:string) => new Date(iso).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false});
+    const seaState = (h:number|null) => h==null ? tx('غير متوفر','Indisponible') : h<=0.4 ? tx('هادئ','Calme') : h<=0.8 ? tx('خفيف','Léger') : h<=1.2 ? tx('متوسط','Modéré') : tx('مرتفع','Élevé');
+    const windState = (v:number|null) => v==null ? tx('غير متوفر','Indisponible') : v<=15 ? tx('مناسب','Favorable') : v<=20 ? tx('متوسط','Modéré') : tx('مرتفع','Élevé');
+
     panel.innerHTML = `
-      <div class="ki-head"><div><b>🧠 ${getLang()==='fr'?'Kayak Intelligence':'ذكاء الكياك'}</b><small>${getLang()==='fr'?'Décision pour la sortie':'قرار رحلة الكياك'}</small></div><button id="ki-close" aria-label="${t('إغلاق')}">×</button></div>
-      <div class="ki-location"><span>📍</span><input id="ki-place" value="${escapeHtml(initialLabel ?? '')}" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}"/></div>
-      <div class="ki-status">${t('اختر موقعًا لحساب ظروف رحلة الكياك.')}</div>
-    `;
-    panel.querySelector('#ki-close')?.addEventListener('click',()=>panel?.classList.add('hidden'));
+      <div class="ki-page">
+        <header class="ki-topbar">
+          <button id="ki-close" class="ki-icon-btn" aria-label="${tx('إغلاق','Fermer')}">×</button>
+          <div class="ki-title">
+            <span class="ki-eyebrow">🧠 ${tx('ذكاء الكياك','KAYAK INTELLIGENCE')}</span>
+            <strong>${tx('قرار الرحلة','Décision de sortie')}</strong>
+          </div>
+          <span class="ki-live-dot" title="${tx('بيانات حديثة','Données récentes')}"></span>
+        </header>
+
+        <div class="ki-body">
+          <div class="ki-searchbar">
+            <span>📍</span>
+            <input id="ki-place" value="${escapeHtml(initialLabel ?? '')}" placeholder="${tx('ابحث عن موقع الصيد…','Rechercher un spot…')}" autocomplete="off"/>
+            <button id="ki-search" type="button">${tx('تحليل','Analyser')}</button>
+          </div>
+
+          <div class="ki-status">
+            <div class="ki-loading">
+              <span class="ki-spinner"></span>
+              <b>${tx('جاري تحليل ظروف البحر…','Analyse des conditions marines…')}</b>
+              <small>${tx('يتم جلب أحدث بيانات النقطة المحددة','Récupération des dernières données du point')}</small>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    const close = () => {
+      panel?.classList.remove('ki-open');
+      panel?.removeAttribute('aria-modal');
+    };
+    panel.querySelector('#ki-close')?.addEventListener('click',close);
+
     const run = async (lat:number,lng:number,label:string|null) => {
       const status = panel?.querySelector<HTMLElement>('.ki-status');
       if (!status) return;
-      status.innerHTML = `<div class="ki-loading">${t('جاري جلب آخر البيانات…')}</div>`;
+      status.innerHTML = `
+        <div class="ki-loading">
+          <span class="ki-spinner"></span>
+          <b>${tx('جاري تحليل البحر والرياح…','Analyse de la mer et du vent…')}</b>
+          <small>${tx('نقرأ الموج، الـSwell، الرياح والهبات عند النقطة','Lecture des vagues, du swell, du vent et des rafales au point')}</small>
+        </div>`;
       try {
         const data = await marine.getPointConditions(lat,lng);
         const assessment = assessKayakConditions({
@@ -302,55 +345,112 @@ export function createApp(root: HTMLElement) {
           currentVelocity:data.sea.currentVelocity
         });
         const reasons = assessment.reasons.map(reason=>`<li>${escapeHtml(translateReason(reason))}</li>`).join('');
+        const score = assessment.score;
+        const decisionClass = assessment.level === 'ممتاز' ? 'good' : assessment.level === 'جيد' ? 'ok' : assessment.level === 'حذر' ? 'warn' : 'bad';
+        const freshness = new Date(data.fetchedAt).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false});
+
         status.innerHTML = `
-          <div class="ki-place">📍 <b>${escapeHtml(label ?? t('موقع بحري محدد'))}</b><small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small></div>
-          <div class="ki-decision"><div><small>${t('القرار')}</small><b>${translateLevel(assessment.level)}</b></div><div class="ki-score"><strong>${assessment.score}</strong><span>/100</span></div></div>
-          <div class="ki-grid">
-            <div><small>🌊 ${t('ارتفاع الموج الآن')}</small><b>${value(data.sea.waveHeight,' m')}</b></div>
-            <div><small>📈 ${t('أقصى ارتفاع للموج اليوم')}</small><b>${value(data.sea.maxWaveHeightToday,' m')}</b></div>
-            <div><small>〰️ ${t('ارتفاع الـSwell')}</small><b>${value(data.sea.swellHeight,' m')}</b></div>
-            <div><small>⏱️ ${t('فترة الموج')}</small><b>${value(data.sea.wavePeriod,' s')}</b></div>
-            <div><small>🧭 ${t('اتجاه الموج')}</small><b>${value(data.sea.waveDirection,'°')}</b></div>
-            <div><small>〰️ ${t('فترة الـSwell')}</small><b>${value(data.sea.swellPeriod,' s')}</b></div>
-            <div><small>💨 ${t('الرياح')}</small><b>${value(data.weather.windSpeed,' km/h')}</b></div>
-            <div><small>💨 ${t('الهبات')}</small><b>${value(data.weather.windGusts,' km/h')}</b></div>
-            <div><small>🧭 ${t('اتجاه الرياح')}</small><b>${value(data.weather.windDirection,'°')}</b></div>
-          </div>
-          <div class="ki-recommendation"><b>🎯 ${t('القرار')}</b><p>${escapeHtml(assessment.recommendation)}</p></div>
-          <div class="ki-reasons"><b>🔎 ${t('التفسير')}</b><ul>${reasons}</ul></div>
-          <small class="ki-disclaimer">${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small>
-        `;
-        try {
-          const hourly = await marine.getHourlyKayakForecast(lat,lng);
-          const best = bestKayakWindow(hourly,3);
-          if (best) {
-            const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'});
-            const card = document.createElement('div');
-            card.className='ki-window';
-            card.innerHTML=`<b>⭐ ${t('أفضل نافذة للرحلة')}</b><strong>${fmt(best.start)} – ${fmt(best.end)}</strong><span>${t('متوسط ملاءمة النافذة')}: ${best.score}/100</span>`;
-            status.appendChild(card);
-          }
-        } catch {
-          // Current sea/weather report remains usable if the hourly forecast service is unavailable.
+          <section class="ki-hero ${decisionClass}">
+            <div class="ki-location-main">
+              <span class="ki-pin">📍</span>
+              <div><b>${escapeHtml(label ?? tx('موقع بحري محدد','Point marin'))}</b><small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small></div>
+            </div>
+            <div class="ki-verdict">
+              <div class="ki-verdict-copy">
+                <small>${tx('قرار الرحلة','Décision')}</small>
+                <strong>${scoreLabel(assessment.level)}</strong>
+                <span>${escapeHtml(assessment.recommendation)}</span>
+              </div>
+              <div class="ki-score-ring" style="--ki-score:${score}deg">
+                <div><strong>${score}</strong><small>/100</small></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="ki-window-card">
+            <div class="ki-section-head"><div><span>⭐</span><b>${tx('أفضل نافذة للانطلاق','Meilleure fenêtre')}</b></div><small>${tx('حسب البيانات المتاحة','Selon les données disponibles')}</small></div>
+            <div id="ki-window-slot" class="ki-window-slot"><span class="ki-muted">${tx('جاري حساب أفضل الساعات…','Calcul de la meilleure fenêtre…')}</span></div>
+          </section>
+
+          <section class="ki-section">
+            <div class="ki-section-head"><div><span>🌊</span><b>${tx('حالة البحر','État de la mer')}</b></div><small>${seaState(data.sea.waveHeight)}</small></div>
+            <div class="ki-metrics">
+              <div class="ki-metric primary"><small>${tx('الموج الآن','Vagues')}</small><b>${value(data.sea.waveHeight,' m')}</b><span>${tx('ارتفاع الموج','Hauteur')}</span></div>
+              <div class="ki-metric"><small>${tx('فترة الموج','Période')}</small><b>${value(data.sea.wavePeriod,' s')}</b><span>${tx('ثانية','secondes')}</span></div>
+              <div class="ki-metric"><small>${tx('اتجاه الموج','Direction')}</small><b>${value(data.sea.waveDirection,'°')}</b><span>${tx('اتجاه','Direction')}</span></div>
+              <div class="ki-metric"><small>SWELL</small><b>${value(data.sea.swellHeight,' m')}</b><span>${value(data.sea.swellPeriod,' s')}</span></div>
+              <div class="ki-metric"><small>${tx('أقصى موج اليوم','Max aujourd’hui')}</small><b>${value(data.sea.maxWaveHeightToday,' m')}</b><span>${tx('متوقع','Prévu')}</span></div>
+            </div>
+          </section>
+
+          <section class="ki-section">
+            <div class="ki-section-head"><div><span>💨</span><b>${tx('الرياح','Vent')}</b></div><small>${windState(data.weather.windSpeed)}</small></div>
+            <div class="ki-metrics">
+              <div class="ki-metric primary"><small>${tx('الرياح','Vent')}</small><b>${value(data.weather.windSpeed,' km/h')}</b><span>${tx('سرعة','Vitesse')}</span></div>
+              <div class="ki-metric"><small>${tx('الهبات','Rafales')}</small><b>${value(data.weather.windGusts,' km/h')}</b><span>${tx('أقصى هبة','Max')}</span></div>
+              <div class="ki-metric"><small>${tx('الاتجاه','Direction')}</small><b>${value(data.weather.windDirection,'°')}</b><span>${tx('درجة','degrés')}</span></div>
+              <div class="ki-metric"><small>${tx('التيار','Courant')}</small><b>${value(data.sea.currentVelocity,' km/h')}</b><span>${tx('سرعة','Vitesse')}</span></div>
+            </div>
+          </section>
+
+          <section class="ki-section ki-analysis">
+            <div class="ki-section-head"><div><span>🔎</span><b>${tx('لماذا أعطاك هذا القرار؟','Pourquoi cette décision ?')}</b></div></div>
+            <ul>${reasons}</ul>
+          </section>
+
+          <section class="ki-data-status">
+            <div><span>●</span><b>${assessment.dataComplete ? tx('البيانات مكتملة','Données complètes') : tx('البيانات غير مكتملة','Données incomplètes')}</b></div>
+            <small>${tx('آخر تحديث','Dernière mise à jour')} ${freshness}</small>
+          </section>
+
+          <div class="ki-disclaimer">${tx('هذا تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة. افحص التغيرات المحلية والتنبيهات البحرية قبل الانطلاق.','Évaluation de planification basée sur les données météo et marines disponibles. Ce score ne constitue pas une garantie de sécurité. Vérifiez les conditions locales et les alertes marines avant le départ.')}</div>
+        </div>
+      </div>`;
+
+      try {
+        const hourly = await marine.getHourlyKayakForecast(lat,lng);
+        const best = bestKayakWindow(hourly,3);
+        const slot = panel?.querySelector<HTMLElement>('#ki-window-slot');
+        if (slot && best) {
+          slot.innerHTML = `
+            <div class="ki-window-main"><strong>${formatTime(best.start)} → ${formatTime(best.end)}</strong><span>${tx('ملاءمة النافذة','Adéquation')} <b>${best.score}/100</b></span></div>`;
+        } else if (slot) {
+          slot.innerHTML = `<span class="ki-muted">${tx('لا تتوفر نافذة موثوقة من البيانات الحالية','Aucune fenêtre fiable disponible avec les données actuelles')}</span>`;
         }
       } catch {
-        status.innerHTML = `<div class="ki-error">${t('تعذر جلب البيانات')}<button id="ki-retry">إعادة المحاولة</button></div>`;
-        panel?.querySelector('#ki-retry')?.addEventListener('click',()=>run(lat,lng,label));
+        const slot = panel?.querySelector<HTMLElement>('#ki-window-slot');
+        if (slot) slot.innerHTML = `<span class="ki-muted">${tx('تعذر حساب أفضل نافذة حاليًا','Impossible de calculer la meilleure fenêtre')}</span>`;
       }
     };
+
     const input=panel.querySelector<HTMLInputElement>('#ki-place')!;
-    input.addEventListener('change',async()=>{
-      const q=input.value.trim(); if(!q)return;
+    const doSearch = async () => {
+      const q=input.value.trim();
+      if(!q) return;
+      input.classList.remove('ki-invalid');
       try {
         const results=await geocoder.search(q);
         const hit=results[0];
         if(hit) await run(hit.latitude,hit.longitude,hit.name);
-        else input.setCustomValidity(t('لم يتم العثور على موقع تونسي مطابق.'));
-      } catch { input.setCustomValidity(t('تعذر الاتصال بخدمة البحث. حاول مرة أخرى.')); }
-    });
-    if(initialLat!=null && initialLng!=null) await run(initialLat,initialLng,initialLabel);
-  };
+        else {
+          input.classList.add('ki-invalid');
+          input.setAttribute('aria-invalid','true');
+        }
+      } catch {
+        input.classList.add('ki-invalid');
+        input.setAttribute('aria-invalid','true');
+      }
+    };
+    input.addEventListener('change',doSearch);
+    input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void doSearch();}});
+    panel.querySelector('#ki-search')?.addEventListener('click',()=>void doSearch());
 
+    if(initialLat!=null && initialLng!=null) await run(initialLat,initialLng,initialLabel);
+    else {
+      const center = map.getCenter();
+      await run(center.lat,center.lng,initialLabel);
+    }
+  };
 
   document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => {
     const center = map.getCenter();
