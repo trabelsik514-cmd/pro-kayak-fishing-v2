@@ -519,10 +519,6 @@ export function createApp(root: HTMLElement) {
     )));
 
     void run(currentLat,currentLng,currentLabel);
-    else {
-      const center = map.getCenter();
-      await run(center.lat,center.lng,initialLabel);
-    }
   };
 
   document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => {
