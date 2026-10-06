@@ -3,6 +3,7 @@ export type KayakAssessment = {
 };
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const penalty=(v:number|null,bands:Array<[number,number]>):number=>{ if(v==null)return 0; for(const [limit,p] of bands)if(v>limit)return p; return 0; };
+const weightedPenalty=(v:number|null,bands:Array<[number,number]>,weight=1)=>penalty(v,bands)*weight;
 /** Conservative suitability model for fishing kayaks. Planning aid, not a safety certification. */
 export function assessKayakConditions(data:{windSpeed:number|null;windGusts:number|null;windDirection?:number|null;waveHeight:number|null;waveDirection?:number|null;wavePeriod:number|null;swellHeight?:number|null;swellDirection?:number|null;swellPeriod?:number|null;currentVelocity?:number|null;}):KayakAssessment{
  const reasons:string[]=[]; const missing:string[]=[]; const risks:number[]=[];
@@ -11,8 +12,14 @@ export function assessKayakConditions(data:{windSpeed:number|null;windGusts:numb
  if(data.waveHeight==null)missing.push('الموج'); else { const p=penalty(data.waveHeight,[[0.4,0],[0.6,8],[0.9,20],[1.2,38],[1.5,60],[Infinity,85]]); if(p)risks.push(p); if(data.waveHeight>1.2)reasons.push('ارتفاع الموج كبير للكياك'); else if(data.waveHeight>0.9)reasons.push('الموج مرتفع نسبياً'); }
  if(data.wavePeriod==null)missing.push('فترة الموج'); else if(data.waveHeight!=null&&data.wavePeriod>=8&&data.waveHeight>0.8){risks.push(10);reasons.push('فترة الموج طويلة مع ارتفاع ملحوظ');}
  if(data.swellHeight==null)missing.push('Swell'); else { const p=penalty(data.swellHeight,[[0.4,0],[0.7,7],[1.0,18],[1.4,35],[1.8,55],[Infinity,75]]); if(p)risks.push(p); if(data.swellHeight>1.0)reasons.push('الـSwell مرتفع'); }
- if(data.currentVelocity!=null){ const p=penalty(data.currentVelocity,[[0.5,0],[1.0,4],[1.5,10],[2.0,20],[Infinity,32]]); if(p)risks.push(p); if(data.currentVelocity>1.5)reasons.push('التيار مرتفع نسبياً'); }
- const combined=Math.min(92,risks.reduce((sum,p)=>sum+p,0)*0.72); const strongest=risks.length?Math.max(...risks):0; let score=Math.round(clamp(100-Math.max(combined,strongest*0.88),0,95));
+ if(data.currentVelocity!=null){ const p=weightedPenalty(data.currentVelocity,[[0.5,0],[1.0,4],[1.5,10],[2.0,20],[Infinity,32]],0.65); if(p)risks.push(p); if(data.currentVelocity>1.5)reasons.push('التيار مرتفع نسبياً'); }
+ const combined=Math.min(92,risks.reduce((sum,p)=>sum+p,0)*0.72);
+ const strongest=risks.length?Math.max(...risks):0;
+ // A suitability score is not a safety probability. Cap the score when any single
+ // major hazard is present so a calm factor cannot mathematically hide it.
+ const majorHazard=risks.some(p=>p>=38);
+ let score=Math.round(clamp(100-Math.max(combined,strongest*0.88),0,95));
+ if(majorHazard) score=Math.min(score,59);
  const dataComplete=missing.length===0; if(!dataComplete){score=Math.min(score,64);reasons.push('بيانات غير مكتملة: '+missing.join('، '));}
  const level=score>=82?'ممتاز':score>=65?'جيد':score>=45?'حذر':'غير مناسب';
  const recommendation=level==='ممتاز'?'الظروف تبدو ملائمة للتخطيط لرحلة كياك وفق البيانات المتاحة، لكن هذه درجة ملاءمة وليست نسبة أمان. تحقق من التغيرات قبل الانطلاق.':level==='جيد'?'الظروف قد تكون مناسبة، لكن راقب الرياح والهبات والموج وأعد التحقق قبل الانطلاق.':level==='حذر'?'الظروف تتطلب حذراً إضافياً. قلّل مدة الرحلة وابقَ قريباً من الشاطئ إذا قررت الخروج.':'الظروف الحالية غير ملائمة للتخطيط لرحلة كياك وفق البيانات المتاحة. يفضّل تأجيل الخروج وإعادة التحقق لاحقاً.';
