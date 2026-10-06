@@ -999,3 +999,48 @@
 @media(max-width:700px){
   .model-comparison-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Final mobile report spacing */
+.report-updated{
+  display:block;
+  clear:both;
+  margin:12px 0 4px;
+  padding-top:3px;
+  line-height:1.5;
+  font-size:12px;
+  opacity:.72;
+}
+.depth-card{
+  margin-top:12px;
+  margin-bottom:8px;
+  min-height:56px;
+  align-items:center;
+}
+.depth-card small{
+  display:block;
+  margin-top:5px;
+  line-height:1.4;
+}
+.kayak-window{
+  margin-top:10px;
+}
+@media(max-width:430px){
+  .report-updated{
+    margin:14px 0 6px;
+    padding-top:5px;
+    font-size:11px;
+  }
+  .depth-card{
+    margin-top:14px;
+    margin-bottom:10px;
+    gap:6px 10px;
+  }
+  .depth-card b{
+    line-height:1.2;
+  }
+  .depth-card small{
+    grid-column:1 / -1;
+    margin-top:2px;
+  }
+}
