@@ -543,7 +543,7 @@ export function createApp(root: HTMLElement) {
     report.innerHTML = `<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div><p>${t('جاري حساب توقعات الأسبوع…')}</p>`;
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
-      const [days, modelDays, currentDays] = await Promise.all([marine.getWeeklySeaSummary(lat,lng), marine.getWeatherModelComparison(lat,lng), marine.getWeeklySeaSummary(lat,lng)]);
+      const [days, modelDays] = await Promise.all([marine.getWeeklySeaSummary(lat,lng), marine.getWeatherModelComparison(lat,lng)]);
       const dayLabel=(date:string,index:number)=>{
         if(index===0) return t('اليوم');
         if(index===1) return t('غداً');
@@ -570,7 +570,7 @@ export function createApp(root: HTMLElement) {
           </div>
         </article>`;
       }).join('');
-      const currentByDate = new Map(currentDays.map(d=>[d.date,d]));
+      const currentByDate = new Map(days.map(d=>[d.date,d]));
       const modelCards = modelDays.map((m:WeatherModelComparisonDay,i:number)=>{
         const label=dayLabel(m.date,i);
         const fmt=(v:number|null,unit:string)=>v==null?'--':v.toFixed(0)+unit;
