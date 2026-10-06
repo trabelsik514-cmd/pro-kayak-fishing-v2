@@ -170,7 +170,8 @@ export class MarineService {
     seaUrl.searchParams.set('cell_selection','sea');
 
     const [wr,sr]=await Promise.all([getJson(weatherUrl),getJson(seaUrl)]);
-    const w=wr.hourly??{}; const m=sr.hourly??{};
+    const w = ((wr as {hourly?: Record<string, unknown>}).hourly ?? {}) as Record<string, unknown>;
+    const m = ((sr as {hourly?: Record<string, unknown>}).hourly ?? {}) as Record<string, unknown>;
     const weatherTimes=Array.isArray(w.time)?w.time.filter((v:unknown):v is string=>typeof v==='string'):[];
     const marineTimes=Array.isArray(m.time)?m.time.filter((v:unknown):v is string=>typeof v==='string'):[];
     const weatherIndex=new Map(weatherTimes.map((time:string,i:number)=>[time,i]));
