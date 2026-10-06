@@ -166,7 +166,7 @@ export class MarineService {
     const url = new URL('https://marine-api.open-meteo.com/v1/marine');
     url.searchParams.set('latitude', String(latitude));
     url.searchParams.set('longitude', String(longitude));
-    url.searchParams.set('hourly', 'wave_height,wave_direction,wave_period,swell_wave_height');
+    url.searchParams.set('hourly', 'wave_height,wave_direction,wave_period,swell_wave_height,ocean_current_velocity,ocean_current_direction');
     url.searchParams.set('daily', 'wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max');
     url.searchParams.set('timezone', 'auto');
     url.searchParams.set('forecast_days', '7');
@@ -208,15 +208,27 @@ export class MarineService {
       const [waveMin,hourlyWaveMax]=range(seaHourly.wave_height,sd);
       const [windMin,windMax]=range(weatherHourly.wind_speed_10m,wd);
       const [,gustMax]=range(weatherHourly.wind_gusts_10m,wd);
-      const currentValues=nums(seaHourly.ocean_current_velocity,sd);
-      const currentDirections=nums(seaHourly.ocean_current_direction,sd);
+      const currentPairs = sd.map(({i}) => ({
+        speed: numberAt(seaHourly.ocean_current_velocity, i),
+        direction: numberAt(seaHourly.ocean_current_direction, i)
+      })).filter((x): x is {speed:number; direction:number} =>
+        x.speed != null && x.direction != null && Number.isFinite(x.speed) && Number.isFinite(x.direction)
+      );
+      const currentValues=currentPairs.map(x=>x.speed);
       const currentAvg=currentValues.length ? currentValues.reduce((a,b)=>a+b,0)/currentValues.length : null;
       const currentMax=currentValues.length ? Math.max(...currentValues) : null;
-      const directionVector=currentDirections.reduce((acc,deg)=>{
-        const rad=deg*Math.PI/180;
-        acc.x+=Math.sin(rad); acc.y+=Math.cos(rad); return acc;
+      // Current direction is a flow direction. Use a speed-weighted circular mean
+      // so calm hours cannot pull the weekly direction toward an arbitrary angle.
+      const directionVector=currentPairs.reduce((acc,{speed,direction})=>{
+        const rad=direction*Math.PI/180;
+        acc.x+=Math.sin(rad)*speed;
+        acc.y+=Math.cos(rad)*speed;
+        return acc;
       },{x:0,y:0});
-      const currentDirection=currentDirections.length ? (Math.atan2(directionVector.x,directionVector.y)*180/Math.PI+360)%360 : null;
+      const vectorMagnitude=Math.hypot(directionVector.x,directionVector.y);
+      const currentDirection=vectorMagnitude > 0.01
+        ? (Math.atan2(directionVector.x,directionVector.y)*180/Math.PI+360)%360
+        : null;
       const dailyWaveMax=numberAt(daily.wave_height_max,i);
       const dailyDirection=numberAt(daily.wave_direction_dominant,i);
       const dailyPeriod=numberAt(daily.wave_period_max,i);
