@@ -95,6 +95,10 @@ const FR: Record<string,string> = {
   'جاري البحث…':'Recherche…',
   'تعذر الاتصال بخدمة البحث. حاول مرة أخرى.':'Impossible de joindre le service de recherche. Réessayez.',
   'الموج':'Vagues',
+  'ارتفاع الموج الآن':'Hauteur des vagues maintenant',
+  'أقصى ارتفاع للموج اليوم':'Hauteur maximale des vagues aujourd’hui',
+  'أقصى Swell اليوم':'Swell maximal aujourd’hui',
+  'قد يرتفع الموج خلال اليوم':'La hauteur des vagues peut augmenter aujourd’hui',
   'اتجاه الموج':'Direction des vagues',
   'فترة الموج':'Période des vagues',
   'Swell':'Swell',
@@ -168,8 +172,9 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
   return `<div class="report-head"><b>${t('حالة البحر عند النقطة')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
     <p class="report-place">📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</p><p class="coords">${ltr(`${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}`)}</p>
     <div class="report-grid">
-      <span>🌊 ${t('الموج')} <b>${value(data.sea.waveHeight,' m')}</b></span><span>🧭 ${t('اتجاه الموج')} <b>${value(data.sea.waveDirection,'°')}</b></span>
-      <span>〰️ ${t('Swell')} <b>${value(data.sea.swellHeight,' m')}</b></span><span>⏱️ ${t('فترة الموج')} <b>${value(data.sea.wavePeriod,' s')}</b></span>
+      <span>🌊 ${t('ارتفاع الموج الآن')} <b>${value(data.sea.waveHeight,' m')}</b></span><span>🧭 ${t('اتجاه الموج')} <b>${value(data.sea.waveDirection,'°')}</b></span>
+      <span>📈 ${t('أقصى ارتفاع للموج اليوم')} <b>${value(data.sea.maxWaveHeightToday,' m')}</b></span>
+      <span>〰️ ${t('Swell')} <b>${value(data.sea.swellHeight,' m')}</b></span><span>📈 ${t('أقصى Swell اليوم')} <b>${value(data.sea.maxSwellHeightToday,' m')}</b></span><span>⏱️ ${t('فترة الموج')} <b>${value(data.sea.wavePeriod,' s')}</b></span>
       <span>💨 ${t('الرياح')} <b>${value(data.weather.windSpeed,' km/h')}</b></span><span>💨 ${t('الهبات')} <b>${value(data.weather.windGusts,' km/h')}</b></span>
       <span>🧭 ${t('اتجاه الرياح')} <b>${value(data.weather.windDirection,'°')}</b></span><span>🌡️ ${t('الهواء')} <b>${value(data.weather.temperature,' °C')}</b></span>
       <span>🌊 ${t('حرارة البحر')} <b>${value(data.sea.seaTemperature,' °C')}</b></span><span>📈 ${t('الضغط')} <b>${value(data.weather.pressure,' hPa')}</b></span>
@@ -519,7 +524,11 @@ export function createApp(root: HTMLElement) {
         currentVelocity:data.sea.currentVelocity
       });
 
-      const reportBase = reportHtml(data,placeName);
+      const reportBase = reportHtml(data,placeName) + (
+        data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
+          ? \`<div class="sea-wave-warning">⚠️ <b>\${t('قد يرتفع الموج خلال اليوم')}</b><span>\${value(data.sea.waveHeight,' m')} → \${value(data.sea.maxWaveHeightToday,' m')}</span></div>\`
+          : ''
+      );
       const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`;
       const initialHtml = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) +
         `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
