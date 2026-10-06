@@ -166,7 +166,7 @@ function setDocumentLanguage() {
 
 function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']>>, placeName: string|null) {
   return `<div class="report-head"><b>${t('حالة البحر عند النقطة')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
-    <p>📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</p><p class="coords">${ltr(`${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}`)}</p>
+    <p class="report-place">📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</p><p class="coords">${ltr(`${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}`)}</p>
     <div class="report-grid">
       <span>🌊 ${t('الموج')} <b>${value(data.sea.waveHeight,' m')}</b></span><span>🧭 ${t('اتجاه الموج')} <b>${value(data.sea.waveDirection,'°')}</b></span>
       <span>〰️ ${t('Swell')} <b>${value(data.sea.swellHeight,' m')}</b></span><span>⏱️ ${t('فترة الموج')} <b>${value(data.sea.wavePeriod,' s')}</b></span>
@@ -502,7 +502,8 @@ export function createApp(root: HTMLElement) {
       const data = await marine.getPointConditions(lat,lng);
       if (!isCurrent()) return;
 
-      const placeName = await placeNamePromise;
+      // Reverse geocoding is optional: never hold the current sea report for a place-name lookup.
+      const placeName = label;
       if (!isCurrent()) return;
 
       const assessment = assessKayakConditions({
@@ -524,6 +525,13 @@ export function createApp(root: HTMLElement) {
         `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
       report.innerHTML = initialHtml;
       bindClose();
+
+      // Add the coastal name whenever reverse geocoding finishes, without rebuilding the report.
+      void placeNamePromise.then(resolvedName => {
+        if (!isCurrent() || !resolvedName) return;
+        const placeEl = report.querySelector<HTMLElement>('.report-place');
+        if (placeEl) placeEl.innerHTML = '📍 ' + escapeHtml(resolvedName);
+      });
 
       // Optional services must never delay the core sea-state report.
       void (async () => {
@@ -645,64 +653,3 @@ export function createApp(root: HTMLElement) {
           '<span>'+t('فرق الرياح')+' <b>'+fmt(m.windSpread,' km/h')+'</b></span>' +
           '<span>'+t('متوسط التيار')+' <b>'+fmt(current?.currentAvg ?? null,' km/h')+'</b></span>' +
           '<span>'+t('أقصى تيار')+' <b>'+fmt(current?.currentMax ?? null,' km/h')+'</b></span>' +
-          '<span>'+t('اتجاه التيار')+' <b>'+directionValue(current?.currentDirection ?? null,current?.currentAvg ?? null)+'</b></span>' +
-          '</div></article>';
-      }).join('');
-      report.innerHTML = '<div class="report-head"><b>'+t('حالة البحر 7 أيام')+'</b><button id="close-report">×</button></div>' +
-        '<p>📍 '+ltr(lat.toFixed(4)+', '+lng.toFixed(4))+'</p>' +
-        '<div class="weekly-sea-list">'+(cards || '<p>'+t('لا توجد بيانات أسبوعية متاحة')+'</p>')+'</div>' +
-        '<section class="model-comparison">' +
-          '<div class="model-comparison-title"><b>📊 '+t('مقارنة النماذج')+'</b><small>'+t('توافق النماذج')+'</small></div>' +
-          '<div class="model-comparison-list">'+(modelCards || '<p>'+t('بيانات غير متاحة')+'</p>')+'</div>' +
-          '<small>'+t('الثقة هنا تقيس تقارب نماذج الرياح الثلاثة، وليست دقة مضمونة.')+'</small>' +
-        '</section>' +
-        '<small>'+t('المصدر:')+' Open-Meteo · ECMWF · GFS · ICON</small>';
-      document.querySelector('#close-report')?.addEventListener('click', closeReport);
-    } catch {
-      report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب توقعات الأسبوع')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
-      document.querySelector('#close-report')?.addEventListener('click', closeReport);
-    }
-  };
-
-  document.querySelector('#weekly-sea')?.addEventListener('click', () => {
-    const markerPoint = marker?.getLngLat();
-    const target = selectedLocation ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null) ?? (() => { const center=map.getCenter(); return {lat:center.lat,lng:center.lng}; })();
-    showWeeklySea(target.lat,target.lng);
-  });
-
-  document.querySelector('#today-sea')?.addEventListener('click', () => {
-    const markerPoint = marker?.getLngLat();
-    const target = selectedLocation
-      ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null)
-      ?? (() => { const center = map.getCenter(); return {lat:center.lat, lng:center.lng}; })();
-    showTodaySea(target.lat, target.lng);
-  });
-
-  map.on('click',event=>{
-    if (measuring) {
-      if (measurePoints.length>=2) return;
-      const point:[number,number]=[event.lngLat.lng,event.lngLat.lat];
-      measurePoints.push(point);
-      const marker=new maplibregl.Marker({color: measurePoints.length===1 ? '#f59e0b' : '#22c55e'}).setLngLat(point).addTo(map);
-      measureMarkers.push(marker);
-      if (measurePoints.length===2) {
-        map.addSource('measure-source',{type:'geojson',data:{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:measurePoints}}});
-        map.addLayer({id:'measure-line',type:'line',source:'measure-source',paint:{'line-color':'#f59e0b','line-width':4,'line-dasharray':[1,1]}});
-      }
-      renderMeasurement();
-      return;
-    }
-    selectPoint(event.lngLat.lat,event.lngLat.lng);
-  });
-  document.querySelector('#search-form')?.addEventListener('submit',async event=>{
-    event.preventDefault(); const input=document.querySelector<HTMLInputElement>('#search-input')!; const results=document.querySelector<HTMLElement>('#search-results')!; const query=input.value.trim(); if(!query)return;
-    results.classList.remove('hidden'); results.innerHTML='<div>'+t('جاري البحث…')+'</div>';
-    try{const places=await geocoder.search(query,getLang()); if(!places.length){results.innerHTML='<div>'+t('لم يتم العثور على موقع تونسي مطابق.')+'</div>';return}
-      results.innerHTML=places.map((p,i)=>`<button data-index="${i}"><b>${p.name}</b><small>${p.admin1??''} ${p.country??''}</small></button>`).join('');
-      results.querySelectorAll<HTMLButtonElement>('button').forEach(button=>button.addEventListener('click',()=>{const p=places[Number(button.dataset.index)];results.classList.add('hidden');const label=[p.name,p.admin1].filter(Boolean).join(' — ');map.stop();map.jumpTo({center:[p.longitude,p.latitude],zoom:13.5});selectPoint(p.latitude,p.longitude,label)}))
-    }catch{results.innerHTML='<div>'+t('تعذر الاتصال بخدمة البحث. حاول مرة أخرى.')+'</div>'}
-  });
-  map.on('load',()=>geolocate.trigger());
-}
-
-// Production deployment refresh: 2026-10-05T20:39:12.734Z
