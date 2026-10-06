@@ -1119,3 +1119,61 @@
     min-height:48px;
   }
 }
+
+
+/* KAYAK INTELLIGENCE PRO UI */
+.kayak-intelligence{
+  font-size:14px;
+  line-height:1.45;
+  direction:inherit;
+}
+.kayak-intelligence.hidden{display:none!important}
+.ki-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.10)}
+.ki-head b{display:block;font-size:18px;line-height:1.25}
+.ki-head small{display:block;margin-top:3px;opacity:.65;font-size:12px}
+.ki-head button{width:38px;height:38px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.07);color:#fff;font-size:22px;cursor:pointer}
+.ki-location{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;margin-bottom:12px}
+.ki-location>span{font-size:20px}
+.ki-location input{min-width:0;width:100%;height:42px;padding:0 11px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.07);color:#fff;font:inherit;outline:none}
+.ki-location input:focus{border-color:rgba(96,165,250,.65)}
+.ki-status{display:grid;gap:10px}
+.ki-place{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:2px 0}
+.ki-place b{font-size:16px}
+.ki-place small{width:100%;display:block;opacity:.58;direction:ltr;text-align:start}
+.ki-decision{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid rgba(34,197,94,.22);border-radius:14px;background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(255,255,255,.035))}
+.ki-decision>div:first-child{min-width:0}
+.ki-decision small{display:block;opacity:.62;font-size:11px;margin-bottom:3px}
+.ki-decision b{font-size:20px;line-height:1.2}
+.ki-score{display:flex;align-items:baseline;gap:3px;flex:0 0 auto;direction:ltr}
+.ki-score strong{font-size:38px;line-height:1;font-weight:850}
+.ki-score span{font-size:12px;opacity:.62}
+.ki-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.ki-grid>div{min-width:0;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.045)}
+.ki-grid small{display:block;opacity:.68;font-size:11px;line-height:1.35}
+.ki-grid b{display:block;margin-top:5px;font-size:17px;line-height:1.15;direction:ltr;text-align:start}
+.ki-recommendation,.ki-reasons{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.035)}
+.ki-recommendation b,.ki-reasons>b{display:block;font-size:13px}
+.ki-recommendation p{margin:6px 0 0;line-height:1.6}
+.ki-reasons ul{margin:7px 0 0;padding-inline-start:20px}
+.ki-reasons li{margin:5px 0;line-height:1.5}
+.ki-window{display:grid;gap:4px;padding:12px;border:1px solid rgba(96,165,250,.24);border-radius:12px;background:rgba(30,64,175,.13)}
+.ki-window b{font-size:13px}
+.ki-window strong{font-size:19px;direction:ltr}
+.ki-window span{font-size:11px;opacity:.7}
+.ki-disclaimer{display:block;padding:8px 2px;opacity:.58;font-size:10.5px;line-height:1.5}
+.ki-loading,.ki-error{padding:20px;text-align:center;border-radius:12px;background:rgba(255,255,255,.045)}
+.ki-error button{display:block;margin:10px auto 0;padding:8px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(225,29,72,.85);color:#fff;font:inherit}
+.map-action-intelligence{background:rgba(124,58,237,.92)!important}
+.map-action-intelligence:hover{background:rgba(109,40,217,.98)!important}
+@media(max-width:700px){
+  .kayak-intelligence{inset:74px 8px 8px auto!important;width:min(420px,calc(100vw - 16px))!important;max-height:calc(100vh - 90px)!important;padding:14px!important;border-radius:16px!important}
+  .ki-head b{font-size:17px}
+  .ki-grid{gap:6px}
+  .ki-grid>div{padding:9px}
+}
+@media(max-width:390px){
+  .kayak-intelligence{inset:70px 7px 7px auto!important;width:calc(100vw - 14px)!important;padding:12px!important}
+  .ki-score strong{font-size:34px}
+  .ki-decision b{font-size:18px}
+  .ki-grid b{font-size:16px}
+}
