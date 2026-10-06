@@ -361,7 +361,7 @@ export function createApp(root: HTMLElement) {
                 <strong>${scoreLabel(assessment.level)}</strong>
                 <span>${escapeHtml(assessment.recommendation)}</span>
               </div>
-              <div class="ki-score-ring" style="--ki-score:${score}deg">
+              <div class="ki-score-ring" style="--ki-score:${score}">
                 <div><strong>${score}</strong><small>/100</small></div>
               </div>
             </div>
