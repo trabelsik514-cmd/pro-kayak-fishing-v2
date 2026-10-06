@@ -22,6 +22,9 @@ export type PointConditions = {
     seaTemperature: number|null;
   };
   fetchedAt: string;
+  dataTime: string|null;
+  timezone: string|null;
+  source: 'Open-Meteo';
 };
 
 async function getJson(url: URL, timeoutMs = 20000): Promise<any> {
@@ -58,6 +61,11 @@ export type DailySeaSummary = {
   windMax: number|null;
   gustMin: number|null;
   gustMax: number|null;
+  dataFrom: string|null;
+  dataTo: string|null;
+  timezone: string|null;
+  generatedAt: string;
+  source: 'Open-Meteo';
 };
 
 
@@ -82,38 +90,65 @@ export class MarineService {
     url.searchParams.set('latitude', String(latitude));
     url.searchParams.set('longitude', String(longitude));
     url.searchParams.set('hourly', 'wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period');
+    url.searchParams.set('current', 'wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period');
     url.searchParams.set('timezone', 'auto');
     url.searchParams.set('forecast_days', '1');
     url.searchParams.set('cell_selection', 'sea');
+
     const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
     weatherUrl.searchParams.set('latitude', String(latitude));
     weatherUrl.searchParams.set('longitude', String(longitude));
     weatherUrl.searchParams.set('hourly', 'wind_speed_10m,wind_gusts_10m');
+    weatherUrl.searchParams.set('current', 'wind_speed_10m,wind_gusts_10m');
     weatherUrl.searchParams.set('timezone', 'auto');
     weatherUrl.searchParams.set('forecast_days', '1');
+    weatherUrl.searchParams.set('cell_selection', 'nearest');
 
     const [seaResult, weatherResult] = await Promise.allSettled([getJson(url), getJson(weatherUrl)]);
     if (seaResult.status === 'rejected' && weatherResult.status === 'rejected') {
       throw new Error('تعذر الوصول إلى توقعات اليوم');
     }
 
-    const sea = seaResult.status === 'fulfilled' ? seaResult.value.hourly ?? {} : {};
-    const weather = weatherResult.status === 'fulfilled' ? weatherResult.value.hourly ?? {} : {};
-    const finite = (arr: unknown): number[] => Array.isArray(arr) ? arr.map(Number).filter(Number.isFinite) : [];
-    const range = (arr: unknown): [number|null,number|null] => {
-      const v = finite(arr); return v.length ? [Math.min(...v), Math.max(...v)] : [null,null];
+    const seaPayload = seaResult.status === 'fulfilled' ? seaResult.value : {};
+    const weatherPayload = weatherResult.status === 'fulfilled' ? weatherResult.value : {};
+    const sea = seaPayload.hourly ?? {};
+    const weather = weatherPayload.hourly ?? {};
+    const seaTimes = Array.isArray(sea.time) ? sea.time.filter((v: unknown): v is string => typeof v === 'string') : [];
+    const weatherTimes = Array.isArray(weather.time) ? weather.time.filter((v: unknown): v is string => typeof v === 'string') : [];
+    const date = (seaTimes[0] ?? weatherTimes[0] ?? new Date().toISOString()).slice(0, 10);
+
+    const sameDay = (times: string[]) => times
+      .map((time, i) => ({time, i}))
+      .filter(({time}) => time.slice(0, 10) === date);
+
+    const seaDay = sameDay(seaTimes);
+    const weatherDay = sameDay(weatherTimes);
+    const valuesFor = (arr: unknown, indexes: {i:number}[]): number[] =>
+      indexes.map(({i}) => Array.isArray(arr) ? Number(arr[i]) : NaN).filter(Number.isFinite);
+    const range = (arr: unknown, indexes: {i:number}[]): [number|null,number|null] => {
+      const v = valuesFor(arr, indexes);
+      return v.length ? [Math.min(...v), Math.max(...v)] : [null, null];
     };
-    const [waveMin,waveMax] = range(sea.wave_height);
-    const [wavePeriodMin,wavePeriodMax] = range(sea.wave_period);
-    const [swellMin,swellMax] = range(sea.swell_wave_height);
-    const [windMin,windMax] = range(weather.wind_speed_10m);
-    const [gustMin,gustMax] = range(weather.wind_gusts_10m);
-    const directions = finite(sea.wave_direction);
+
+    const [waveMin,waveMax] = range(sea.wave_height, seaDay);
+    const [wavePeriodMin,wavePeriodMax] = range(sea.wave_period, seaDay);
+    const [swellMin,swellMax] = range(sea.swell_wave_height, seaDay);
+    const [windMin,windMax] = range(weather.wind_speed_10m, weatherDay);
+    const [gustMin,gustMax] = range(weather.wind_gusts_10m, weatherDay);
+    const directions = valuesFor(sea.wave_direction, seaDay);
     const waveDirection = directions.length ? directions[0] : null;
+    const allTimes = [...seaDay.map(x => x.time), ...weatherDay.map(x => x.time)].sort();
+    const dataFrom = allTimes[0] ?? null;
+    const dataTo = allTimes.at(-1) ?? null;
+    const timezone = seaPayload.timezone ?? weatherPayload.timezone ?? null;
+
     return {
-      date: sea.time?.[0] ?? weather.time?.[0] ?? new Date().toISOString().slice(0, 10),
+      date,
       waveMin,waveMax,waveDirection,wavePeriodMin,wavePeriodMax,swellMin,swellMax,
-      windMin,windMax,gustMin,gustMax
+      windMin,windMax,gustMin,gustMax,
+      dataFrom,dataTo,timezone,
+      generatedAt:new Date().toISOString(),
+      source:'Open-Meteo'
     };
   }
 
@@ -123,7 +158,7 @@ export class MarineService {
     weatherUrl.searchParams.set('longitude',String(longitude));
     weatherUrl.searchParams.set('hourly','wind_speed_10m,wind_gusts_10m,wind_direction_10m');
     weatherUrl.searchParams.set('timezone','auto');
-    weatherUrl.searchParams.set('forecast_days','1');
+    weatherUrl.searchParams.set('forecast_days','2');
     weatherUrl.searchParams.set('cell_selection','nearest');
 
     const seaUrl=new URL('https://marine-api.open-meteo.com/v1/marine');
@@ -131,18 +166,37 @@ export class MarineService {
     seaUrl.searchParams.set('longitude',String(longitude));
     seaUrl.searchParams.set('hourly','wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,ocean_current_velocity');
     seaUrl.searchParams.set('timezone','auto');
-    seaUrl.searchParams.set('forecast_days','1');
+    seaUrl.searchParams.set('forecast_days','2');
     seaUrl.searchParams.set('cell_selection','sea');
 
     const [wr,sr]=await Promise.all([getJson(weatherUrl),getJson(seaUrl)]);
     const w=wr.hourly??{}; const m=sr.hourly??{};
-    const n=Math.max(Array.isArray(w.time)?w.time.length:0,Array.isArray(m.time)?m.time.length:0);
-    const num=(arr:unknown[],i:number):number|null=>{const v=Array.isArray(arr)?Number(arr[i]):NaN;return Number.isFinite(v)?v:null;};
+    const weatherTimes=Array.isArray(w.time)?w.time.filter((v:unknown):v is string=>typeof v==='string'):[];
+    const marineTimes=Array.isArray(m.time)?m.time.filter((v:unknown):v is string=>typeof v==='string'):[];
+    const weatherIndex=new Map(weatherTimes.map((time:string,i:number)=>[time,i]));
+    const marineIndex=new Map(marineTimes.map((time:string,i:number)=>[time,i]));
+    const now=Date.now();
+    const num=(arr:unknown,i:number):number|null=>{const v=Array.isArray(arr)?Number(arr[i]):NaN;return Number.isFinite(v)?v:null;};
     const out:HourlyKayakPoint[]=[];
-    for(let i=0;i<n;i++){
-      const time=(m.time?.[i]??w.time?.[i]);
-      if(typeof time!=='string')continue;
-      out.push({time,windSpeed:num(w.wind_speed_10m,i),windGusts:num(w.wind_gusts_10m,i),windDirection:num(w.wind_direction_10m,i),waveHeight:num(m.wave_height,i),waveDirection:num(m.wave_direction,i),wavePeriod:num(m.wave_period,i),swellHeight:num(m.swell_wave_height,i),swellDirection:num(m.swell_wave_direction,i),swellPeriod:num(m.swell_wave_period,i),currentVelocity:num(m.ocean_current_velocity,i)});
+    for(const time of [...new Set([...weatherTimes,...marineTimes])].sort()){
+      const ts=Date.parse(time);
+      if(!Number.isFinite(ts) || ts < now - 30*60*1000) continue;
+      const wi=weatherIndex.get(time);
+      const mi=marineIndex.get(time);
+      if(wi==null && mi==null) continue;
+      out.push({
+        time,
+        windSpeed:wi==null?null:num(w.wind_speed_10m,wi),
+        windGusts:wi==null?null:num(w.wind_gusts_10m,wi),
+        windDirection:wi==null?null:num(w.wind_direction_10m,wi),
+        waveHeight:mi==null?null:num(m.wave_height,mi),
+        waveDirection:mi==null?null:num(m.wave_direction,mi),
+        wavePeriod:mi==null?null:num(m.wave_period,mi),
+        swellHeight:mi==null?null:num(m.swell_wave_height,mi),
+        swellDirection:mi==null?null:num(m.swell_wave_direction,mi),
+        swellPeriod:mi==null?null:num(m.swell_wave_period,mi),
+        currentVelocity:mi==null?null:num(m.ocean_current_velocity,mi)
+      });
     }
     return out;
   }
@@ -215,12 +269,10 @@ export class MarineService {
         );
     }
 
-    const weather = weatherResult.status === 'fulfilled'
-      ? weatherResult.value.current ?? {}
-      : {};
-    const sea = marineResult.status === 'fulfilled'
-      ? marineResult.value.current ?? {}
-      : {};
+    const weatherPayload = weatherResult.status === 'fulfilled' ? weatherResult.value : {};
+    const marinePayload = marineResult.status === 'fulfilled' ? marineResult.value : {};
+    const weather = weatherPayload.current ?? {};
+    const sea = marinePayload.current ?? {};
 
     const weatherHourly = weatherResult.status === 'fulfilled'
       ? weatherResult.value.hourly ?? {}
@@ -268,7 +320,10 @@ export class MarineService {
         currentDirection: getSea('ocean_current_direction', 'ocean_current_direction'),
         seaTemperature: getSea('sea_surface_temperature', 'sea_surface_temperature')
       },
-      fetchedAt: new Date().toISOString()
+      fetchedAt: new Date().toISOString(),
+      dataTime: weather.time ?? sea.time ?? null,
+      timezone: weatherPayload.timezone ?? marinePayload.timezone ?? null,
+      source: 'Open-Meteo'
     };
   }
 }
