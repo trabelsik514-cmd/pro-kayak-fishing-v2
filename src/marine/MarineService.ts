@@ -20,6 +20,9 @@ export type PointConditions = {
     currentVelocity: number|null;
     currentDirection: number|null;
     seaTemperature: number|null;
+    maxWaveHeightToday: number|null;
+    maxWaveTimeToday: string|null;
+    maxSwellHeightToday: number|null;
   };
   fetchedAt: string;
   dataTime: string|null;
@@ -395,6 +398,7 @@ export class MarineService {
       'current',
       'wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,ocean_current_velocity,ocean_current_direction,sea_surface_temperature'
     );
+    marineUrl.searchParams.set('daily', 'wave_height_max,swell_wave_height_max');
     marineUrl.searchParams.set('timezone', 'auto');
     marineUrl.searchParams.set('cell_selection', 'sea');
 
@@ -449,6 +453,11 @@ export class MarineService {
     const marinePayload = marineResult.status === 'fulfilled' ? marineResult.value : {};
     const weather = weatherPayload.current ?? {};
     const sea = marinePayload.current ?? {};
+    const seaDaily = marinePayload.daily ?? {};
+    const maxWaveHeightToday = Array.isArray(seaDaily.wave_height_max) && Number.isFinite(Number(seaDaily.wave_height_max[0]))
+      ? Number(seaDaily.wave_height_max[0]) : null;
+    const maxSwellHeightToday = Array.isArray(seaDaily.swell_wave_height_max) && Number.isFinite(Number(seaDaily.swell_wave_height_max[0]))
+      ? Number(seaDaily.swell_wave_height_max[0]) : null;
 
     const weatherHourly = weatherResult.status === 'fulfilled'
       ? weatherResult.value.hourly ?? {}
@@ -494,7 +503,10 @@ export class MarineService {
         swellPeriod: getSea('swell_wave_period', 'swell_wave_period'),
         currentVelocity: getSea('ocean_current_velocity', 'ocean_current_velocity'),
         currentDirection: getSea('ocean_current_direction', 'ocean_current_direction'),
-        seaTemperature: getSea('sea_surface_temperature', 'sea_surface_temperature')
+        seaTemperature: getSea('sea_surface_temperature', 'sea_surface_temperature'),
+        maxWaveHeightToday,
+        maxWaveTimeToday: null,
+        maxSwellHeightToday
       },
       fetchedAt: new Date().toISOString(),
       dataTime: weather.time ?? sea.time ?? null,
