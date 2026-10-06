@@ -322,10 +322,21 @@ export function createApp(root: HTMLElement) {
       </div>`;
 
     const close = () => {
-      panel?.classList.remove('ki-open');
-      panel?.removeAttribute('aria-modal');
+      if (!panel) return;
+      panel.classList.remove('ki-open');
+      panel.setAttribute('aria-hidden','true');
+      panel.removeAttribute('aria-modal');
+      panel.style.display = 'none';
+      panel.remove();
     };
-    panel.querySelector('#ki-close')?.addEventListener('click',close);
+    panel.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('#ki-close')) {
+        event.preventDefault();
+        event.stopPropagation();
+        close();
+      }
+    }, {capture:true});
 
     const run = async (lat:number,lng:number,label:string|null) => {
       const status = panel?.querySelector<HTMLElement>('.ki-status');
@@ -824,11 +835,17 @@ export function createApp(root: HTMLElement) {
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
       const [days, modelDays] = await Promise.all([marine.getWeeklySeaSummary(lat,lng), marine.getWeatherModelComparison(lat,lng)]);
+      const formatForecastDate=(date:string)=> {
+        const d = new Date(date + 'T12:00:00');
+        return new Intl.DateTimeFormat(locale(), {
+          weekday:'long', day:'numeric', month:'long'
+        }).format(d);
+      };
       const dayLabel=(date:string,index:number)=>{
         if(index===0) return t('اليوم');
         if(index===1) return t('غداً');
         if(index===2) return t('بعد غد');
-        return new Date(date+'T12:00:00').toLocaleDateString(locale(),{weekday:'short',day:'numeric',month:'short'});
+        return formatForecastDate(date);
       };
       const score=(d:WeeklySeaSummary)=>{
         let s=100;
