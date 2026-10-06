@@ -479,3 +479,35 @@
 .map-action-sea{background:rgba(225,29,72,.92)}.map-action-measure{background:rgba(51,65,85,.92)}.map-action-trip{background:rgba(15,118,110,.92)}
 @media(max-width:700px){.map-actions{left:10px;right:10px;bottom:10px;justify-content:center}.map-action-group{width:min(100%,390px);border-radius:15px}.map-action-row{width:100%}.map-action{flex:1;min-width:0;min-height:44px;padding:8px 7px;font-size:12px}}
 .report-open .map-actions{top:118px;bottom:auto;left:auto;right:10px}.report-open .map-action-group{padding:6px}.report-open .map-action-label{display:none}.report-open .map-action{min-width:42px;width:42px;height:40px;padding:0}.report-open .map-action span{display:none}
+
+
+/* PKF PROFESSIONAL UI PASS 5 — focused trip route viewer */
+.route-view{
+  position:absolute;
+  z-index:13;
+  left:14px;
+  bottom:18px;
+  width:min(330px,calc(100% - 28px));
+  padding:12px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;
+  background:rgba(5,17,28,.92);
+  box-shadow:0 16px 38px rgba(0,0,0,.42);
+  backdrop-filter:blur(16px);
+}
+.route-view.hidden{display:none}
+.route-view-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.route-view-head>div{min-width:0}
+.route-view-head b{display:block;font-size:14px}
+.route-view-head small{display:block;margin-top:3px;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.route-view-head button{width:34px;height:34px;flex:0 0 34px;border:0;border-radius:9px;background:rgba(255,255,255,.07);color:#fff;font-size:22px;cursor:pointer}
+.route-view-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px}
+.route-view-stats span{padding:8px 6px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(255,255,255,.04);text-align:center;font-size:11px;white-space:nowrap}
+.route-view-stats b{font-size:14px}
+.route-hide{width:100%;margin-top:8px;min-height:38px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(225,29,72,.9);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+@media(max-width:700px){
+  .route-view{left:10px;right:10px;bottom:62px;width:auto;padding:10px;border-radius:14px}
+  .route-view-stats span{padding:7px 4px;font-size:10.5px}
+  .route-view-stats b{font-size:13px}
+}
+@media(max-width:390px){.route-view{bottom:60px}.route-view-stats{gap:5px}}
