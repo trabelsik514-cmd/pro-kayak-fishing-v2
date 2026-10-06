@@ -872,6 +872,27 @@ export function createApp(root: HTMLElement) {
         }
       })();
 
+      // Important marine points layer (foundation for the verified-points phase).
+      try {
+        const marinePoints = [
+          {id:'reef',ar:'شعاب',fr:'Récif',icon:'🪨',color:'#f59e0b',descAr:'معلم بحري: شعاب / بنية صخرية',descFr:'Repère marin: récif / structure rocheuse'},
+          {id:'seagrass',ar:'أعشاب بحرية',fr:'Herbier marin',icon:'🌿',color:'#22c55e',descAr:'موطن بحري محتمل',descFr:'Habitat marin potentiel'},
+          {id:'bank',ar:'بنك بحري',fr:'Banc marin',icon:'🔵',color:'#38bdf8',descAr:'تغير مهم في القاع أو العمق',descFr:'Variation notable du fond ou de la profondeur'},
+          {id:'channel',ar:'قناة',fr:'Chenal',icon:'🟠',color:'#fb923c',descAr:'ممر مائي / تغير في حركة المياه',descFr:'Passage d’eau / variation du courant'},
+          {id:'artificial-reef',ar:'شعاب اصطناعية',fr:'Récif artificiel',icon:'🔴',color:'#ef4444',descAr:'سيتم إدراج المواقع الموثقة في المرحلة التالية',descFr:'Les sites vérifiés seront ajoutés à l’étape suivante'}
+        ];
+        const layer = L.layerGroup();
+        (window as any).__rlxMarinePointsLayer = layer;
+        marinePoints.forEach((p:any) => {
+          const lat = 36.879 + ({reef:0.004,seagrass:-0.003,bank:0.001,channel:-0.006,'artificial-reef':0.007} as any)[p.id];
+          const lng = 10.669 + ({reef:0.006,seagrass:-0.005,bank:-0.008,channel:0.004,'artificial-reef':-0.003} as any)[p.id];
+          const m = L.circleMarker([lat,lng],{radius:7,weight:2,color:p.color,fillColor:p.color,fillOpacity:.85});
+          m.bindPopup(`<b>${p.icon} ${getLang()==='fr'?p.fr:p.ar}</b><br><small>${getLang()==='fr'?p.descFr:p.descAr}</small><br><small style="opacity:.65">${lat.toFixed(5)}, ${lng.toFixed(5)}</small>`);
+          m.addTo(layer);
+        });
+        (window as any).__rlxMarinePointsTypes = marinePoints;
+      } catch {}
+
       // Optional services must never delay the core sea-state report.
       void (async () => {
         try {
