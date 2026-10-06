@@ -324,7 +324,7 @@ export function createApp(root: HTMLElement) {
       try {
         const results=await geocoder.search(q);
         const hit=results[0];
-        if(hit) await run(hit.lat,hit.lon,hit.name);
+        if(hit) await run(hit.latitude,hit.longitude,hit.name);
         else input.setCustomValidity(t('لم يتم العثور على موقع تونسي مطابق.'));
       } catch { input.setCustomValidity(t('تعذر الاتصال بخدمة البحث. حاول مرة أخرى.')); }
     });
