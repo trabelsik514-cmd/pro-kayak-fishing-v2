@@ -33,8 +33,6 @@ const FR: Record<string,string> = {
   'ملاءمة ظروف الكياك':'Adéquation des conditions du kayak',
   'تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.':'Évaluation indicative basée sur les données météo et marines disponibles ; elle ne constitue pas une garantie de sécurité.',
   'الموج اليوم':"Vagues aujourd'hui",
-  'اتجاه الموج':"Direction des vagues",
-  'فترة الموج':"Période des vagues",
   'Swell اليوم':"Swell aujourd'hui",
   'الرياح اليوم':"Vent aujourd'hui",
   'الهبات اليوم':"Rafales aujourd'hui",
