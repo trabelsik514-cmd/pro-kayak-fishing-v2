@@ -314,7 +314,8 @@ export function createApp(root: HTMLElement) {
       routeTripId = trip.id;
       const distance = Number.isFinite(trip.distanceKm) ? trip.distanceKm.toFixed(2) : '0.00';
       const duration = Math.round(trip.durationMin);
-      routeView.innerHTML = `<div class="route-view-head"><div><b>🗺️ ${t('المسار المعروض')}</b><small>${escapeHtml(tripNameForRoute(trip))}</small></div><button id="close-route-view" aria-label="${t('إغلاق')}">×</button></div><div class="route-view-stats"><span>📍 <b>${distance}</b> ${getLang()==='fr'?'km':'كم'}</span><span>⏱️ <b>${duration}</b> ${getLang()==='fr'?'min':'د'}</span><span>🧭 <b>${trip.points.length}</b> ${getLang()==='fr'?'points':'نقطة'}</span></div><button id="hide-route" class="route-hide">${t('إخفاء المسار')}</button>`;
+      const routeName = getLang() === 'fr' && trip.name.startsWith('رحلة ') ? 'Sortie ' + new Date(trip.startedAt).toLocaleDateString('fr-TN') : trip.name;
+      routeView.innerHTML = `<div class="route-view-head"><div><b>🗺️ ${t('المسار المعروض')}</b><small>${escapeHtml(routeName)}</small></div><button id="close-route-view" aria-label="${t('إغلاق')}">×</button></div><div class="route-view-stats"><span>📍 <b>${distance}</b> ${getLang()==='fr'?'km':'كم'}</span><span>⏱️ <b>${duration}</b> ${getLang()==='fr'?'min':'د'}</span><span>🧭 <b>${trip.points.length}</b> ${getLang()==='fr'?'points':'نقطة'}</span></div><button id="hide-route" class="route-hide">${t('إخفاء المسار')}</button>`;
       routeView.classList.remove('hidden');
       routeView.querySelector('#close-route-view')?.addEventListener('click', removeRoute);
       routeView.querySelector('#hide-route')?.addEventListener('click', removeRoute);
@@ -322,12 +323,6 @@ export function createApp(root: HTMLElement) {
     if (map.isStyleLoaded()) draw(); else map.once('load', draw);
   };
 
-  const tripNameForRoute = (trip: KayakTrip) => {
-    if (getLang() === 'fr' && trip.name.startsWith('رحلة ')) {
-      return 'Sortie ' + new Date(trip.startedAt).toLocaleDateString('fr-TN');
-    }
-    return trip.name;
-  };
 
   const renderTrips = () => {
     const trips = loadTrips();
