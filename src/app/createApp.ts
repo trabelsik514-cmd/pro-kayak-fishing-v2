@@ -421,6 +421,9 @@ export function createApp(root: HTMLElement) {
         const slot = panel?.querySelector<HTMLElement>('#ki-window-slot');
         if (slot) slot.innerHTML = `<span class="ki-muted">${tx('تعذر حساب أفضل نافذة حاليًا','Impossible de calculer la meilleure fenêtre')}</span>`;
       }
+      } catch {
+        status.innerHTML = `<div class="ki-error">${tx('تعذر جلب بيانات البحر. حاول مرة أخرى.','Impossible de récupérer les données marines. Réessayez.')}</div>`;
+      }
     };
 
     const input=panel.querySelector<HTMLInputElement>('#ki-place')!;
