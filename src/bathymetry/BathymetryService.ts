@@ -6,7 +6,7 @@ export type BathymetryResult = {
   nearShore?: boolean;
 };
 
-const CLIENT_API = '/api/bathymetry';
+// Vite/StackBlitz preview does not provide Vercel serverless functions.\n// Calling /api/bathymetry there makes Vite treat api/bathymetry.ts as a client\n// module and can produce an esbuild loader error. Production on Vercel keeps\n// using the real serverless endpoint.\nconst CLIENT_API = import.meta.env.PROD ? '/api/bathymetry' : null;
 
 type BathymetryApiResponse = {
   depthMeters?: number | null;
@@ -19,7 +19,7 @@ export async function getBathymetryDepth(
   lng: number,
   lat: number
 ): Promise<BathymetryResult | null> {
-  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+  if (!CLIENT_API) return null;\n  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
   if (lat < 15 || lat > 90 || lng < -36 || lng > 43) return null;
 
   const controller = new AbortController();
