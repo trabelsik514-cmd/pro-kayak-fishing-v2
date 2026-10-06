@@ -60,6 +60,22 @@ export type DailySeaSummary = {
   gustMax: number|null;
 };
 
+
+
+export type HourlyKayakPoint = {
+  time:string;
+  windSpeed:number|null;
+  windGusts:number|null;
+  windDirection:number|null;
+  waveHeight:number|null;
+  waveDirection:number|null;
+  wavePeriod:number|null;
+  swellHeight:number|null;
+  swellDirection:number|null;
+  swellPeriod:number|null;
+  currentVelocity:number|null;
+};
+
 export class MarineService {
   async getTodaySummary(latitude: number, longitude: number): Promise<DailySeaSummary> {
     const url = new URL('https://marine-api.open-meteo.com/v1/marine');
@@ -99,6 +115,36 @@ export class MarineService {
       waveMin,waveMax,waveDirection,wavePeriodMin,wavePeriodMax,swellMin,swellMax,
       windMin,windMax,gustMin,gustMax
     };
+  }
+
+  async getHourlyKayakForecast(latitude:number, longitude:number):Promise<HourlyKayakPoint[]> {
+    const weatherUrl=new URL('https://api.open-meteo.com/v1/forecast');
+    weatherUrl.searchParams.set('latitude',String(latitude));
+    weatherUrl.searchParams.set('longitude',String(longitude));
+    weatherUrl.searchParams.set('hourly','wind_speed_10m,wind_gusts_10m,wind_direction_10m');
+    weatherUrl.searchParams.set('timezone','auto');
+    weatherUrl.searchParams.set('forecast_days','1');
+    weatherUrl.searchParams.set('cell_selection','nearest');
+
+    const seaUrl=new URL('https://marine-api.open-meteo.com/v1/marine');
+    seaUrl.searchParams.set('latitude',String(latitude));
+    seaUrl.searchParams.set('longitude',String(longitude));
+    seaUrl.searchParams.set('hourly','wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,ocean_current_velocity');
+    seaUrl.searchParams.set('timezone','auto');
+    seaUrl.searchParams.set('forecast_days','1');
+    seaUrl.searchParams.set('cell_selection','sea');
+
+    const [wr,sr]=await Promise.all([getJson(weatherUrl),getJson(seaUrl)]);
+    const w=wr.hourly??{}; const m=sr.hourly??{};
+    const n=Math.max(Array.isArray(w.time)?w.time.length:0,Array.isArray(m.time)?m.time.length:0);
+    const num=(arr:unknown[],i:number):number|null=>{const v=Array.isArray(arr)?Number(arr[i]):NaN;return Number.isFinite(v)?v:null;};
+    const out:HourlyKayakPoint[]=[];
+    for(let i=0;i<n;i++){
+      const time=(m.time?.[i]??w.time?.[i]);
+      if(typeof time!=='string')continue;
+      out.push({time,windSpeed:num(w.wind_speed_10m,i),windGusts:num(w.wind_gusts_10m,i),windDirection:num(w.wind_direction_10m,i),waveHeight:num(m.wave_height,i),waveDirection:num(m.wave_direction,i),wavePeriod:num(m.wave_period,i),swellHeight:num(m.swell_wave_height,i),swellDirection:num(m.swell_wave_direction,i),swellPeriod:num(m.swell_wave_period,i),currentVelocity:num(m.ocean_current_velocity,i)});
+    }
+    return out;
   }
 
   async getPointConditions(latitude: number, longitude: number): Promise<PointConditions> {
