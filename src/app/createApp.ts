@@ -526,7 +526,7 @@ export function createApp(root: HTMLElement) {
 
       const reportBase = reportHtml(data,placeName) + (
         data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
-          ? \`<div class="sea-wave-warning">⚠️ <b>\${t('قد يرتفع الموج خلال اليوم')}</b><span>\${value(data.sea.waveHeight,' m')} → \${value(data.sea.maxWaveHeightToday,' m')}</span></div>\`
+          ? `<div class="sea-wave-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
           : ''
       );
       const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`;
