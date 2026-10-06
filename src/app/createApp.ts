@@ -7,6 +7,7 @@ import { loadTrips, saveTrip, deleteTrip, makeTrip, type KayakTrip, type TrackPo
 import { getBathymetryDepth } from '../bathymetry/BathymetryService';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
+const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
 const escapeHtml = (v: string) => v.replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch] ?? ch));
 const ltr = (v: string) => `<span dir="ltr">${v}</span>`;
 
@@ -172,7 +173,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
       <span>💨 ${t('الرياح')} <b>${value(data.weather.windSpeed,' km/h')}</b></span><span>💨 ${t('الهبات')} <b>${value(data.weather.windGusts,' km/h')}</b></span>
       <span>🧭 ${t('اتجاه الرياح')} <b>${value(data.weather.windDirection,'°')}</b></span><span>🌡️ ${t('الهواء')} <b>${value(data.weather.temperature,' °C')}</b></span>
       <span>🌊 ${t('حرارة البحر')} <b>${value(data.sea.seaTemperature,' °C')}</b></span><span>📈 ${t('الضغط')} <b>${value(data.weather.pressure,' hPa')}</b></span>
-      <span>🌊 ${t('التيار')} <b>${value(data.sea.currentVelocity,' km/h')}</b></span><span>🧭 ${t('اتجاه التيار')} <b>${value(data.sea.currentDirection,'°')}</b></span>
+      <span>🌊 ${t('التيار')} <b>${value(data.sea.currentVelocity,' km/h')}</b></span><span>🧭 ${t('اتجاه التيار')} <b>${directionValue(data.sea.currentDirection,data.sea.currentVelocity)}</b></span>
     </div><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small>`;
 }
 
