@@ -308,7 +308,14 @@ export function createApp(root: HTMLElement) {
           <div class="ki-searchbar">
             <span>📍</span>
             <input id="ki-place" value="${escapeHtml(initialLabel ?? '')}" placeholder="${tx('ابحث عن موقع الصيد…','Rechercher un spot…')}" autocomplete="off"/>
-            <button id="ki-search" type="button">${tx('تحليل','Analyser')}</button>
+            <button id="ki-search" type="button">${tx('اختيار','Choisir')}</button>
+          </div>
+          <div class="ki-planner">
+            <div class="ki-planner-title">🧭 <b>${tx('حضّر خروجتك','Préparez votre sortie')}</b><small>${tx('نحلل الفترة من الانطلاق إلى العودة','Nous analysons toute la période')}</small></div>
+            <label><span>🗓️ ${tx('التاريخ','Date')}</span><input id="ki-date" type="date"/></label>
+            <label><span>⏰ ${tx('وقت الانطلاق','Heure de départ')}</span><input id="ki-time" type="time" value="07:00"/></label>
+            <label><span>⏱️ ${tx('مدة الرحلة','Durée')}</span><select id="ki-duration"><option value="2">2 h</option><option value="3">3 h</option><option value="4" selected>4 h</option><option value="5">5 h</option><option value="6">6 h</option><option value="8">8 h</option></select></label>
+            <button id="ki-analyze-trip" class="ki-plan-btn" type="button">🧠 ${tx('تحليل الرحلة','Analyser la sortie')}</button>
           </div>
 
           <div class="ki-status">
@@ -341,36 +348,69 @@ export function createApp(root: HTMLElement) {
     const run = async (lat:number,lng:number,label:string|null) => {
       const status = panel?.querySelector<HTMLElement>('.ki-status');
       if (!status) return;
+
+      const dateInput = panel.querySelector<HTMLInputElement>('#ki-date')!;
+      const timeInput = panel.querySelector<HTMLInputElement>('#ki-time')!;
+      const durationInput = panel.querySelector<HTMLSelectElement>('#ki-duration')!;
+      const selectedDate = dateInput.value;
+      const startTime = timeInput.value || '07:00';
+      const durationHours = Number(durationInput.value) || 4;
+      const startLocal = `${selectedDate}T${startTime}`;
+
       status.innerHTML = `
         <div class="ki-loading">
           <span class="ki-spinner"></span>
-          <b>${tx('جاري تحليل البحر والرياح…','Analyse de la mer et du vent…')}</b>
-          <small>${tx('نقرأ الموج، الـSwell، الرياح والهبات عند النقطة','Lecture des vagues, du swell, du vent et des rafales au point')}</small>
+          <b>${tx('جاري تحليل الرحلة كاملة…','Analyse de toute la sortie…')}</b>
+          <small>${tx('نحلل البحر والرياح من وقت الانطلاق حتى وقت العودة','Analyse de la mer et du vent du départ au retour')}</small>
         </div>`;
+
       try {
-        const data = await marine.getPointConditions(lat,lng);
-        const assessment = assessKayakConditions({
-          windSpeed:data.weather.windSpeed, windGusts:data.weather.windGusts, windDirection:data.weather.windDirection,
-          waveHeight:data.sea.waveHeight, waveDirection:data.sea.waveDirection, wavePeriod:data.sea.wavePeriod,
-          swellHeight:data.sea.swellHeight, swellDirection:data.sea.swellDirection, swellPeriod:data.sea.swellPeriod,
-          currentVelocity:data.sea.currentVelocity
-        });
-        const reasons = assessment.reasons.map(reason=>`<li>${escapeHtml(translateReason(reason))}</li>`).join('');
-        const score = assessment.score;
-        const decisionClass = assessment.level === 'ممتاز' ? 'good' : assessment.level === 'جيد' ? 'ok' : assessment.level === 'حذر' ? 'warn' : 'bad';
-        const freshness = new Date(data.fetchedAt).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false});
+        const hourly = await marine.getHourlyKayakForecast(lat,lng);
+        const selected = hourly.filter(p => p.time.slice(0,16) >= startLocal.slice(0,16) && p.time.slice(0,16) < new Date(new Date(startLocal).getTime()+durationHours*3600000).toISOString().slice(0,16));
+        if (selected.length < Math.max(2, Math.min(durationHours,3))) {
+          throw new Error('insufficient_forecast');
+        }
+
+        const assessments = selected.map(p => ({
+          point:p,
+          assessment:assessKayakConditions({
+            windSpeed:p.windSpeed, windGusts:p.windGusts, windDirection:p.windDirection,
+            waveHeight:p.waveHeight, waveDirection:p.waveDirection, wavePeriod:p.wavePeriod,
+            swellHeight:p.swellHeight, swellDirection:p.swellDirection, swellPeriod:p.swellPeriod,
+            currentVelocity:p.currentVelocity
+          })
+        }));
+        const scores = assessments.map(x=>x.assessment.score);
+        const avgScore = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+        const minScore = Math.min(...scores);
+        const score = Math.round(avgScore*0.6 + minScore*0.4);
+        const worst = assessments.reduce((a,b)=>a.assessment.score<=b.assessment.score?a:b);
+        const reasons = [...new Set(assessments.flatMap(x=>x.assessment.reasons).map(translateReason))].slice(0,4);
+        const decisionLevel = score >= 85 ? 'ممتاز' : score >= 70 ? 'جيد' : score >= 50 ? 'حذر' : 'غير مناسب';
+        const decisionClass = decisionLevel === 'ممتاز' ? 'good' : decisionLevel === 'جيد' ? 'ok' : decisionLevel === 'حذر' ? 'warn' : 'bad';
+        const endDate = new Date(new Date(startLocal).getTime()+durationHours*3600000);
+        const formatLocal = (d:Date) => d.toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false});
+        const best = bestKayakWindow(hourly.filter(p=>p.time.slice(0,10)===selectedDate),durationHours);
+        const worstTime = formatTime(worst.point.time);
+        const tripAdvice = score >= 85
+          ? tx('الظروف تبدو مناسبة طوال فترة الرحلة المحددة.','Les conditions semblent favorables pendant toute la durée choisie.')
+          : score >= 70
+          ? tx('الرحلة ممكنة، لكن راقب تطور البحر والرياح خصوصاً في أسوأ ساعة.','Sortie possible, mais surveillez surtout l’évolution de la mer et du vent pendant l’heure la moins favorable.')
+          : score >= 50
+          ? tx('الحذر مطلوب؛ توجد فترة أضعف داخل الرحلة. قلّل مدة التعرض وفكّر في العودة المبكرة.','Prudence requise : une période moins favorable est présente. Réduisez l’exposition et envisagez un retour anticipé.')
+          : tx('لا أوصي بهذه الفترة للكياك وفق البيانات المتاحة.','Cette période n’est pas recommandée pour le kayak selon les données disponibles.');
 
         status.innerHTML = `
           <section class="ki-hero ${decisionClass}">
             <div class="ki-location-main">
               <span class="ki-pin">📍</span>
-              <div><b>${escapeHtml(label ?? tx('موقع بحري محدد','Point marin'))}</b><small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small></div>
+              <div><b>${escapeHtml(label ?? tx('موقع الصيد المحدد','Spot sélectionné'))}</b><small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small></div>
             </div>
             <div class="ki-verdict">
               <div class="ki-verdict-copy">
-                <small>${tx('قرار الرحلة','Décision')}</small>
-                <strong>${scoreLabel(assessment.level)}</strong>
-                <span>${escapeHtml(assessment.recommendation)}</span>
+                <small>${tx('قرار الرحلة المخطط لها','Décision pour la sortie planifiée')}</small>
+                <strong>${scoreLabel(decisionLevel)}</strong>
+                <span>${escapeHtml(tripAdvice)}</span>
               </div>
               <div class="ki-score-ring" style="--ki-score:${score}">
                 <div><strong>${score}</strong><small>/100</small></div>
@@ -379,64 +419,59 @@ export function createApp(root: HTMLElement) {
           </section>
 
           <section class="ki-window-card">
-            <div class="ki-section-head"><div><span>⭐</span><b>${tx('أفضل نافذة للانطلاق','Meilleure fenêtre')}</b></div><small>${tx('حسب البيانات المتاحة','Selon les données disponibles')}</small></div>
-            <div id="ki-window-slot" class="ki-window-slot"><span class="ki-muted">${tx('جاري حساب أفضل الساعات…','Calcul de la meilleure fenêtre…')}</span></div>
+            <div class="ki-section-head"><div><span>🗓️</span><b>${tx('خطة الرحلة','Plan de sortie')}</b></div><small>${tx('تحليل الفترة كاملة','Analyse de toute la période')}</small></div>
+            <div class="ki-trip-summary">
+              <div><span>${tx('التاريخ','Date')}</span><b>${new Intl.DateTimeFormat(locale(),{weekday:'short',day:'numeric',month:'short'}).format(new Date(selectedDate+'T12:00:00'))}</b></div>
+              <div><span>${tx('الانطلاق','Départ')}</span><b>${startTime}</b></div>
+              <div><span>${tx('العودة المتوقعة','Retour prévu')}</span><b>${formatLocal(endDate)}</b></div>
+              <div><span>${tx('المدة','Durée')}</span><b>${durationHours}h</b></div>
+            </div>
+            ${best ? `<div class="ki-best-window"><span>⭐ ${tx('أفضل نافذة في هذا اليوم','Meilleure fenêtre du jour')}</span><strong>${formatTime(best.start)} → ${formatTime(best.end)}</strong><b>${best.score}/100</b></div>` : ''}
           </section>
 
           <section class="ki-section">
-            <div class="ki-section-head"><div><span>🌊</span><b>${tx('حالة البحر','État de la mer')}</b></div><small>${seaState(data.sea.waveHeight)}</small></div>
+            <div class="ki-section-head"><div><span>🌊</span><b>${tx('البحر أثناء الرحلة','Mer pendant la sortie')}</b></div><small>${tx('أضعف نقطة: '+worstTime,'Point le plus défavorable : '+worstTime)}</small></div>
             <div class="ki-metrics">
-              <div class="ki-metric primary"><small>${tx('الموج الآن','Vagues')}</small><b>${value(data.sea.waveHeight,' m')}</b><span>${tx('ارتفاع الموج','Hauteur')}</span></div>
-              <div class="ki-metric"><small>${tx('فترة الموج','Période')}</small><b>${value(data.sea.wavePeriod,' s')}</b><span>${tx('ثانية','secondes')}</span></div>
-              <div class="ki-metric"><small>${tx('اتجاه الموج','Direction')}</small><b>${value(data.sea.waveDirection,'°')}</b><span>${tx('اتجاه','Direction')}</span></div>
-              <div class="ki-metric"><small>SWELL</small><b>${value(data.sea.swellHeight,' m')}</b><span>${value(data.sea.swellPeriod,' s')}</span></div>
-              <div class="ki-metric"><small>${tx('أقصى موج اليوم','Max aujourd’hui')}</small><b>${value(data.sea.maxWaveHeightToday,' m')}</b><span>${tx('متوقع','Prévu')}</span></div>
+              <div class="ki-metric primary"><small>${tx('أعلى موج','Vague max')}</small><b>${value(Math.max(...assessments.map(x=>x.point.waveHeight??0)),' m')}</b><span>${tx('خلال الرحلة','pendant la sortie')}</span></div>
+              <div class="ki-metric"><small>${tx('أقصر فترة موج','Période min')}</small><b>${value(Math.min(...assessments.map(x=>x.point.wavePeriod??999)),' s')}</b><span>${tx('أثناء الرحلة','pendant la sortie')}</span></div>
+              <div class="ki-metric"><small>${tx('أعلى Swell','Swell max')}</small><b>${value(Math.max(...assessments.map(x=>x.point.swellHeight??0)),' m')}</b><span>${tx('متوقع','prévu')}</span></div>
+              <div class="ki-metric"><small>${tx('أعلى فترة Swell','Période swell')}</small><b>${value(Math.max(...assessments.map(x=>x.point.swellPeriod??0)),' s')}</b><span>${tx('متوقع','prévu')}</span></div>
             </div>
           </section>
 
           <section class="ki-section">
-            <div class="ki-section-head"><div><span>💨</span><b>${tx('الرياح','Vent')}</b></div><small>${windState(data.weather.windSpeed)}</small></div>
+            <div class="ki-section-head"><div><span>💨</span><b>${tx('الرياح أثناء الرحلة','Vent pendant la sortie')}</b></div></div>
             <div class="ki-metrics">
-              <div class="ki-metric primary"><small>${tx('الرياح','Vent')}</small><b>${value(data.weather.windSpeed,' km/h')}</b><span>${tx('سرعة','Vitesse')}</span></div>
-              <div class="ki-metric"><small>${tx('الهبات','Rafales')}</small><b>${value(data.weather.windGusts,' km/h')}</b><span>${tx('أقصى هبة','Max')}</span></div>
-              <div class="ki-metric"><small>${tx('الاتجاه','Direction')}</small><b>${value(data.weather.windDirection,'°')}</b><span>${tx('درجة','degrés')}</span></div>
-              <div class="ki-metric"><small>${tx('التيار','Courant')}</small><b>${value(data.sea.currentVelocity,' km/h')}</b><span>${tx('سرعة','Vitesse')}</span></div>
+              <div class="ki-metric primary"><small>${tx('أعلى رياح','Vent max')}</small><b>${value(Math.max(...assessments.map(x=>x.point.windSpeed??0)),' km/h')}</b><span>${tx('خلال الرحلة','pendant la sortie')}</span></div>
+              <div class="ki-metric"><small>${tx('أعلى هبات','Rafales max')}</small><b>${value(Math.max(...assessments.map(x=>x.point.windGusts??0)),' km/h')}</b><span>${tx('خلال الرحلة','pendant la sortie')}</span></div>
+              <div class="ki-metric"><small>${tx('أسوأ تقييم','Score minimum')}</small><b>${minScore}/100</b><span>${escapeHtml(worstTime)}</span></div>
+              <div class="ki-metric"><small>${tx('المتوسط','Moyenne')}</small><b>${avgScore}/100</b><span>${tx('للفترة','de la période')}</span></div>
             </div>
           </section>
 
           <section class="ki-section ki-analysis">
-            <div class="ki-section-head"><div><span>🔎</span><b>${tx('لماذا أعطاك هذا القرار؟','Pourquoi cette décision ?')}</b></div></div>
-            <ul>${reasons}</ul>
+            <div class="ki-section-head"><div><span>🔎</span><b>${tx('لماذا هذا القرار؟','Pourquoi cette décision ?')}</b></div></div>
+            <ul>${reasons.length ? reasons.map(r=>`<li>${escapeHtml(r)}</li>`).join('') : `<li>${tx('لا توجد عوامل خطر رئيسية في الفترة المختارة.','Aucun facteur de risque majeur sur la période choisie.')}</li>`}</ul>
           </section>
 
           <section class="ki-data-status">
-            <div><span>●</span><b>${assessment.dataComplete ? tx('البيانات مكتملة','Données complètes') : tx('البيانات غير مكتملة','Données incomplètes')}</b></div>
-            <small>${tx('آخر تحديث','Dernière mise à jour')} ${freshness}</small>
+            <div><span>●</span><b>${tx('التقييم مبني على توقعات الرحلة','Évaluation basée sur les prévisions de sortie')}</b></div>
+            <small>${selected.length} ${tx('ساعات محللة','heures analysées')}</small>
           </section>
 
-          <div class="ki-disclaimer">${tx('هذا تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة. افحص التغيرات المحلية والتنبيهات البحرية قبل الانطلاق.','Évaluation de planification basée sur les données météo et marines disponibles. Ce score ne constitue pas une garantie de sécurité. Vérifiez les conditions locales et les alertes marines avant le départ.')}</div>
-        </div>
-      </div>`;
-
-      try {
-        const hourly = await marine.getHourlyKayakForecast(lat,lng);
-        const best = bestKayakWindow(hourly,3);
-        const slot = panel?.querySelector<HTMLElement>('#ki-window-slot');
-        if (slot && best) {
-          slot.innerHTML = `
-            <div class="ki-window-main"><strong>${formatTime(best.start)} → ${formatTime(best.end)}</strong><span>${tx('ملاءمة النافذة','Adéquation')} <b>${best.score}/100</b></span></div>`;
-        } else if (slot) {
-          slot.innerHTML = `<span class="ki-muted">${tx('لا تتوفر نافذة موثوقة من البيانات الحالية','Aucune fenêtre fiable disponible avec les données actuelles')}</span>`;
-        }
-      } catch {
-        const slot = panel?.querySelector<HTMLElement>('#ki-window-slot');
-        if (slot) slot.innerHTML = `<span class="ki-muted">${tx('تعذر حساب أفضل نافذة حاليًا','Impossible de calculer la meilleure fenêtre')}</span>`;
-      }
-      } catch {
-        status.innerHTML = `<div class="ki-error">${tx('تعذر جلب بيانات البحر. حاول مرة أخرى.','Impossible de récupérer les données marines. Réessayez.')}</div>`;
+          <div class="ki-disclaimer">${tx('هذا تخطيط للرحلة وليس ضماناً للسلامة. افحص التنبيهات البحرية والظروف المحلية قبل الانطلاق، وأعد التقييم إذا تغير وقت الرحلة.','Ceci est une aide à la planification et non une garantie de sécurité. Vérifiez les alertes marines et les conditions locales avant le départ, et réévaluez si l’horaire change.')}</div>
+        `;
+      } catch (error) {
+        status.innerHTML = `<div class="ki-loading"><b>${tx('لا توجد بيانات توقعات كافية لهذه الفترة.','Prévisions insuffisantes pour cette période.')}</b><small>${tx('اختر تاريخاً أقرب أو وقتاً مختلفاً.','Choisissez une date plus proche ou une autre heure.')}</small></div>`;
       }
     };
 
+    const dateEl = panel.querySelector<HTMLInputElement>('#ki-date')!;
+    const now = new Date();
+    const tomorrow = new Date(now.getTime()+24*60*60*1000);
+    dateEl.value = tomorrow.toISOString().slice(0,10);
+    dateEl.min = now.toISOString().slice(0,10);
+    dateEl.max = new Date(now.getTime()+6*24*60*60*1000).toISOString().slice(0,10);
     const input=panel.querySelector<HTMLInputElement>('#ki-place')!;
     const doSearch = async () => {
       const q=input.value.trim();
@@ -458,8 +493,20 @@ export function createApp(root: HTMLElement) {
     input.addEventListener('change',doSearch);
     input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void doSearch();}});
     panel.querySelector('#ki-search')?.addEventListener('click',()=>void doSearch());
+    panel.querySelector('#ki-analyze-trip')?.addEventListener('click',()=>void run(
+      initialLat ?? map.getCenter().lat,
+      initialLng ?? map.getCenter().lng,
+      input.value.trim() || initialLabel
+    ));
+    [dateEl, panel.querySelector('#ki-time'), panel.querySelector('#ki-duration')].forEach(el => el?.addEventListener('change',()=>void run(
+      initialLat ?? map.getCenter().lat,
+      initialLng ?? map.getCenter().lng,
+      input.value.trim() || initialLabel
+    )));
 
-    if(initialLat!=null && initialLng!=null) await run(initialLat,initialLng,initialLabel);
+    if(initialLat!=null && initialLng!=null) {
+      void run(initialLat,initialLng,initialLabel);
+    }
     else {
       const center = map.getCenter();
       await run(center.lat,center.lng,initialLabel);
