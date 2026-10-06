@@ -29,6 +29,10 @@ const FR: Record<string,string> = {
   'بحث':'Rechercher',
   'العربية':'Français',
   'حالة البحر اليوم':"État de la mer aujourd'hui",
+  'أفضل نافذة للرحلة':'Meilleure fenêtre pour la sortie',
+  'متوسط ملاءمة النافذة':'Adéquation moyenne de la fenêtre',
+  'بعض بيانات الساعات غير مكتملة':'Certaines données horaires sont incomplètes',
+
   '📏 قياس المسافة':'📏 Mesurer la distance',
   '✖️ إيقاف القياس':'✖️ Arrêter la mesure',
   '🛶 رحلاتي':'🛶 Mes voyages',
