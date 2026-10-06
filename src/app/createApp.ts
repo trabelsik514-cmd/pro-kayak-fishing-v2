@@ -1,5 +1,5 @@
 import maplibregl from 'maplibre-gl';
-import { MarineService } from '../marine/MarineService';
+import { MarineService, type HourlyKayakPoint } from '../marine/MarineService';
 import { GeocodingService, reverseCoastalName } from '../location/GeocodingService';
 import { createMap } from '../map/createMap';
 import { assessKayakConditions } from '../kayak/KayakAssessment';
@@ -124,6 +124,8 @@ const translateReason = (reason: string) => {
 };
 const translateLevel = (level: string) => t(level);
 const locale = () => getLang() === 'fr' ? 'fr-TN' : 'ar-TN';
+
+function bestKayakWindow(points:HourlyKayakPoint[], hours=3){ const rows=points.map(p=>({p,a:assessKayakConditions({windSpeed:p.windSpeed,windGusts:p.windGusts,waveHeight:p.waveHeight,wavePeriod:p.wavePeriod,swellHeight:p.swellHeight,currentVelocity:p.currentVelocity})})); let best:any=null; for(let i=0;i<=rows.length-hours;i++){const w=rows.slice(i,i+hours); const score=Math.round(w.reduce((n,x)=>n+x.a.score,0)/w.length); const blocked=w.some(x=>x.a.level==='غير مناسب'); const effective=blocked?Math.max(0,score-20):score; if(!best||effective>best.score)best={score:effective,start:w[0].p.time,end:w[w.length-1].p.time,complete:w.every(x=>x.a.dataComplete)};} return best;}
 
 function setDocumentLanguage() {
   const lang = getLang();
@@ -446,8 +448,10 @@ export function createApp(root: HTMLElement) {
       if (requestId !== pointRequestId) return;
       const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,windDirection:data.weather.windDirection,waveHeight:data.sea.waveHeight,waveDirection:data.sea.waveDirection,wavePeriod:data.sea.wavePeriod,swellHeight:data.sea.swellHeight,swellDirection:data.sea.swellDirection,swellPeriod:data.sea.swellPeriod,currentVelocity:data.sea.currentVelocity});
       const reportBase = reportHtml(data,placeName);
+      let windowHtml='';
+      try { const hourly=await marine.getHourlyKayakForecast(lat,lng); const best=bestKayakWindow(hourly,3); if(best){ const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}); const level=best.score>=82?'ممتاز':best.score>=65?'جيد':best.score>=45?'حذر':'غير مناسب'; windowHtml='<div class="kayak-window"><b>⏰ '+t('أفضل نافذة للرحلة')+'</b><strong>'+fmt(best.start)+' – '+fmt(best.end)+'</strong><span>'+t('متوسط ملاءمة النافذة')+': '+best.score+'/100 · '+translateLevel(level)+'</span></div>'; }} catch {}
       const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${depthLabel}</b><small>${t('المصدر:')} ${escapeHtml(depthSource)}</small></div>`;
-      report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
+      report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + windowHtml + `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
       document.querySelector('#close-report')?.addEventListener('click',closeReport)
     }
     catch{report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب البيانات')}</b><button id="close-report">×</button></div><p>${t('تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.')}</p><button id="retry-report">${getLang()==='fr' ? 'Réessayer' : 'إعادة المحاولة'}</button>`;document.querySelector('#close-report')?.addEventListener('click',closeReport);document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,label))}
