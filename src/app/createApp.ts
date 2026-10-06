@@ -196,7 +196,7 @@ export function createApp(root: HTMLElement) {
           <button id="weekly-sea" class="map-action map-action-weekly-sea" type="button" aria-label="${t('حالة البحر 7 أيام')}">📅 <span>7 ${getLang()==='fr'?'jours':'أيام'}</span></button>
           <button id="measure-toggle" class="map-action map-action-measure" type="button" aria-label="${t('قياس المسافة')}">📏 <span>${t('قياس')}</span></button>
           <button id="trip-toggle" class="map-action map-action-trip" type="button" aria-label="${t('رحلاتي')}">🛶 <span>${t('رحلاتي')}</span></button>
-          <button id="kayak-intelligence-toggle" class="map-action map-action-intelligence" type="button" aria-label="Kayak Intelligence">🧠 <span>Intelligence</span></button>
+          <button id="kayak-intelligence-toggle" class="map-action map-action-intelligence" type="button" aria-label="${getLang()==='fr'?'Kayak Intelligence':'ذكاء الكياك'}">🧠 <span>${getLang()==='fr'?'Intelligence':'ذكاء الكياك'}</span></button>
         </div>
       </div>
     </nav>
@@ -278,7 +278,7 @@ export function createApp(root: HTMLElement) {
     panel.style.cssText = 'position:fixed;z-index:9999;inset:72px 12px 12px auto;width:min(430px,calc(100vw - 24px));max-height:calc(100vh - 84px);overflow:auto;background:rgba(10,18,28,.97);color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.45);display:block;';
     panel.classList.remove('hidden');
     panel.innerHTML = `
-      <div class="ki-head"><div><b>🧠 Kayak Intelligence</b><small>قرار رحلة الكياك</small></div><button id="ki-close" aria-label="${t('إغلاق')}">×</button></div>
+      <div class="ki-head"><div><b>🧠 ${getLang()==='fr'?'Kayak Intelligence':'ذكاء الكياك'}</b><small>${getLang()==='fr'?'Décision pour la sortie':'قرار رحلة الكياك'}</small></div><button id="ki-close" aria-label="${t('إغلاق')}">×</button></div>
       <div class="ki-location"><span>📍</span><input id="ki-place" value="${escapeHtml(initialLabel ?? '')}" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}"/></div>
       <div class="ki-status">${t('اختر موقعًا لحساب ظروف رحلة الكياك.')}</div>
     `;
@@ -298,16 +298,20 @@ export function createApp(root: HTMLElement) {
         const reasons = assessment.reasons.map(reason=>`<li>${escapeHtml(translateReason(reason))}</li>`).join('');
         status.innerHTML = `
           <div class="ki-place">📍 <b>${escapeHtml(label ?? t('موقع بحري محدد'))}</b><small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small></div>
-          <div class="ki-score ${assessment.level}"><span>${assessment.score}</span><small>/100</small><b>${translateLevel(assessment.level)}</b></div>
+          <div class="ki-decision"><div><small>${t('القرار')}</small><b>${translateLevel(assessment.level)}</b></div><div class="ki-score"><strong>${assessment.score}</strong><span>/100</span></div></div>
           <div class="ki-grid">
-            <span>🌊 <b>${value(data.sea.waveHeight,' m')}</b><small>${t('ارتفاع الموج الآن')}</small></span>
-            <span>📈 <b>${value(data.sea.maxWaveHeightToday,' m')}</b><small>${t('أقصى ارتفاع للموج اليوم')}</small></span>
-            <span>〰️ <b>${value(data.sea.swellHeight,' m')}</b><small>${t('Swell')}</small></span>
-            <span>⏱️ <b>${value(data.sea.wavePeriod,' s')}</b><small>${t('فترة الموج')}</small></span>
-            <span>💨 <b>${value(data.weather.windSpeed,' km/h')}</b><small>${t('الرياح')}</small></span>
-            <span>💨 <b>${value(data.weather.windGusts,' km/h')}</b><small>${t('الهبات')}</small></span>
+            <div><small>🌊 ${t('ارتفاع الموج الآن')}</small><b>${value(data.sea.waveHeight,' m')}</b></div>
+            <div><small>📈 ${t('أقصى ارتفاع للموج اليوم')}</small><b>${value(data.sea.maxWaveHeightToday,' m')}</b></div>
+            <div><small>〰️ ${t('ارتفاع الـSwell')}</small><b>${value(data.sea.swellHeight,' m')}</b></div>
+            <div><small>⏱️ ${t('فترة الموج')}</small><b>${value(data.sea.wavePeriod,' s')}</b></div>
+            <div><small>🧭 ${t('اتجاه الموج')}</small><b>${value(data.sea.waveDirection,'°')}</b></div>
+            <div><small>〰️ ${t('فترة الـSwell')}</small><b>${value(data.sea.swellPeriod,' s')}</b></div>
+            <div><small>💨 ${t('الرياح')}</small><b>${value(data.weather.windSpeed,' km/h')}</b></div>
+            <div><small>💨 ${t('الهبات')}</small><b>${value(data.weather.windGusts,' km/h')}</b></div>
+            <div><small>🧭 ${t('اتجاه الرياح')}</small><b>${value(data.weather.windDirection,'°')}</b></div>
           </div>
-          <div class="ki-reasons"><b>🔎 التفسير</b><ul>${reasons}</ul></div>
+          <div class="ki-recommendation"><b>🎯 ${t('القرار')}</b><p>${escapeHtml(assessment.recommendation)}</p></div>
+          <div class="ki-reasons"><b>🔎 ${t('التفسير')}</b><ul>${reasons}</ul></div>
           <small class="ki-disclaimer">${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small>
         `;
         try {
