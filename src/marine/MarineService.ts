@@ -82,6 +82,16 @@ export type WeeklySeaSummary = {
   gustMax: number|null;
 };
 
+export type WeatherModelComparisonDay = {
+  date: string;
+  ecmwf: { windMax:number|null; gustMax:number|null };
+  gfs: { windMax:number|null; gustMax:number|null };
+  icon: { windMax:number|null; gustMax:number|null };
+  windSpread:number|null;
+  gustSpread:number|null;
+  agreement:number|null;
+};
+
 export type HourlyKayakPoint = {
   time:string;
   windSpeed:number|null;
@@ -97,6 +107,58 @@ export type HourlyKayakPoint = {
 };
 
 export class MarineService {
+
+  async getWeatherModelComparison(latitude:number, longitude:number):Promise<WeatherModelComparisonDay[]> {
+    const models = [
+      {key:'ecmwf' as const, model:'ecmwf_ifs'},
+      {key:'gfs' as const, model:'ncep_gfs_global'},
+      {key:'icon' as const, model:'icon_global'}
+    ];
+    const makeUrl = (model:string) => {
+      const u = new URL('https://api.open-meteo.com/v1/forecast');
+      u.searchParams.set('latitude',String(latitude));
+      u.searchParams.set('longitude',String(longitude));
+      u.searchParams.set('hourly','wind_speed_10m,wind_gusts_10m');
+      u.searchParams.set('forecast_days','7');
+      u.searchParams.set('timezone','auto');
+      u.searchParams.set('models',model);
+      u.searchParams.set('cell_selection','nearest');
+      return u;
+    };
+    const results = await Promise.all(models.map(async ({key,model}) => {
+      try { return {key, payload:await getJson(makeUrl(model))}; }
+      catch { return {key, payload:null}; }
+    }));
+    const byModel = new Map(results.map(x=>[x.key,x.payload]));
+    const dateSet = new Set<string>();
+    for (const payload of byModel.values()) {
+      const times = payload?.hourly?.time;
+      if (Array.isArray(times)) for (const time of times) if(typeof time==='string') dateSet.add(time.slice(0,10));
+    }
+    const dates=[...dateSet].sort().slice(0,7);
+    const rangeFor=(payload:any,date:string,key:string):number|null=>{
+      const times=Array.isArray(payload?.hourly?.time)?payload.hourly.time:[];
+      const arr=payload?.hourly?.[key];
+      const values=times.map((time:string,i:number)=>time.slice(0,10)===date&&Array.isArray(arr)?Number(arr[i]):NaN).filter(Number.isFinite);
+      return values.length?Math.max(...values):null;
+    };
+    const spread=(values:(number|null)[])=>{
+      const v=values.filter((x):x is number=>x!=null&&Number.isFinite(x));
+      return v.length>=2?Math.max(...v)-Math.min(...v):null;
+    };
+    return dates.map(date=>{
+      const e={windMax:rangeFor(byModel.get('ecmwf'),date,'wind_speed_10m'),gustMax:rangeFor(byModel.get('ecmwf'),date,'wind_gusts_10m')};
+      const g={windMax:rangeFor(byModel.get('gfs'),date,'wind_speed_10m'),gustMax:rangeFor(byModel.get('gfs'),date,'wind_gusts_10m')};
+      const i={windMax:rangeFor(byModel.get('icon'),date,'wind_speed_10m'),gustMax:rangeFor(byModel.get('icon'),date,'wind_gusts_10m')};
+      const windSpread=spread([e.windMax,g.windMax,i.windMax]);
+      const gustSpread=spread([e.gustMax,g.gustMax,i.gustMax]);
+      const windAgreement=windSpread==null?null:Math.max(0,Math.min(100,Math.round(100-(windSpread/15)*100)));
+      const gustAgreement=gustSpread==null?null:Math.max(0,Math.min(100,Math.round(100-(gustSpread/20)*100)));
+      return {date,ecmwf:e,gfs:g,icon:i,windSpread,gustSpread,agreement:
+        windAgreement==null?gustAgreement:gustAgreement==null?windAgreement:Math.round((windAgreement+gustAgreement)/2)};
+    });
+  }
+
   async getWeeklySeaSummary(latitude:number, longitude:number):Promise<WeeklySeaSummary[]> {
     const url = new URL('https://marine-api.open-meteo.com/v1/marine');
     url.searchParams.set('latitude', String(latitude));
