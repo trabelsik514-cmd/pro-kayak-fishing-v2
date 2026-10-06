@@ -229,6 +229,40 @@ export function createApp(root: HTMLElement) {
 
   const { map, geolocate } = createMap('map'); const marine = new MarineService(); const geocoder = new GeocodingService();
 
+
+  let marker: maplibregl.Marker | null = null; const report = document.querySelector<HTMLElement>('#report')!;
+  let selectedLocation: {lat:number; lng:number; label:string|null} | null = null;
+  let pointRequestId = 0;
+
+  const tripPanel = document.querySelector<HTMLElement>('#trip-panel')!;
+  const tripList = document.querySelector<HTMLElement>('#trip-list')!;
+  const tripStatus = document.querySelector<HTMLElement>('#trip-status')!;
+  const routeView = document.querySelector<HTMLElement>('#route-view')!;
+  const tripRecord = document.querySelector<HTMLButtonElement>('#trip-record')!;
+  let recording = false;
+  let watchId: number | null = null;
+  let recordedPoints: TrackPoint[] = [];
+  let lastRecordedAt = 0;
+  let routeTripId: string | null = null;
+  let measuring = false;
+  let measurePoints: [number, number][] = [];
+  let measureMarkers: maplibregl.Marker[] = [];
+
+  const shell = root.querySelector<HTMLElement>('.shell')!;
+  const setReportOpen = (open:boolean) => shell.classList.toggle('report-open', open);
+  const closeReport = () => { report.classList.add('hidden'); setReportOpen(false); };
+  document.querySelector('#close-report')?.addEventListener('click', closeReport);
+  document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => openKayakIntelligence(selectedLocation?.label ?? null, selectedLocation?.lat ?? null, selectedLocation?.lng ?? null));
+
+  document.querySelector('#trip-toggle')?.addEventListener('click', () => {
+    const opening = tripPanel.classList.contains('hidden');
+    tripPanel.classList.toggle('hidden');
+    if (opening) { closeReport(); measurePanel.classList.add('hidden'); measuring = false; renderTrips(); }
+  });
+  document.querySelector('#close-trips')?.addEventListener('click', () => tripPanel.classList.add('hidden'));
+  const measurePanel = document.querySelector<HTMLElement>('#measure-panel')!;
+  const measureToggle = document.querySelector<HTMLButtonElement>('#measure-toggle')!;
+
   const openKayakIntelligence = async (initialLabel:string|null = null, initialLat:number|null = null, initialLng:number|null = null) => {
     closeReport();
     tripPanel.classList.add('hidden');
@@ -296,38 +330,6 @@ export function createApp(root: HTMLElement) {
     });
     if(initialLat!=null && initialLng!=null) await run(initialLat,initialLng,initialLabel);
   };
-  let marker: maplibregl.Marker | null = null; const report = document.querySelector<HTMLElement>('#report')!;
-  let selectedLocation: {lat:number; lng:number; label:string|null} | null = null;
-  let pointRequestId = 0;
-
-  const tripPanel = document.querySelector<HTMLElement>('#trip-panel')!;
-  const tripList = document.querySelector<HTMLElement>('#trip-list')!;
-  const tripStatus = document.querySelector<HTMLElement>('#trip-status')!;
-  const routeView = document.querySelector<HTMLElement>('#route-view')!;
-  const tripRecord = document.querySelector<HTMLButtonElement>('#trip-record')!;
-  let recording = false;
-  let watchId: number | null = null;
-  let recordedPoints: TrackPoint[] = [];
-  let lastRecordedAt = 0;
-  let routeTripId: string | null = null;
-  let measuring = false;
-  let measurePoints: [number, number][] = [];
-  let measureMarkers: maplibregl.Marker[] = [];
-
-  const shell = root.querySelector<HTMLElement>('.shell')!;
-  const setReportOpen = (open:boolean) => shell.classList.toggle('report-open', open);
-  const closeReport = () => { report.classList.add('hidden'); setReportOpen(false); };
-  document.querySelector('#close-report')?.addEventListener('click', closeReport);
-  document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => openKayakIntelligence(selectedLocation?.label ?? null, selectedLocation?.lat ?? null, selectedLocation?.lng ?? null));
-
-  document.querySelector('#trip-toggle')?.addEventListener('click', () => {
-    const opening = tripPanel.classList.contains('hidden');
-    tripPanel.classList.toggle('hidden');
-    if (opening) { closeReport(); measurePanel.classList.add('hidden'); measuring = false; renderTrips(); }
-  });
-  document.querySelector('#close-trips')?.addEventListener('click', () => tripPanel.classList.add('hidden'));
-  const measurePanel = document.querySelector<HTMLElement>('#measure-panel')!;
-  const measureToggle = document.querySelector<HTMLButtonElement>('#measure-toggle')!;
 
   const measureDistanceKm = (a:[number,number], b:[number,number]) => {
     const R=6371, p1=a[1]*Math.PI/180, p2=b[1]*Math.PI/180;
