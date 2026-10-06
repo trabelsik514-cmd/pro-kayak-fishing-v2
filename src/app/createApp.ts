@@ -810,6 +810,42 @@ export function createApp(root: HTMLElement) {
         if (placeEl) placeEl.innerHTML = '📍 ' + escapeHtml(resolvedName);
       });
 
+      // Species compatibility enrichment: uses the selected point's bathymetry and current sea temperature.
+      void (async () => {
+        try {
+          const bathy = await getBathymetryDepth(map,lng,lat);
+          if (!isCurrent()) return;
+          renderDepth(
+            bathy ? `${bathy.depthMeters.toFixed(1)} m` : t('غير متاح'),
+            bathy?.source ?? t('لا توجد قراءة متاحة')
+          );
+          const depth = bathy?.depthMeters;
+          const seaTemp = data.sea.seaTemperature;
+          const species = [
+            {ar:'الدنيس / Daurade',fr:'Daurade',min:2,max:45,tmin:14,tmax:28},
+            {ar:'السار / Sar',fr:'Sar',min:3,max:55,tmin:15,tmax:27},
+            {ar:'الشرغو / Diplodus',fr:'Diplodus',min:2,max:45,tmin:14,tmax:27},
+            {ar:'القاروص / Loup',fr:'Loup de mer',min:1,max:30,tmin:10,tmax:25},
+            {ar:'المرمار / Pageot',fr:'Pageot',min:15,max:120,tmin:13,tmax:24}
+          ];
+          const compatibility = (s:{min:number;max:number;tmin:number;tmax:number}) => {
+            if (depth == null) return 0;
+            const depthScore = depth >= s.min && depth <= s.max ? 65 : Math.max(0, 65 - Math.min(Math.abs(depth-s.min),Math.abs(depth-s.max))*2);
+            const tempScore = seaTemp == null ? 15 : (seaTemp >= s.tmin && seaTemp <= s.tmax ? 35 : Math.max(0,35-Math.min(Math.abs(seaTemp-s.tmin),Math.abs(seaTemp-s.tmax))*5));
+            return Math.round(Math.min(100,depthScore+tempScore));
+          };
+          const ranked = species.map(s=>({...s,score:compatibility(s)})).sort((a,b)=>b.score-a.score).slice(0,4);
+          const card = document.createElement('div');
+          card.className='species-compat';
+          card.innerHTML = `<div class="species-compat-head"><b>🐟 ${getLang()==='fr'?'Espèces potentielles':'الأنواع المحتملة'}</b><small>${getLang()==='fr'?'Compatibilité environnementale':'ملاءمة بيئية'}</small></div><div class="species-compat-list">${ranked.map(s=>`<div><span>🐟 ${escapeHtml(getLang()==='fr'?s.fr:s.ar)}</span><strong>${s.score}/100</strong></div>`).join('')}</div><small>${getLang()==='fr'?'Basé sur profondeur et température de la mer. Ce score indique une compatibilité environnementale, pas la présence garantie du poisson.':'اعتمادًا على العمق وحرارة البحر. الدرجة تعبر عن الملاءمة البيئية وليست تأكيدًا لوجود السمك.'}</small>`;
+          if (!isCurrent()) return;
+          const depthCardEl = report.querySelector('.depth-card');
+          if (depthCardEl) depthCardEl.insertAdjacentElement('afterend',card);
+        } catch {
+          // Species enrichment is optional and never blocks the sea report.
+        }
+      })();
+
       // Optional services must never delay the core sea-state report.
       void (async () => {
         try {
