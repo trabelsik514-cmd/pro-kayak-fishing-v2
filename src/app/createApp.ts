@@ -33,6 +33,9 @@ const FR: Record<string,string> = {
   'مقارنة النماذج':'Comparaison des modèles',
   'توافق النماذج':'Accord des modèles',
   'فرق الرياح':'Écart du vent',
+  'متوسط التيار':'Courant moyen',
+  'أقصى تيار':'Courant maximal',
+  'اتجاه التيار':'Direction du courant',
   'بيانات غير متاحة':'Données indisponibles',
 
   'الأسبوع القادم':'7 prochains jours',
@@ -577,6 +580,9 @@ export function createApp(root: HTMLElement) {
           '<span>GFS <b>'+fmt(m.gfs.windMax,' km/h')+'</b></span>' +
           '<span>ICON <b>'+fmt(m.icon.windMax,' km/h')+'</b></span>' +
           '<span>'+t('فرق الرياح')+' <b>'+fmt(m.windSpread,' km/h')+'</b></span>' +
+          '<span>'+t('متوسط التيار')+' <b>'+fmt(m.currentAvg,' km/h')+'</b></span>' +
+          '<span>'+t('أقصى تيار')+' <b>'+fmt(m.currentMax,' km/h')+'</b></span>' +
+          '<span>'+t('اتجاه التيار')+' <b>'+fmt(m.currentDirection,'°')+'</b></span>' +
           '</div></article>';
       }).join('');
       report.innerHTML = '<div class="report-head"><b>'+t('حالة البحر 7 أيام')+'</b><button id="close-report">×</button></div>' +
