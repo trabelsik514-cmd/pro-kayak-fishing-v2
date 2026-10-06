@@ -536,7 +536,7 @@ export function createApp(root: HTMLElement) {
     tripPanel.classList.add('hidden');
     measurePanel.classList.add('hidden');
     measuring = false;
-    report.innerHTML = \`<div class="report-head"><b>\${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div><p>\${t('جاري حساب توقعات الأسبوع…')}</p>\`;
+    report.innerHTML = `<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div><p>${t('جاري حساب توقعات الأسبوع…')}</p>`;
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
       const days = await marine.getWeeklySeaSummary(lat,lng);
@@ -556,23 +556,23 @@ export function createApp(root: HTMLElement) {
       const level=(s:number)=>s>=82?'ممتاز':s>=65?'جيد':s>=45?'حذر':'غير مناسب';
       const cards=days.map((d,i)=>{
         const s=score(d);
-        return \`<article class="weekly-sea-card">
-          <div class="weekly-sea-day"><b>\${dayLabel(d.date,i)}</b><strong>\${translateLevel(level(s))}</strong></div>
+        return `<article class="weekly-sea-card">
+          <div class="weekly-sea-day"><b>${dayLabel(d.date,i)}</b><strong>${translateLevel(level(s))}</strong></div>
           <div class="weekly-sea-values">
-            <span>🌊 \${t('أقصى موج')} <b>\${value(d.waveMax,' m')}</b></span>
-            <span>🧭 \${t('اتجاه الموج السائد')} <b>\${value(d.waveDirection,'°')}</b></span>
-            <span>💨 \${t('أقصى رياح')} <b>\${value(d.windMax,' km/h')}</b></span>
-            <span>💨 \${t('أقصى هبات')} <b>\${value(d.gustMax,' km/h')}</b></span>
+            <span>🌊 ${t('أقصى موج')} <b>${value(d.waveMax,' m')}</b></span>
+            <span>🧭 ${t('اتجاه الموج السائد')} <b>${value(d.waveDirection,'°')}</b></span>
+            <span>💨 ${t('أقصى رياح')} <b>${value(d.windMax,' km/h')}</b></span>
+            <span>💨 ${t('أقصى هبات')} <b>${value(d.gustMax,' km/h')}</b></span>
           </div>
-        </article>\`;
+        </article>`;
       }).join('');
-      report.innerHTML=\`<div class="report-head"><b>\${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div>
-        <p>📍 \${ltr(\`\${lat.toFixed(4)}, \${lng.toFixed(4)}\`)}</p>
-        <div class="weekly-sea-list">\${cards || \`<p>\${t('لا توجد بيانات أسبوعية متاحة')}</p>\`}</div>
-        <small>\${t('المصدر:')} Open-Meteo · \${t('الأسبوع القادم')}</small>\`;
+      report.innerHTML=`<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div>
+        <p>📍 ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</p>
+        <div class="weekly-sea-list">${cards || `<p>${t('لا توجد بيانات أسبوعية متاحة')}</p>`}</div>
+        <small>${t('المصدر:')} Open-Meteo · ${t('الأسبوع القادم')}</small>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     } catch {
-      report.innerHTML=\`<div class="report-head"><b>\${t('تعذر جلب توقعات الأسبوع')}</b><button id="close-report">×</button></div><p>\${t('حاول مرة أخرى بعد قليل.')}</p>\`;
+      report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب توقعات الأسبوع')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     }
   };
