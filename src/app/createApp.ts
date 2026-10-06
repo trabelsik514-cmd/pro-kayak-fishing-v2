@@ -51,6 +51,8 @@ const FR: Record<string,string> = {
   'قياس جديد':'Nouvelle mesure',
   'لا توجد رحلات محفوظة بعد.':'Aucune sortie enregistrée.',
   '🗺️ عرض المسار':'🗺️ Voir le parcours',
+  'إخفاء المسار':'Masquer le parcours',
+  'المسار المعروض':'Parcours affiché',
   '🗑️ حذف':'🗑️ Supprimer',
   'حالة البحر عند النقطة':'État de la mer au point',
   'جاري جلب آخر البيانات…':'Chargement des dernières données…',
@@ -174,6 +176,7 @@ export function createApp(root: HTMLElement) {
       <button id="trip-record" class="trip-primary">▶️ ${t('بدء تسجيل رحلة')}</button>
       <div id="trip-list" class="trip-list"></div>
     </aside>
+    <aside class="route-view hidden" id="route-view" aria-live="polite"></aside>
     <aside class="report" id="report"><div class="report-head"><b>${t('حالة البحر')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
     <p>${t('اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.')}</p></aside><div class="search-results hidden" id="search-results"></div></main>`;
 
@@ -201,6 +204,7 @@ export function createApp(root: HTMLElement) {
   const tripPanel = document.querySelector<HTMLElement>('#trip-panel')!;
   const tripList = document.querySelector<HTMLElement>('#trip-list')!;
   const tripStatus = document.querySelector<HTMLElement>('#trip-status')!;
+  const routeView = document.querySelector<HTMLElement>('#route-view')!;
   const tripRecord = document.querySelector<HTMLButtonElement>('#trip-record')!;
   let recording = false;
   let watchId: number | null = null;
@@ -279,12 +283,19 @@ export function createApp(root: HTMLElement) {
     if (map.getLayer('trip-route-line')) map.removeLayer('trip-route-line');
     if (map.getSource('trip-route-source')) map.removeSource('trip-route-source');
     routeTripId = null;
+    routeView.classList.add('hidden');
+    routeView.innerHTML = '';
   };
 
   const drawTrip = (trip: KayakTrip) => {
     if (!trip.points.length) return;
     const draw = () => {
       removeRoute();
+      report.classList.add('hidden');
+      setReportOpen(false);
+      measurePanel.classList.add('hidden');
+      measuring = false;
+      tripPanel.classList.add('hidden');
       const coordinates = trip.points.map(p => [p.lng, p.lat] as [number, number]);
       map.addSource('trip-route-source', {
         type: 'geojson',
@@ -301,8 +312,21 @@ export function createApp(root: HTMLElement) {
       if (coordinates.length === 1) map.easeTo({center: coordinates[0], zoom: 15});
       else map.fitBounds(bounds, {padding: 70, maxZoom: 15});
       routeTripId = trip.id;
+      const distance = Number.isFinite(trip.distanceKm) ? trip.distanceKm.toFixed(2) : '0.00';
+      const duration = Math.round(trip.durationMin);
+      routeView.innerHTML = `<div class="route-view-head"><div><b>🗺️ ${t('المسار المعروض')}</b><small>${escapeHtml(tripNameForRoute(trip))}</small></div><button id="close-route-view" aria-label="${t('إغلاق')}">×</button></div><div class="route-view-stats"><span>📍 <b>${distance}</b> ${getLang()==='fr'?'km':'كم'}</span><span>⏱️ <b>${duration}</b> ${getLang()==='fr'?'min':'د'}</span><span>🧭 <b>${trip.points.length}</b> ${getLang()==='fr'?'points':'نقطة'}</span></div><button id="hide-route" class="route-hide">${t('إخفاء المسار')}</button>`;
+      routeView.classList.remove('hidden');
+      routeView.querySelector('#close-route-view')?.addEventListener('click', removeRoute);
+      routeView.querySelector('#hide-route')?.addEventListener('click', removeRoute);
     };
     if (map.isStyleLoaded()) draw(); else map.once('load', draw);
+  };
+
+  const tripNameForRoute = (trip: KayakTrip) => {
+    if (getLang() === 'fr' && trip.name.startsWith('رحلة ')) {
+      return 'Sortie ' + new Date(trip.startedAt).toLocaleDateString('fr-TN');
+    }
+    return trip.name;
   };
 
   const renderTrips = () => {
@@ -419,6 +443,7 @@ export function createApp(root: HTMLElement) {
 
   const selectPoint = async (lat:number,lng:number,label:string|null=null): Promise<void> => {
     const requestId = ++pointRequestId;
+    if (routeTripId) removeRoute();
     selectedLocation = {lat, lng, label};
     report.classList.remove('hidden');
     setReportOpen(true);
@@ -462,6 +487,7 @@ export function createApp(root: HTMLElement) {
   };
 
   const showTodaySea = async (lat:number, lng:number) => {
+    if (routeTripId) removeRoute();
     report.classList.remove('hidden');
     setReportOpen(true);
     tripPanel.classList.add('hidden');
