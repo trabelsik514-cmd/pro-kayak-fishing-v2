@@ -543,7 +543,7 @@ export function createApp(root: HTMLElement) {
     report.innerHTML = `<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div><p>${t('جاري حساب توقعات الأسبوع…')}</p>`;
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
-      const [days, modelDays] = await Promise.all([marine.getWeeklySeaSummary(lat,lng), marine.getWeatherModelComparison(lat,lng)]);
+      const [days, modelDays, currentDays] = await Promise.all([marine.getWeeklySeaSummary(lat,lng), marine.getWeatherModelComparison(lat,lng), marine.getWeeklySeaSummary(lat,lng)]);
       const dayLabel=(date:string,index:number)=>{
         if(index===0) return t('اليوم');
         if(index===1) return t('غداً');
@@ -570,9 +570,11 @@ export function createApp(root: HTMLElement) {
           </div>
         </article>`;
       }).join('');
+      const currentByDate = new Map(currentDays.map(d=>[d.date,d]));
       const modelCards = modelDays.map((m:WeatherModelComparisonDay,i:number)=>{
         const label=dayLabel(m.date,i);
         const fmt=(v:number|null,unit:string)=>v==null?'--':v.toFixed(0)+unit;
+        const current=currentByDate.get(m.date);
         return '<article class="model-compare-card">' +
           '<div class="model-compare-head"><b>'+label+'</b><strong>'+(m.agreement==null?'--':m.agreement+'%')+'</strong></div>' +
           '<div class="model-compare-grid">' +
@@ -580,9 +582,9 @@ export function createApp(root: HTMLElement) {
           '<span>GFS <b>'+fmt(m.gfs.windMax,' km/h')+'</b></span>' +
           '<span>ICON <b>'+fmt(m.icon.windMax,' km/h')+'</b></span>' +
           '<span>'+t('فرق الرياح')+' <b>'+fmt(m.windSpread,' km/h')+'</b></span>' +
-          '<span>'+t('متوسط التيار')+' <b>'+fmt(m.currentAvg,' km/h')+'</b></span>' +
-          '<span>'+t('أقصى تيار')+' <b>'+fmt(m.currentMax,' km/h')+'</b></span>' +
-          '<span>'+t('اتجاه التيار')+' <b>'+fmt(m.currentDirection,'°')+'</b></span>' +
+          '<span>'+t('متوسط التيار')+' <b>'+fmt(current?.currentAvg ?? null,' km/h')+'</b></span>' +
+          '<span>'+t('أقصى تيار')+' <b>'+fmt(current?.currentMax ?? null,' km/h')+'</b></span>' +
+          '<span>'+t('اتجاه التيار')+' <b>'+fmt(current?.currentDirection ?? null,'°')+'</b></span>' +
           '</div></article>';
       }).join('');
       report.innerHTML = '<div class="report-head"><b>'+t('حالة البحر 7 أيام')+'</b><button id="close-report">×</button></div>' +
