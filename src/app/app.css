@@ -1044,3 +1044,40 @@
     margin-top:2px;
   }
 }
+
+/* PKF FINAL MOBILE REPORT OVERLAP FIX
+   Keep the scroll container on .report, but make the sticky header cover
+   the report padding area so scrolled cards can never appear above it. */
+.report{
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+}
+.report-head{
+  position:sticky;
+  top:-14px;
+  z-index:30;
+  margin:-14px -14px 10px;
+  padding:14px;
+  min-height:52px;
+  background:rgba(5,17,28,.995);
+  background-clip:padding-box;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:0 8px 16px rgba(5,17,28,.92);
+  isolation:isolate;
+}
+@media(max-width:700px){
+  .report-head{
+    top:-13px;
+    margin:-13px -13px 10px;
+    padding:13px;
+    min-height:50px;
+  }
+}
+@media(max-width:390px){
+  .report-head{
+    top:-11px;
+    margin:-11px -11px 9px;
+    padding:11px;
+  }
+}
