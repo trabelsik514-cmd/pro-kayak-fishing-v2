@@ -356,6 +356,8 @@ export function createApp(root: HTMLElement) {
       const startTime = timeInput.value || '07:00';
       const durationHours = Number(durationInput.value) || 4;
       const startLocal = `${selectedDate}T${startTime}`;
+      const startTs = Date.parse(startLocal);
+      const endTs = startTs + durationHours*3600000;
 
       status.innerHTML = `
         <div class="ki-loading">
@@ -366,7 +368,10 @@ export function createApp(root: HTMLElement) {
 
       try {
         const hourly = await marine.getHourlyKayakForecast(lat,lng);
-        const selected = hourly.filter(p => p.time.slice(0,16) >= startLocal.slice(0,16) && p.time.slice(0,16) < new Date(new Date(startLocal).getTime()+durationHours*3600000).toISOString().slice(0,16));
+        const selected = hourly.filter(p => {
+          const ts = Date.parse(p.time);
+          return Number.isFinite(ts) && ts >= startTs && ts < endTs;
+        });
         if (selected.length < Math.max(2, Math.min(durationHours,3))) {
           throw new Error('insufficient_forecast');
         }
