@@ -252,7 +252,11 @@ export function createApp(root: HTMLElement) {
   const setReportOpen = (open:boolean) => shell.classList.toggle('report-open', open);
   const closeReport = () => { report.classList.add('hidden'); setReportOpen(false); };
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
-  document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => openKayakIntelligence(selectedLocation?.label ?? null, selectedLocation?.lat ?? null, selectedLocation?.lng ?? null));
+  document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => {
+    const center = map.getCenter();
+    const target = selectedLocation ?? {lat:center.lat, lng:center.lng, label:null};
+    void openKayakIntelligence(target.label ?? null, target.lat, target.lng);
+  });
 
   document.querySelector('#trip-toggle')?.addEventListener('click', () => {
     const opening = tripPanel.classList.contains('hidden');
@@ -294,10 +298,7 @@ export function createApp(root: HTMLElement) {
           swellHeight:data.sea.swellHeight, swellDirection:data.sea.swellDirection, swellPeriod:data.sea.swellPeriod,
           currentVelocity:data.sea.currentVelocity
         });
-        const hourly = await marine.getHourlyKayakForecast(lat,lng);
-        const best = bestKayakWindow(hourly,3);
         const reasons = assessment.reasons.map(reason=>`<li>${escapeHtml(translateReason(reason))}</li>`).join('');
-        const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'});
         status.innerHTML = `
           <div class="ki-place">📍 <b>${escapeHtml(label ?? t('موقع بحري محدد'))}</b><small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small></div>
           <div class="ki-score ${assessment.level}"><span>${assessment.score}</span><small>/100</small><b>${translateLevel(assessment.level)}</b></div>
@@ -309,10 +310,22 @@ export function createApp(root: HTMLElement) {
             <span>💨 <b>${value(data.weather.windSpeed,' km/h')}</b><small>${t('الرياح')}</small></span>
             <span>💨 <b>${value(data.weather.windGusts,' km/h')}</b><small>${t('الهبات')}</small></span>
           </div>
-          ${best ? `<div class="ki-window"><b>⭐ ${t('أفضل نافذة للرحلة')}</b><strong>${fmt(best.start)} – ${fmt(best.end)}</strong><span>${t('متوسط ملاءمة النافذة')}: ${best.score}/100</span></div>` : ''}
           <div class="ki-reasons"><b>🔎 التفسير</b><ul>${reasons}</ul></div>
           <small class="ki-disclaimer">${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small>
         `;
+        try {
+          const hourly = await marine.getHourlyKayakForecast(lat,lng);
+          const best = bestKayakWindow(hourly,3);
+          if (best) {
+            const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'});
+            const card = document.createElement('div');
+            card.className='ki-window';
+            card.innerHTML=`<b>⭐ ${t('أفضل نافذة للرحلة')}</b><strong>${fmt(best.start)} – ${fmt(best.end)}</strong><span>${t('متوسط ملاءمة النافذة')}: ${best.score}/100</span>`;
+            status.appendChild(card);
+          }
+        } catch {
+          // Current sea/weather report remains usable if the hourly forecast service is unavailable.
+        }
       } catch {
         status.innerHTML = `<div class="ki-error">${t('تعذر جلب البيانات')}<button id="ki-retry">إعادة المحاولة</button></div>`;
         panel?.querySelector('#ki-retry')?.addEventListener('click',()=>run(lat,lng,label));
