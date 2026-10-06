@@ -104,7 +104,6 @@ const FR: Record<string,string> = {
   'حرارة البحر':'Température de la mer',
   'الضغط':'Pression',
   'التيار':'Courant',
-  'اتجاه التيار':'Direction du courant',
   'العمق التقريبي':'Profondeur approximative',
   'غير متاح':'Indisponible',
   'لا توجد قراءة متاحة':'Aucune lecture disponible',
