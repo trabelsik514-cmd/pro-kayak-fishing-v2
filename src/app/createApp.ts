@@ -470,40 +470,101 @@ export function createApp(root: HTMLElement) {
     tripPanel.classList.add('hidden');
     measurePanel.classList.add('hidden');
     measuring = false;
-    marker?.remove(); marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
-    report.innerHTML=`<div class="report-head"><b>${t('جاري جلب آخر البيانات…')}</b><button id="close-report">×</button></div><p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
-    document.querySelector('#close-report')?.addEventListener('click',closeReport);
-    let placeNamePromise: Promise<string|null> = Promise.resolve(label);
-    if(!label){
-      placeNamePromise = Promise.race([
-        reverseCoastalName(lat,lng,getLang()).catch(() => null),
-        new Promise<string|null>(resolve => window.setTimeout(() => resolve(null), 3500))
-      ]);
-    }
-    try{
-      // Fetch the marine/weather data first. Reverse geocoding is secondary and
-      // must never block the latest sea-state report on a slow mobile connection.
-      const data=await marine.getPointConditions(lat,lng);
-      const placeName=await placeNamePromise;
-      let depthLabel='غير متاح';
-      let depthSource='لا توجد قراءة متاحة';
-      try {
-        const bathy=await getBathymetryDepth(map,lng,lat);
-        if (bathy) {
-          depthLabel=`${bathy.depthMeters.toFixed(1)} m`;
-          depthSource=bathy.source;
-        }
-      } catch { /* depth is optional */ }
-      if (requestId !== pointRequestId) return;
-      const assessment=assessKayakConditions({windSpeed:data.weather.windSpeed,windGusts:data.weather.windGusts,windDirection:data.weather.windDirection,waveHeight:data.sea.waveHeight,waveDirection:data.sea.waveDirection,wavePeriod:data.sea.wavePeriod,swellHeight:data.sea.swellHeight,swellDirection:data.sea.swellDirection,swellPeriod:data.sea.swellPeriod,currentVelocity:data.sea.currentVelocity});
+
+    marker?.remove();
+    marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
+
+    const isCurrent = () => requestId === pointRequestId;
+    const bindClose = () => document.querySelector('#close-report')?.addEventListener('click',closeReport);
+    const renderLoading = (title:string, body:string) => {
+      report.innerHTML = `<div class="report-head"><b>${title}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><p>${body}</p>`;
+      bindClose();
+    };
+    const renderDepth = (depthLabel:string, depthSource:string) => {
+      const card = report.querySelector('.depth-card');
+      if (card) {
+        card.innerHTML = `🪸 ${t('العمق التقريبي')} <b>${depthLabel}</b><small>${t('المصدر:')} ${escapeHtml(depthSource)}</small>`;
+      }
+    };
+
+    renderLoading(t('جاري جلب آخر البيانات…'), `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+
+    const placeNamePromise: Promise<string|null> = label
+      ? Promise.resolve(label)
+      : Promise.race([
+          reverseCoastalName(lat,lng,getLang()).catch(() => null),
+          new Promise<string|null>(resolve => window.setTimeout(() => resolve(null), 3500))
+        ]);
+
+    try {
+      // The core sea/weather reading is the only blocking operation.
+      // Optional enrichments are started independently and may update the report later.
+      const data = await marine.getPointConditions(lat,lng);
+      if (!isCurrent()) return;
+
+      const placeName = await placeNamePromise;
+      if (!isCurrent()) return;
+
+      const assessment = assessKayakConditions({
+        windSpeed:data.weather.windSpeed,
+        windGusts:data.weather.windGusts,
+        windDirection:data.weather.windDirection,
+        waveHeight:data.sea.waveHeight,
+        waveDirection:data.sea.waveDirection,
+        wavePeriod:data.sea.wavePeriod,
+        swellHeight:data.sea.swellHeight,
+        swellDirection:data.sea.swellDirection,
+        swellPeriod:data.sea.swellPeriod,
+        currentVelocity:data.sea.currentVelocity
+      });
+
       const reportBase = reportHtml(data,placeName);
-      let windowHtml='';
-      try { const hourly=await marine.getHourlyKayakForecast(lat,lng); const best=bestKayakWindow(hourly,3); if(best){ const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}); const level=best.score>=82?'ممتاز':best.score>=65?'جيد':best.score>=45?'حذر':'غير مناسب'; windowHtml='<div class="kayak-window"><b>⏰ '+t('أفضل نافذة للرحلة')+'</b><strong>'+fmt(best.start)+' – '+fmt(best.end)+'</strong><span>'+t('متوسط ملاءمة النافذة')+': '+best.score+'/100 · '+translateLevel(level)+'</span></div>'; }} catch {}
-      const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${depthLabel}</b><small>${t('المصدر:')} ${escapeHtml(depthSource)}</small></div>`;
-      report.innerHTML = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) + windowHtml + `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
-      document.querySelector('#close-report')?.addEventListener('click',closeReport)
+      const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`;
+      const initialHtml = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) +
+        `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
+      report.innerHTML = initialHtml;
+      bindClose();
+
+      // Optional services must never delay the core sea-state report.
+      void (async () => {
+        try {
+          const bathy = await getBathymetryDepth(map,lng,lat);
+          if (!isCurrent()) return;
+          renderDepth(
+            bathy ? `${bathy.depthMeters.toFixed(1)} m` : t('غير متاح'),
+            bathy?.source ?? t('لا توجد قراءة متاحة')
+          );
+        } catch {
+          if (!isCurrent()) return;
+          renderDepth(t('غير متاح'),t('لا توجد قراءة متاحة'));
+        }
+      })();
+
+      void (async () => {
+        try {
+          const hourly = await marine.getHourlyKayakForecast(lat,lng);
+          if (!isCurrent()) return;
+          const best = bestKayakWindow(hourly,3);
+          if (!best) return;
+          const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'});
+          const level=best.score>=82?'ممتاز':best.score>=65?'جيد':best.score>=45?'حذر':'غير مناسب';
+          const card = document.createElement('div');
+          card.className='kayak-window';
+          card.innerHTML=`<b>⏰ ${t('أفضل نافذة للرحلة')}</b><strong>${fmt(best.start)} – ${fmt(best.end)}</strong><span>${t('متوسط ملاءمة النافذة')}: ${best.score}/100 · ${translateLevel(level)}</span>`;
+          if (!isCurrent()) return;
+          const assessmentEl = report.querySelector('.kayak-assessment');
+          if (assessmentEl) assessmentEl.insertAdjacentElement('beforebegin',card);
+          else report.appendChild(card);
+        } catch {
+          // Forecast enrichment is optional; the already rendered current report remains valid.
+        }
+      })();
+    } catch {
+      if (!isCurrent()) return;
+      report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب البيانات')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><p>${t('تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.')}</p><button id="retry-report">${getLang()==='fr' ? 'Réessayer' : 'إعادة المحاولة'}</button>`;
+      bindClose();
+      document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,label));
     }
-    catch{report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب البيانات')}</b><button id="close-report">×</button></div><p>${t('تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.')}</p><button id="retry-report">${getLang()==='fr' ? 'Réessayer' : 'إعادة المحاولة'}</button>`;document.querySelector('#close-report')?.addEventListener('click',closeReport);document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,label))}
   };
 
   const showTodaySea = async (lat:number, lng:number) => {
