@@ -654,13 +654,13 @@ export function createApp(root: HTMLElement) {
            '<span>'+t('فرق الرياح')+' <b>'+fmt(m.windSpread,' km/h')+'</b></span>' +
            '</div></article>';
        }).join('');
-       report.innerHTML=`<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div>
-         <p>📍 ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</p>
-         <div class="weekly-sea-list">${cards || `<p>${t('لا توجد بيانات أسبوعية متاحة')}</p>`}</div>
-         <section class="model-comparison">
-           <div class="model-comparison-title"><b>📊 ${t('مقارنة النماذج')}</b><small>${t('توافق النماذج')}</small></div>
-           <div class="model-comparison-list">${modelCards || `<p>${t('بيانات غير متاحة')}</p>`}</div>
-           <small>${t('الثقة هنا تقيس تقارب نماذج الرياح الثلاثة، وليست دقة مضمونة.')}</small>
-         </section>
-         <small>${t('المصدر:')} Open-Meteo · ECMWF · GFS · ICON</small>`;
+       report.innerHTML = '<div class="report-head"><b>'+t('حالة البحر 7 أيام')+'</b><button id="close-report">×</button></div>' +
+         '<p>📍 '+ltr(lat.toFixed(4)+', '+lng.toFixed(4))+'</p>' +
+         '<div class="weekly-sea-list">'+(cards || '<p>'+t('لا توجد بيانات أسبوعية متاحة')+'</p>')+'</div>' +
+         '<section class="model-comparison">' +
+           '<div class="model-comparison-title"><b>📊 '+t('مقارنة النماذج')+'</b><small>'+t('توافق النماذج')+'</small></div>' +
+           '<div class="model-comparison-list">'+(modelCards || '<p>'+t('بيانات غير متاحة')+'</p>')+'</div>' +
+           '<small>'+t('الثقة هنا تقيس تقارب نماذج الرياح الثلاثة، وليست دقة مضمونة.')+'</small>' +
+         '</section>' +
+         '<small>'+t('المصدر:')+' Open-Meteo · ECMWF · GFS · ICON</small>';
 Z
