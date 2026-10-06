@@ -575,25 +575,25 @@ export function createApp(root: HTMLElement) {
       const modelCards = modelDays.map((m:WeatherModelComparisonDay,i:number)=>{
         const label=dayLabel(m.date,i);
         const fmt=(v:number|null,unit:string)=>v==null?'--':v.toFixed(0)+unit;
-        return \`<article class="model-compare-card">
-          <div class="model-compare-head"><b>\${label}</b><strong>\${m.agreement==null?'--':m.agreement+'%'}</strong></div>
+        return `<article class="model-compare-card">
+          <div class="model-compare-head"><b>${label}</b><strong>${m.agreement==null?'--':m.agreement+'%'}</strong></div>
           <div class="model-compare-grid">
-            <span>ECMWF <b>\${fmt(m.ecmwf.windMax,' km/h')}</b></span>
-            <span>GFS <b>\${fmt(m.gfs.windMax,' km/h')}</b></span>
-            <span>ICON <b>\${fmt(m.icon.windMax,' km/h')}</b></span>
-            <span>\${t('فرق الرياح')} <b>\${fmt(m.windSpread,' km/h')}</b></span>
+            <span>ECMWF <b>${fmt(m.ecmwf.windMax,' km/h')}</b></span>
+            <span>GFS <b>${fmt(m.gfs.windMax,' km/h')}</b></span>
+            <span>ICON <b>${fmt(m.icon.windMax,' km/h')}</b></span>
+            <span>${t('فرق الرياح')} <b>${fmt(m.windSpread,' km/h')}</b></span>
           </div>
-        </article>\`;
+        </article>`;
       }).join('');
-      report.innerHTML=\`<div class="report-head"><b>\${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div>
-        <p>📍 \${ltr(\`\${lat.toFixed(4)}, \${lng.toFixed(4)}\`)}</p>
-        <div class="weekly-sea-list">\${cards || \`<p>\${t('لا توجد بيانات أسبوعية متاحة')}</p>\`}</div>
+      report.innerHTML=`<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div>
+        <p>📍 ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</p>
+        <div class="weekly-sea-list">${cards || `<p>${t('لا توجد بيانات أسبوعية متاحة')}</p>`}</div>
         <section class="model-comparison">
-          <div class="model-comparison-title"><b>📊 \${t('مقارنة النماذج')}</b><small>\${t('توافق النماذج')}</small></div>
-          <div class="model-comparison-list">\${modelCards || \`<p>\${t('بيانات غير متاحة')}</p>\`}</div>
-          <small>\${t('الثقة هنا تقيس تقارب نماذج الرياح الثلاثة، وليست دقة مضمونة.')}</small>
+          <div class="model-comparison-title"><b>📊 ${t('مقارنة النماذج')}</b><small>${t('توافق النماذج')}</small></div>
+          <div class="model-comparison-list">${modelCards || `<p>${t('بيانات غير متاحة')}</p>`}</div>
+          <small>${t('الثقة هنا تقيس تقارب نماذج الرياح الثلاثة، وليست دقة مضمونة.')}</small>
         </section>
-        <small>\${t('المصدر:')} Open-Meteo · ECMWF · GFS · ICON</small>\`;
+        <small>${t('المصدر:')} Open-Meteo · ECMWF · GFS · ICON</small>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     } catch {
       report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب توقعات الأسبوع')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
