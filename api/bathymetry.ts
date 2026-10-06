@@ -1,11 +1,13 @@
 const EMODNET_URL = 'https://rest.emodnet-bathymetry.eu/depth_sample';
 const GEBCO_URL = 'https://di-elevation.img.arcgis.com/arcgis/rest/services/gebco/ImageServer/identify';
 const OSM_OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const SUBSTRATE_URL = 'https://gtkdata.gtk.fi/arcgis/rest/services/EMODnet/EMODnet_3_Geology/MapServer/2/query';
 
 type DepthResult = {
   depthMeters: number;
   source: 'EMODnet Bathymetry DTM 2024' | 'GEBCO' | 'OpenStreetMap coastline';
   nearShore?: boolean;
+  substrate?: { code:number; label:string; confidence:number|null } | null;
 };
 
 function finiteDepth(value: unknown): number | null {
@@ -78,6 +80,32 @@ async function queryGebco(lat: number, lng: number, signal: AbortSignal): Promis
   return parseGebco(data);
 }
 
+
+async function querySubstrate(lat: number, lng: number, signal: AbortSignal): Promise<{code:number;label:string;confidence:number|null}|null> {
+  const params = new URLSearchParams({
+    f: 'json',
+    where: '1=1',
+    geometry: JSON.stringify({x:lng,y:lat,spatialReference:{wkid:4326}}),
+    geometryType: 'esriGeometryPoint',
+    inSR: '4326',
+    spatialRel: 'esriSpatialRelIntersects',
+    outFields: 'Folk_5cl,Name,Conf_TOT',
+    returnGeometry: 'false',
+    outSR: '4326'
+  });
+  const data = await fetchJson(`${SUBSTRATE_URL}?${params.toString()}`, signal);
+  const a = Array.isArray(data?.features) ? data.features[0] : null;
+  const p = a?.attributes;
+  if (!p) return null;
+  const code = Number(p.Folk_5cl);
+  if (!Number.isFinite(code)) return null;
+  const labels: Record<number,string> = {
+    1:'Mud to muddy Sand',2:'Sand',3:'Coarse substrate',4:'Mixed sediment',5:'Rock & boulders',
+    6:'No data at this level of Folk',9:'Restricted data'
+  };
+  return {code,label:labels[code] || String(p.Name || 'Unknown substrate'),confidence:Number.isFinite(Number(p.Conf_TOT))?Number(p.Conf_TOT):null};
+}
+
 function metersPerDegreeLat() { return 111320; }
 function metersPerDegreeLng(lat: number) { return 111320 * Math.cos(lat * Math.PI / 180); }
 
@@ -139,6 +167,9 @@ export default async function handler(req: any, res: any) {
   const timer = setTimeout(() => controller.abort(), 12000);
 
   try {
+    let substrate: {code:number;label:string;confidence:number|null}|null = null;
+    try { substrate = await querySubstrate(lat,lng,controller.signal); } catch { substrate = null; }
+
     try {
       const result = await queryEmodnet(lat, lng, controller.signal);
       if (result !== null) {
@@ -152,7 +183,8 @@ export default async function handler(req: any, res: any) {
               return res.status(200).json({
                 depthMeters: 0,
                 source: 'OpenStreetMap coastline',
-                nearShore: true
+                nearShore: true,
+                substrate
               });
             }
           } catch {
@@ -164,7 +196,8 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({
           depthMeters: Number(result.depth.toFixed(1)),
           source: 'EMODnet Bathymetry DTM 2024',
-          nearShore: false
+          nearShore: false,
+          substrate
         });
       }
     } catch {
@@ -178,7 +211,8 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({
           depthMeters: Number(depth.toFixed(1)),
           source: 'GEBCO',
-          nearShore: false
+          nearShore: false,
+          substrate
         });
       }
     } catch {
