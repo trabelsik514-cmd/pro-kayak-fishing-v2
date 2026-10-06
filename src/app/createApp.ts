@@ -196,6 +196,7 @@ export function createApp(root: HTMLElement) {
           <button id="weekly-sea" class="map-action map-action-weekly-sea" type="button" aria-label="${t('حالة البحر 7 أيام')}">📅 <span>7 ${getLang()==='fr'?'jours':'أيام'}</span></button>
           <button id="measure-toggle" class="map-action map-action-measure" type="button" aria-label="${t('قياس المسافة')}">📏 <span>${t('قياس')}</span></button>
           <button id="trip-toggle" class="map-action map-action-trip" type="button" aria-label="${t('رحلاتي')}">🛶 <span>${t('رحلاتي')}</span></button>
+          <button id="kayak-intelligence-toggle" class="map-action map-action-intelligence" type="button" aria-label="Kayak Intelligence">🧠 <span>Intelligence</span></button>
         </div>
       </div>
     </nav>
@@ -227,6 +228,74 @@ export function createApp(root: HTMLElement) {
 
 
   const { map, geolocate } = createMap('map'); const marine = new MarineService(); const geocoder = new GeocodingService();
+
+  const openKayakIntelligence = async (initialLabel:string|null = null, initialLat:number|null = null, initialLng:number|null = null) => {
+    closeReport();
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
+    let panel = document.querySelector<HTMLElement>('#kayak-intelligence');
+    if (!panel) {
+      panel = document.createElement('aside');
+      panel.id = 'kayak-intelligence';
+      panel.className = 'kayak-intelligence';
+      shell.appendChild(panel);
+    }
+    panel.classList.remove('hidden');
+    panel.innerHTML = `
+      <div class="ki-head"><div><b>🧠 Kayak Intelligence</b><small>قرار رحلة الكياك</small></div><button id="ki-close" aria-label="${t('إغلاق')}">×</button></div>
+      <div class="ki-location"><span>📍</span><input id="ki-place" value="${escapeHtml(initialLabel ?? '')}" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}"/></div>
+      <div class="ki-status">${t('اختر موقعًا لحساب ظروف رحلة الكياك.')}</div>
+    `;
+    panel.querySelector('#ki-close')?.addEventListener('click',()=>panel?.classList.add('hidden'));
+    const run = async (lat:number,lng:number,label:string|null) => {
+      const status = panel?.querySelector<HTMLElement>('.ki-status');
+      if (!status) return;
+      status.innerHTML = `<div class="ki-loading">${t('جاري جلب آخر البيانات…')}</div>`;
+      try {
+        const data = await marine.getPointConditions(lat,lng);
+        const assessment = assessKayakConditions({
+          windSpeed:data.weather.windSpeed, windGusts:data.weather.windGusts, windDirection:data.weather.windDirection,
+          waveHeight:data.sea.waveHeight, waveDirection:data.sea.waveDirection, wavePeriod:data.sea.wavePeriod,
+          swellHeight:data.sea.swellHeight, swellDirection:data.sea.swellDirection, swellPeriod:data.sea.swellPeriod,
+          currentVelocity:data.sea.currentVelocity
+        });
+        const hourly = await marine.getHourlyKayakForecast(lat,lng);
+        const best = bestKayakWindow(hourly,3);
+        const reasons = assessment.reasons.map(reason=>`<li>${escapeHtml(translateReason(reason))}</li>`).join('');
+        const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'});
+        status.innerHTML = `
+          <div class="ki-place">📍 <b>${escapeHtml(label ?? t('موقع بحري محدد'))}</b><small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small></div>
+          <div class="ki-score ${assessment.level}"><span>${assessment.score}</span><small>/100</small><b>${translateLevel(assessment.level)}</b></div>
+          <div class="ki-grid">
+            <span>🌊 <b>${value(data.sea.waveHeight,' m')}</b><small>${t('ارتفاع الموج الآن')}</small></span>
+            <span>📈 <b>${value(data.sea.maxWaveHeightToday,' m')}</b><small>${t('أقصى ارتفاع للموج اليوم')}</small></span>
+            <span>〰️ <b>${value(data.sea.swellHeight,' m')}</b><small>${t('Swell')}</small></span>
+            <span>⏱️ <b>${value(data.sea.wavePeriod,' s')}</b><small>${t('فترة الموج')}</small></span>
+            <span>💨 <b>${value(data.weather.windSpeed,' km/h')}</b><small>${t('الرياح')}</small></span>
+            <span>💨 <b>${value(data.weather.windGusts,' km/h')}</b><small>${t('الهبات')}</small></span>
+          </div>
+          ${best ? `<div class="ki-window"><b>⭐ ${t('أفضل نافذة للرحلة')}</b><strong>${fmt(best.start)} – ${fmt(best.end)}</strong><span>${t('متوسط ملاءمة النافذة')}: ${best.score}/100</span></div>` : ''}
+          <div class="ki-reasons"><b>🔎 التفسير</b><ul>${reasons}</ul></div>
+          <small class="ki-disclaimer">${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small>
+        `;
+      } catch {
+        status.innerHTML = `<div class="ki-error">${t('تعذر جلب البيانات')}<button id="ki-retry">إعادة المحاولة</button></div>`;
+        panel?.querySelector('#ki-retry')?.addEventListener('click',()=>run(lat,lng,label));
+      }
+    };
+    const input=panel.querySelector<HTMLInputElement>('#ki-place')!;
+    input.addEventListener('change',async()=>{
+      const q=input.value.trim(); if(!q)return;
+      try {
+        const results=await geocoder.search(q);
+        const hit=results[0];
+        if(hit) await run(hit.lat,hit.lon,hit.name);
+        else input.setCustomValidity(t('لم يتم العثور على موقع تونسي مطابق.'));
+      } catch { input.setCustomValidity(t('تعذر الاتصال بخدمة البحث. حاول مرة أخرى.')); }
+    });
+    if(initialLat!=null && initialLng!=null) await run(initialLat,initialLng,initialLabel);
+  };
   let marker: maplibregl.Marker | null = null; const report = document.querySelector<HTMLElement>('#report')!;
   let selectedLocation: {lat:number; lng:number; label:string|null} | null = null;
   let pointRequestId = 0;
@@ -249,6 +318,8 @@ export function createApp(root: HTMLElement) {
   const setReportOpen = (open:boolean) => shell.classList.toggle('report-open', open);
   const closeReport = () => { report.classList.add('hidden'); setReportOpen(false); };
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
+  document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => openKayakIntelligence(selectedLocation?.label ?? null, selectedLocation?.lat ?? null, selectedLocation?.lng ?? null));
+
   document.querySelector('#trip-toggle')?.addEventListener('click', () => {
     const opening = tripPanel.classList.contains('hidden');
     tripPanel.classList.toggle('hidden');
