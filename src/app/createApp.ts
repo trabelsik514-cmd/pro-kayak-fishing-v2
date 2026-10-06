@@ -584,7 +584,7 @@ export function createApp(root: HTMLElement) {
           '<span>'+t('فرق الرياح')+' <b>'+fmt(m.windSpread,' km/h')+'</b></span>' +
           '<span>'+t('متوسط التيار')+' <b>'+fmt(current?.currentAvg ?? null,' km/h')+'</b></span>' +
           '<span>'+t('أقصى تيار')+' <b>'+fmt(current?.currentMax ?? null,' km/h')+'</b></span>' +
-          '<span>'+t('اتجاه التيار')+' <b>'+fmt(current?.currentDirection ?? null,'°')+'</b></span>' +
+          '<span>'+t('اتجاه التيار')+' <b>'+directionValue(current?.currentDirection ?? null,current?.currentVelocity ?? null)+'</b></span>' +
           '</div></article>';
       }).join('');
       report.innerHTML = '<div class="report-head"><b>'+t('حالة البحر 7 أيام')+'</b><button id="close-report">×</button></div>' +
