@@ -511,3 +511,150 @@
   .route-view-stats b{font-size:13px}
 }
 @media(max-width:390px){.route-view{bottom:60px}.route-view-stats{gap:5px}}
+
+/* PKF REPORT FIX — mobile-safe report, language consistency, and action stacking */
+.report{
+  z-index:20;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+.report:not(.hidden){
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.report-head{
+  position:sticky;
+  top:0;
+  z-index:2;
+  flex:0 0 auto;
+  padding-bottom:8px;
+  background:rgba(5,17,28,.96);
+  backdrop-filter:blur(12px);
+}
+.depth-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+}
+.depth-card small{
+  grid-column:1/-1;
+  min-width:0;
+  overflow-wrap:anywhere;
+  margin-top:3px;
+}
+.kayak-window{
+  margin-top:12px;
+  padding:12px 13px;
+  border:1px solid rgba(96,165,250,.24);
+  border-radius:13px;
+  background:rgba(30,64,175,.14);
+  display:grid;
+  gap:5px;
+}
+.kayak-window-title{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:14px;
+}
+.kayak-window>strong{
+  font-size:20px;
+  line-height:1.25;
+}
+.kayak-window>span{
+  font-size:12px;
+  opacity:.78;
+  line-height:1.45;
+}
+.kayak-assessment{
+  margin-top:12px;
+  padding:13px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:13px;
+  background:rgba(255,255,255,.045);
+}
+.kayak-assessment-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  line-height:1.35;
+}
+.kayak-assessment-head b{min-width:0}
+.kayak-assessment-head strong{flex:0 0 auto}
+.kayak-score{
+  display:flex;
+  align-items:baseline;
+  gap:3px;
+  margin-top:5px;
+}
+.kayak-score span{
+  font-size:34px;
+  font-weight:800;
+  line-height:1;
+}
+.kayak-score small{opacity:.65}
+.kayak-assessment p{
+  line-height:1.55;
+  margin:9px 0;
+}
+.kayak-assessment ul{
+  margin:7px 0;
+  padding-inline-start:20px;
+}
+.kayak-assessment li{
+  margin:5px 0;
+  line-height:1.45;
+}
+.kayak-assessment>small{
+  display:block;
+  opacity:.62;
+  font-size:11px;
+  line-height:1.5;
+}
+.report hr{
+  width:100%;
+  border:0;
+  border-top:1px solid rgba(255,255,255,.12);
+  margin:12px 0;
+}
+.report-open .map-actions{z-index:19}
+
+@media(max-width:700px){
+  .report{
+    z-index:20;
+    right:10px;
+    left:10px;
+    bottom:10px;
+    width:auto;
+    max-height:min(74vh,680px);
+    padding:13px;
+  }
+  .report-head{min-height:40px}
+  .report-grid{grid-template-columns:1fr 1fr}
+  .report-grid span{
+    min-width:0;
+    overflow:hidden;
+    overflow-wrap:anywhere;
+  }
+  .report-grid b{overflow-wrap:anywhere}
+  .depth-card{min-height:0}
+  .kayak-assessment-head{align-items:flex-start}
+  .report-open .map-actions{
+    z-index:19;
+    top:118px;
+  }
+}
+@media(max-width:390px){
+  .report{max-height:72vh}
+  .report-grid{gap:6px}
+  .report-grid span{
+    min-height:58px;
+    padding:8px;
+    font-size:13px;
+  }
+  .report-grid b{font-size:15px}
+  .kayak-window>strong{font-size:18px}
+  .kayak-assessment{padding:11px}
+}
