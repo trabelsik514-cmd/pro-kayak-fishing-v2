@@ -1177,3 +1177,94 @@
   .ki-decision b{font-size:18px}
   .ki-grid b{font-size:16px}
 }
+
+
+/* KAYAK INTELLIGENCE — decision-first marine UX */
+.kayak-intelligence{display:none!important;position:fixed!important;inset:0!important;z-index:10050!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;background:#07131d!important;color:#f7fbff!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important}
+.kayak-intelligence.ki-open{display:block!important}
+.ki-page{height:100%;display:flex;flex-direction:column;background:radial-gradient(circle at 50% -20%,rgba(24,91,125,.32),transparent 45%),#07131d}
+.ki-topbar{height:72px;flex:0 0 72px;display:flex;align-items:center;gap:14px;padding:0 max(18px,calc((100vw - 920px)/2));border-bottom:1px solid rgba(255,255,255,.09);background:rgba(5,15,23,.94);backdrop-filter:blur(16px)}
+.ki-icon-btn{width:42px;height:42px;flex:0 0 42px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.055);color:#fff;font-size:25px;line-height:1;cursor:pointer}
+.ki-title{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+.ki-eyebrow{font-size:11px;letter-spacing:.12em;opacity:.58;font-weight:700}
+.ki-title strong{font-size:19px;margin-top:3px}
+.ki-live-dot{margin-inline-start:auto;width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 5px rgba(34,197,94,.10)}
+.ki-body{width:min(920px,100%);margin:0 auto;padding:18px max(18px,calc((100vw - 920px)/2)) 36px;overflow:auto;overscroll-behavior:contain}
+.ki-searchbar{display:flex;align-items:center;gap:8px;padding:6px 7px 6px 12px;margin-bottom:14px;border:1px solid rgba(255,255,255,.11);border-radius:14px;background:rgba(255,255,255,.045)}
+.ki-searchbar>span{font-size:18px}
+.ki-searchbar input{min-width:0;flex:1;height:38px;border:0;outline:0;background:transparent;color:#fff;font:inherit}
+.ki-searchbar input::placeholder{color:rgba(255,255,255,.42)}
+.ki-searchbar input.ki-invalid{color:#fb7185}
+.ki-searchbar button{height:38px;padding:0 15px;border:0;border-radius:10px;background:#e11d48;color:#fff;font:700 13px inherit;cursor:pointer}
+.ki-status{display:grid;gap:12px}
+.ki-hero{padding:16px;border:1px solid rgba(255,255,255,.10);border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.065),rgba(255,255,255,.025));box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.ki-hero.good{border-color:rgba(34,197,94,.25)}
+.ki-hero.ok{border-color:rgba(59,130,246,.28)}
+.ki-hero.warn{border-color:rgba(245,158,11,.28)}
+.ki-hero.bad{border-color:rgba(239,68,68,.30)}
+.ki-location-main{display:flex;gap:10px;align-items:center}
+.ki-pin{font-size:21px}
+.ki-location-main b{display:block;font-size:17px}
+.ki-location-main small{display:block;margin-top:3px;opacity:.52;direction:ltr;text-align:start;font-size:11px}
+.ki-verdict{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:16px}
+.ki-verdict-copy{display:flex;flex-direction:column;min-width:0}
+.ki-verdict-copy small{font-size:11px;opacity:.55}
+.ki-verdict-copy strong{font-size:29px;line-height:1.1;margin-top:4px}
+.ki-verdict-copy span{max-width:600px;margin-top:8px;font-size:12px;line-height:1.65;opacity:.74}
+.ki-score-ring{width:104px;height:104px;flex:0 0 104px;display:grid;place-items:center;border-radius:50%;background:conic-gradient(#22c55e calc(var(--ki-score)*1%),rgba(255,255,255,.09) 0);position:relative}
+.ki-score-ring:before{content:"";position:absolute;inset:7px;border-radius:50%;background:#0b1a26}
+.ki-score-ring>div{position:relative;display:flex;align-items:baseline;direction:ltr}
+.ki-score-ring strong{font-size:30px;line-height:1}
+.ki-score-ring small{font-size:10px;opacity:.55;margin-inline-start:2px}
+.ki-section,.ki-window-card,.ki-analysis,.ki-data-status{padding:15px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.035)}
+.ki-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}
+.ki-section-head>div{display:flex;align-items:center;gap:7px}
+.ki-section-head b{font-size:14px}
+.ki-section-head small{font-size:11px;opacity:.55}
+.ki-window-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ki-window-main strong{font-size:24px;direction:ltr}
+.ki-window-main span{font-size:11px;opacity:.65;text-align:end}
+.ki-window-main span b{display:block;font-size:14px;color:#fff;margin-top:3px}
+.ki-muted{font-size:12px;opacity:.55}
+.ki-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ki-metric{min-width:0;padding:11px;border-radius:11px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06)}
+.ki-metric.primary{background:rgba(14,116,144,.13);border-color:rgba(34,211,238,.13)}
+.ki-metric small{display:block;font-size:10px;opacity:.58;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ki-metric b{display:block;margin-top:5px;font-size:19px;direction:ltr;text-align:start}
+.ki-metric span{display:block;margin-top:2px;font-size:10px;opacity:.45}
+.ki-analysis ul{margin:8px 0 0;padding-inline-start:21px}
+.ki-analysis li{margin:6px 0;font-size:12px;line-height:1.5}
+.ki-data-status{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ki-data-status>div{display:flex;align-items:center;gap:7px;font-size:12px}
+.ki-data-status>div span{font-size:9px;color:#22c55e}
+.ki-data-status small{font-size:10px;opacity:.48;direction:ltr}
+.ki-disclaimer{padding:2px 3px 14px;font-size:10px;line-height:1.55;color:rgba(255,255,255,.43)}
+.ki-loading{min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;padding:30px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.025)}
+.ki-loading b{font-size:15px}
+.ki-loading small{font-size:11px;opacity:.48}
+.ki-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.14);border-top-color:#38bdf8;border-radius:50%;animation:ki-spin .8s linear infinite}
+@keyframes ki-spin{to{transform:rotate(360deg)}}
+
+@media(max-width:700px){
+  .ki-topbar{height:64px;flex-basis:64px;padding:0 12px}
+  .ki-title strong{font-size:17px}
+  .ki-body{padding:12px 10px 28px}
+  .ki-searchbar{margin-bottom:10px}
+  .ki-hero{padding:14px}
+  .ki-verdict{gap:10px}
+  .ki-verdict-copy strong{font-size:25px}
+  .ki-score-ring{width:88px;height:88px;flex-basis:88px}
+  .ki-score-ring strong{font-size:26px}
+  .ki-section,.ki-window-card,.ki-analysis,.ki-data-status{padding:12px;border-radius:14px}
+  .ki-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ki-metric{padding:10px}
+  .ki-window-main{align-items:flex-start;flex-direction:column}
+  .ki-window-main span{text-align:start}
+}
+@media(max-width:380px){
+  .ki-eyebrow{font-size:9px}
+  .ki-title strong{font-size:16px}
+  .ki-score-ring{width:80px;height:80px;flex-basis:80px}
+  .ki-score-ring strong{font-size:24px}
+  .ki-verdict-copy span{font-size:11px}
+}
