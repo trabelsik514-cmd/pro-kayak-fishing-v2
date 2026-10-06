@@ -4,6 +4,7 @@ export type BathymetryResult = {
   depthMeters: number;
   source: 'EMODnet Bathymetry DTM 2024' | 'GEBCO' | 'OpenStreetMap coastline';
   nearShore?: boolean;
+  substrate?: { code:number; label:string; confidence:number|null } | null;
 };
 
 // Vite/StackBlitz preview does not provide Vercel serverless functions.
@@ -16,6 +17,7 @@ type BathymetryApiResponse = {
   depthMeters?: number | null;
   source?: 'EMODnet Bathymetry DTM 2024' | 'GEBCO' | 'OpenStreetMap coastline' | null;
   nearShore?: boolean;
+  substrate?: { code:number; label:string; confidence:number|null } | null;
 };
 
 export async function getBathymetryDepth(
@@ -49,7 +51,7 @@ export async function getBathymetryDepth(
       data.source !== 'OpenStreetMap coastline'
     ) return null;
 
-    return { depthMeters: depth, source: data.source, nearShore: Boolean(data.nearShore) };
+    return { depthMeters: depth, source: data.source, nearShore: Boolean(data.nearShore), substrate: data.substrate ?? null };
   } finally {
     clearTimeout(timer);
   }
