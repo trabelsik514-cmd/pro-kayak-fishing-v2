@@ -148,7 +148,13 @@ const FR: Record<string,string> = {
   'الظروف الحالية غير ملائمة للكياك وفق البيانات المتاحة. يفضّل تأجيل الرحلة وإعادة التحقق لاحقاً.':'Les conditions actuelles sont défavorables au kayak selon les données disponibles. Il est préférable de reporter la sortie et de vérifier plus tard.'
 };
 
-const t = (ar: string) => getLang() === 'fr' ? (FR[ar] ?? ar) : ar;
+const FR_KI: Record<string,string> = {
+  'ارتفاع الـSwell':'Hauteur du swell',
+  'فترة الـSwell':'Période du swell',
+  'التفسير':'Analyse',
+  'القرار':'Décision',
+};
+const t = (ar: string) => getLang() === 'fr' ? (FR_KI[ar] ?? FR[ar] ?? ar) : ar;
 const translateReason = (reason: string) => {
   if (getLang() !== 'fr') return reason;
   if (reason.startsWith('بيانات غير مكتملة:')) {
