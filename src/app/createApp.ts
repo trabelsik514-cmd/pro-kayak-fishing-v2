@@ -252,11 +252,7 @@ export function createApp(root: HTMLElement) {
   const setReportOpen = (open:boolean) => shell.classList.toggle('report-open', open);
   const closeReport = () => { report.classList.add('hidden'); setReportOpen(false); };
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
-  document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => {
-    const center = map.getCenter();
-    const target = selectedLocation ?? {lat:center.lat, lng:center.lng, label:null};
-    void openKayakIntelligence(target.label ?? null, target.lat, target.lng);
-  });
+
 
   document.querySelector('#trip-toggle')?.addEventListener('click', () => {
     const opening = tripPanel.classList.contains('hidden');
@@ -279,6 +275,7 @@ export function createApp(root: HTMLElement) {
       panel.className = 'kayak-intelligence';
       shell.appendChild(panel);
     }
+    panel.style.cssText = 'position:fixed;z-index:9999;inset:72px 12px 12px auto;width:min(430px,calc(100vw - 24px));max-height:calc(100vh - 84px);overflow:auto;background:rgba(10,18,28,.97);color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.45);display:block;';
     panel.classList.remove('hidden');
     panel.innerHTML = `
       <div class="ki-head"><div><b>🧠 Kayak Intelligence</b><small>قرار رحلة الكياك</small></div><button id="ki-close" aria-label="${t('إغلاق')}">×</button></div>
@@ -344,6 +341,12 @@ export function createApp(root: HTMLElement) {
     if(initialLat!=null && initialLng!=null) await run(initialLat,initialLng,initialLabel);
   };
 
+
+  document.querySelector('#kayak-intelligence-toggle')?.addEventListener('click', () => {
+    const center = map.getCenter();
+    const target = selectedLocation ?? {lat:center.lat, lng:center.lng, label:null};
+    void openKayakIntelligence(target.label ?? null, target.lat, target.lng);
+  });
   const measureDistanceKm = (a:[number,number], b:[number,number]) => {
     const R=6371, p1=a[1]*Math.PI/180, p2=b[1]*Math.PI/180;
     const dp=(b[1]-a[1])*Math.PI/180, dl=(b[0]-a[0])*Math.PI/180;
