@@ -821,6 +821,9 @@ export function createApp(root: HTMLElement) {
           );
           const depth = bathy?.depthMeters;
           const seaTemp = data.sea.seaTemperature;
+          const substrateCode = bathy?.substrate?.code ?? null;
+          const substrateLabel = bathy?.substrate?.label ?? null;
+          const substrateName = substrateCode===1?'mud':substrateCode===2?'sandy':substrateCode===3?'coarse':substrateCode===4?'mixed':substrateCode===5?'rocky':null;
           const month = new Date().getMonth()+1;
           const species = [
             {ar:'الدنيس / Daurade',fr:'Daurade',min:2,max:50,tmin:14,tmax:28,bottom:['sandy','rocky','seagrass'],season:[3,4,5,6,7,8,9,10,11]},
@@ -837,7 +840,8 @@ export function createApp(root: HTMLElement) {
             const seasonScore = s.season?.includes(month) ? 20 : 8;
             const current = Number(data.sea.currentVelocity);
             const currentScore = Number.isFinite(current) ? (current>=0.2&&current<=1.2 ? 10 : current<0.2 ? 5 : 3) : 5;
-            return Math.round(Math.min(100,depthScore+tempScore+seasonScore+currentScore));
+            const substrateScore = substrateName && s.bottom?.includes(substrateName) ? 20 : (substrateName ? 6 : 10);
+            return Math.round(Math.min(100,depthScore+tempScore+seasonScore+currentScore+substrateScore));
           };
           const ranked = species.map(s=>({...s,score:compatibility(s)})).sort((a,b)=>b.score-a.score).slice(0,4);
           const card = document.createElement('div');
@@ -845,7 +849,15 @@ export function createApp(root: HTMLElement) {
           card.innerHTML = `<div class="species-compat-head"><b>🐟 ${getLang()==='fr'?'Espèces potentielles':'الأنواع المحتملة'}</b><small>${getLang()==='fr'?'Compatibilité environnementale':'ملاءمة بيئية'}</small></div><div class="species-compat-list">${ranked.map(s=>`<div><span>🐟 ${escapeHtml(getLang()==='fr'?s.fr:s.ar)}</span><strong>${s.score}/100</strong></div>`).join('')}</div><small>${getLang()==='fr'?'Basé sur profondeur, température, saison et courant disponibles. Ce score indique une compatibilité environnementale, pas la présence garantie du poisson.':'اعتمادًا على العمق وحرارة البحر والموسم وحركة التيار المتاحة. الدرجة تعبر عن الملاءمة البيئية وليست تأكيدًا لوجود السمك.'}</small>`;
           if (!isCurrent()) return;
           const depthCardEl = report.querySelector('.depth-card');
-          if (depthCardEl) depthCardEl.insertAdjacentElement('afterend',card);
+          if (depthCardEl) {
+            if (substrateLabel) {
+              const sub = document.createElement('div');
+              sub.className='substrate-card';
+              sub.innerHTML=`🪨 <b>${getLang()==='fr'?'Fond marin':'نوع القاع'}</b><span>${escapeHtml(getLang()==='fr' ? ({'Mud to muddy Sand':'Vase / sable vaseux','Sand':'Sable','Coarse substrate':'Sédiment grossier','Mixed sediment':'Sédiment mixte','Rock & boulders':'Roche et blocs'} as Record<string,string>)[substrateLabel] || substrateLabel : ({'Mud to muddy Sand':'طين / رمل طيني','Sand':'رمل','Coarse substrate':'رواسب خشنة','Mixed sediment':'رواسب مختلطة','Rock & boulders':'صخور وكتل'} as Record<string,string>)[substrateLabel] || substrateLabel)}</span>`;
+              depthCardEl.insertAdjacentElement('afterend',sub);
+            }
+            depthCardEl.insertAdjacentElement('afterend',card);
+          }
         } catch {
           // Species enrichment is optional and never blocks the sea report.
         }
