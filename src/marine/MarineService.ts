@@ -80,6 +80,9 @@ export type WeeklySeaSummary = {
   windMin: number|null;
   windMax: number|null;
   gustMax: number|null;
+  currentAvg: number|null;
+  currentMax: number|null;
+  currentDirection: number|null;
 };
 
 export type WeatherModelComparisonDay = {
@@ -205,6 +208,15 @@ export class MarineService {
       const [waveMin,hourlyWaveMax]=range(seaHourly.wave_height,sd);
       const [windMin,windMax]=range(weatherHourly.wind_speed_10m,wd);
       const [,gustMax]=range(weatherHourly.wind_gusts_10m,wd);
+      const currentValues=nums(seaHourly.ocean_current_velocity,sd);
+      const currentDirections=nums(seaHourly.ocean_current_direction,sd);
+      const currentAvg=currentValues.length ? currentValues.reduce((a,b)=>a+b,0)/currentValues.length : null;
+      const currentMax=currentValues.length ? Math.max(...currentValues) : null;
+      const directionVector=currentDirections.reduce((acc,deg)=>{
+        const rad=deg*Math.PI/180;
+        acc.x+=Math.sin(rad); acc.y+=Math.cos(rad); return acc;
+      },{x:0,y:0});
+      const currentDirection=currentDirections.length ? (Math.atan2(directionVector.x,directionVector.y)*180/Math.PI+360)%360 : null;
       const dailyWaveMax=numberAt(daily.wave_height_max,i);
       const dailyDirection=numberAt(daily.wave_direction_dominant,i);
       const dailyPeriod=numberAt(daily.wave_period_max,i);
@@ -219,7 +231,10 @@ export class MarineService {
         swellMax: dailySwell ?? (()=>{const [,max]=range(seaHourly.swell_wave_height,sd);return max;})(),
         windMin,
         windMax,
-        gustMax
+        gustMax,
+        currentAvg,
+        currentMax,
+        currentDirection
       };
     });
   }
