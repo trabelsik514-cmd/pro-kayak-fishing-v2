@@ -1,5 +1,5 @@
 import maplibregl from 'maplibre-gl';
-import { MarineService, type HourlyKayakPoint, type WeeklySeaSummary } from '../marine/MarineService';
+import { MarineService, type HourlyKayakPoint, type WeeklySeaSummary, type WeatherModelComparisonDay } from '../marine/MarineService';
 import { GeocodingService, reverseCoastalName } from '../location/GeocodingService';
 import { createMap } from '../map/createMap';
 import { assessKayakConditions } from '../kayak/KayakAssessment';
@@ -30,6 +30,16 @@ const FR: Record<string,string> = {
   'العربية':'Français',
   'حالة البحر اليوم':"État de la mer aujourd'hui",
   'حالة البحر 7 أيام':'État de la mer — 7 jours',
+  'مقارنة النماذج':'Comparaison des modèles',
+  'توافق النماذج':'Accord des modèles',
+  'فرق الرياح':'Écart du vent',
+  'فرق الهبات':'Écart des rafales',
+  'ثقة التوقع':'Confiance de la prévision',
+  'ECMWF':'ECMWF',
+  'GFS':'GFS',
+  'ICON':'ICON',
+  'بيانات غير متاحة':'Données indisponibles',
+
   'الأسبوع القادم':'7 prochains jours',
   'جاري حساب توقعات الأسبوع…':'Calcul des prévisions sur 7 jours…',
   'تعذر جلب توقعات الأسبوع':"Impossible de récupérer les prévisions sur 7 jours",
@@ -535,7 +545,7 @@ export function createApp(root: HTMLElement) {
     report.innerHTML = `<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div><p>${t('جاري حساب توقعات الأسبوع…')}</p>`;
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
-      const days = await marine.getWeeklySeaSummary(lat,lng);
+      const [days, modelDays] = await Promise.all([marine.getWeeklySeaSummary(lat,lng), marine.getWeatherModelComparison(lat,lng)]);
       const dayLabel=(date:string,index:number)=>{
         if(index===0) return t('اليوم');
         if(index===1) return t('غداً');
@@ -562,10 +572,28 @@ export function createApp(root: HTMLElement) {
           </div>
         </article>`;
       }).join('');
-      report.innerHTML=`<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div>
-        <p>📍 ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</p>
-        <div class="weekly-sea-list">${cards || `<p>${t('لا توجد بيانات أسبوعية متاحة')}</p>`}</div>
-        <small>${t('المصدر:')} Open-Meteo · ${t('الأسبوع القادم')}</small>`;
+      const modelCards = modelDays.map((m:WeatherModelComparisonDay,i:number)=>{
+        const label=dayLabel(m.date,i);
+        const fmt=(v:number|null,unit:string)=>v==null?'--':v.toFixed(0)+unit;
+        return \`<article class="model-compare-card">
+          <div class="model-compare-head"><b>\${label}</b><strong>\${m.agreement==null?'--':m.agreement+'%'}</strong></div>
+          <div class="model-compare-grid">
+            <span>ECMWF <b>\${fmt(m.ecmwf.windMax,' km/h')}</b></span>
+            <span>GFS <b>\${fmt(m.gfs.windMax,' km/h')}</b></span>
+            <span>ICON <b>\${fmt(m.icon.windMax,' km/h')}</b></span>
+            <span>\${t('فرق الرياح')} <b>\${fmt(m.windSpread,' km/h')}</b></span>
+          </div>
+        </article>\`;
+      }).join('');
+      report.innerHTML=\`<div class="report-head"><b>\${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div>
+        <p>📍 \${ltr(\`\${lat.toFixed(4)}, \${lng.toFixed(4)}\`)}</p>
+        <div class="weekly-sea-list">\${cards || \`<p>\${t('لا توجد بيانات أسبوعية متاحة')}</p>\`}</div>
+        <section class="model-comparison">
+          <div class="model-comparison-title"><b>📊 \${t('مقارنة النماذج')}</b><small>\${t('توافق النماذج')}</small></div>
+          <div class="model-comparison-list">\${modelCards || \`<p>\${t('بيانات غير متاحة')}</p>\`}</div>
+          <small>\${t('الثقة هنا تقيس تقارب نماذج الرياح الثلاثة، وليست دقة مضمونة.')}</small>
+        </section>
+        <small>\${t('المصدر:')} Open-Meteo · ECMWF · GFS · ICON</small>\`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     } catch {
       report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب توقعات الأسبوع')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
