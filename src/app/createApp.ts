@@ -131,7 +131,7 @@ const translateReason = (reason: string) => {
 const translateLevel = (level: string) => t(level);
 const locale = () => getLang() === 'fr' ? 'fr-TN' : 'ar-TN';
 
-function bestKayakWindow(points:HourlyKayakPoint[], hours=3){ const rows=points.map(p=>({p,a:assessKayakConditions({windSpeed:p.windSpeed,windGusts:p.windGusts,waveHeight:p.waveHeight,wavePeriod:p.wavePeriod,swellHeight:p.swellHeight,currentVelocity:p.currentVelocity})})); let best:any=null; for(let i=0;i<=rows.length-hours;i++){const w=rows.slice(i,i+hours); const score=Math.round(w.reduce((n,x)=>n+x.a.score,0)/w.length); const blocked=w.some(x=>x.a.level==='غير مناسب'); const effective=blocked?Math.max(0,score-20):score; if(!best||effective>best.score)best={score:effective,start:w[0].p.time,end:w[w.length-1].p.time,complete:w.every(x=>x.a.dataComplete)};} return best;}
+function bestKayakWindow(points:HourlyKayakPoint[], hours=3){ const rows=points.map(p=>({p,a:assessKayakConditions({windSpeed:p.windSpeed,windGusts:p.windGusts,waveHeight:p.waveHeight,wavePeriod:p.wavePeriod,swellHeight:p.swellHeight,currentVelocity:p.currentVelocity})})); let best:any=null; for(let i=0;i<=rows.length-hours;i++){const w=rows.slice(i,i+hours); const score=Math.round(w.reduce((n,x)=>n+x.a.score,0)/w.length); const blocked=w.some(x=>x.a.level==='غير مناسب'); const effective=blocked?Math.max(0,score-20):score; if(!best||effective>best.score){const start=w[0].p.time; const end=new Date(new Date(w[w.length-1].p.time).getTime()+60*60*1000).toISOString(); best={score:effective,start,end,complete:w.every(x=>x.a.dataComplete)};}} return best;}
 
 function setDocumentLanguage() {
   const lang = getLang();
