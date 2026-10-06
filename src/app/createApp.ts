@@ -467,11 +467,19 @@ export function createApp(root: HTMLElement) {
     };
 
     const dateEl = panel.querySelector<HTMLInputElement>('#ki-date')!;
+    const localDateKey = (d:Date) => {
+      const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    };
     const now = new Date();
-    const tomorrow = new Date(now.getTime()+24*60*60*1000);
-    dateEl.value = tomorrow.toISOString().slice(0,10);
-    dateEl.min = now.toISOString().slice(0,10);
-    dateEl.max = new Date(now.getTime()+6*24*60*60*1000).toISOString().slice(0,10);
+    const tomorrow = new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+    const lastDay = new Date(now.getFullYear(),now.getMonth(),now.getDate()+6);
+    dateEl.value = localDateKey(tomorrow);
+    dateEl.min = localDateKey(now);
+    dateEl.max = localDateKey(lastDay);
+    let currentLat = initialLat ?? map.getCenter().lat;
+    let currentLng = initialLng ?? map.getCenter().lng;
+    let currentLabel = initialLabel;
     const input=panel.querySelector<HTMLInputElement>('#ki-place')!;
     const doSearch = async () => {
       const q=input.value.trim();
@@ -480,7 +488,12 @@ export function createApp(root: HTMLElement) {
       try {
         const results=await geocoder.search(q);
         const hit=results[0];
-        if(hit) await run(hit.latitude,hit.longitude,hit.name);
+        if(hit) {
+          currentLat = hit.latitude;
+          currentLng = hit.longitude;
+          currentLabel = hit.name;
+          await run(currentLat,currentLng,currentLabel);
+        }
         else {
           input.classList.add('ki-invalid');
           input.setAttribute('aria-invalid','true');
@@ -494,19 +507,13 @@ export function createApp(root: HTMLElement) {
     input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void doSearch();}});
     panel.querySelector('#ki-search')?.addEventListener('click',()=>void doSearch());
     panel.querySelector('#ki-analyze-trip')?.addEventListener('click',()=>void run(
-      initialLat ?? map.getCenter().lat,
-      initialLng ?? map.getCenter().lng,
-      input.value.trim() || initialLabel
+      currentLat, currentLng, input.value.trim() || currentLabel
     ));
     [dateEl, panel.querySelector('#ki-time'), panel.querySelector('#ki-duration')].forEach(el => el?.addEventListener('change',()=>void run(
-      initialLat ?? map.getCenter().lat,
-      initialLng ?? map.getCenter().lng,
-      input.value.trim() || initialLabel
+      currentLat, currentLng, input.value.trim() || currentLabel
     )));
 
-    if(initialLat!=null && initialLng!=null) {
-      void run(initialLat,initialLng,initialLabel);
-    }
+    void run(currentLat,currentLng,currentLabel);
     else {
       const center = map.getCenter();
       await run(center.lat,center.lng,initialLabel);
