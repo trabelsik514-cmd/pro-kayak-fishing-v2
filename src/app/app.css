@@ -1268,3 +1268,25 @@
   .ki-score-ring strong{font-size:24px}
   .ki-verdict-copy span{font-size:11px}
 }
+
+
+/* KAYAK INTELLIGENCE — trip planning controls */
+.ki-planner{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:13px;margin-bottom:12px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.035)}
+.ki-planner-title{grid-column:1/-1;display:flex;align-items:baseline;gap:7px;padding-bottom:2px}
+.ki-planner-title b{font-size:14px}.ki-planner-title small{font-size:10px;opacity:.48}
+.ki-planner label{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ki-planner label span{font-size:10px;opacity:.6}
+.ki-planner input,.ki-planner select{height:40px;width:100%;box-sizing:border-box;padding:0 9px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:#0c1c29;color:#fff;outline:none;font:inherit}
+.ki-planner input:focus,.ki-planner select:focus{border-color:rgba(56,189,248,.55)}
+.ki-plan-btn{grid-column:1/-1;height:42px;border:0;border-radius:11px;background:#e11d48;color:#fff;font-weight:800;font-size:13px;cursor:pointer}
+.ki-trip-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.ki-trip-summary>div{padding:9px;border-radius:10px;background:rgba(255,255,255,.045)}
+.ki-trip-summary span{display:block;font-size:9px;opacity:.5}.ki-trip-summary b{display:block;margin-top:4px;font-size:13px}
+.ki-best-window{display:flex;align-items:center;gap:9px;margin-top:10px;padding:10px;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.14)}
+.ki-best-window span{font-size:10px;opacity:.65}.ki-best-window strong{font-size:14px;margin-inline-start:auto;direction:ltr}.ki-best-window b{font-size:13px}
+@media(max-width:700px){
+  .ki-planner{grid-template-columns:1fr 1fr}
+  .ki-planner label:nth-of-type(3){grid-column:1/-1}
+  .ki-trip-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ki-best-window{flex-wrap:wrap}.ki-best-window strong{margin-inline-start:0}
+}
