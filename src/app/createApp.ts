@@ -1007,22 +1007,64 @@ export function createApp(root: HTMLElement) {
     tripPanel.classList.add('hidden');
     measurePanel.classList.add('hidden');
     measuring = false;
-    report.innerHTML = `<div class="report-head"><b>${t('حالة البحر اليوم عند النقطة')}</b><button id="close-report">×</button></div><p>${t('جاري حساب ملخص اليوم…')}</p>`;
+    report.innerHTML = `<div class="report-head"><b>🌊 ${t('حالة البحر اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><div class="sea-loading">${t('جاري جلب توقعات اليوم…')}</div>`;
     document.querySelector('#close-report')?.addEventListener('click', closeReport);
     try {
-      const d = await marine.getTodaySummary(lat, lng);
-      report.innerHTML = `<div class="report-head"><b>${t('حالة البحر اليوم عند النقطة')}</b><button id="close-report">×</button></div>
-        <p>📅 ${d.date}</p><div class="report-grid">
-        <span>🌊 ${t('الموج اليوم')} <b>${value(d.waveMin,' m')} – ${value(d.waveMax,' m')}</b></span>
-        <span>🧭 ${t('اتجاه الموج')} <b>${value(d.waveDirection,'°')}</b></span>
-        <span>⏱️ ${t('فترة الموج')} <b>${value(d.wavePeriodMin,' s')} – ${value(d.wavePeriodMax,' s')}</b></span>
-        <span>〰️ ${t('Swell اليوم')} <b>${value(d.swellMin,' m')} – ${value(d.swellMax,' m')}</b></span>
-        <span>💨 ${t('الرياح اليوم')} <b>${value(d.windMin,' km/h')} – ${value(d.windMax,' km/h')}</b></span>
-        <span>💨 ${t('الهبات اليوم')} <b>${value(d.gustMin,' km/h')} – ${value(d.gustMax,' km/h')}</b></span>
-        </div><small>${t('الموقع:')} ${ltr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)}</small>`;
+      const [d, hourly] = await Promise.all([
+        marine.getTodaySummary(lat, lng),
+        marine.getHourlyKayakForecast(lat, lng)
+      ]);
+      const todayPoints = hourly.filter(p => p.time.slice(0,10) === d.date);
+      const nextPoints = todayPoints.slice(0,12);
+      const assess = (p:HourlyKayakPoint) => assessKayakConditions({
+        windSpeed:p.windSpeed, windGusts:p.windGusts, windDirection:p.windDirection,
+        waveHeight:p.waveHeight, waveDirection:p.waveDirection, wavePeriod:p.wavePeriod,
+        swellHeight:p.swellHeight, swellPeriod:p.swellPeriod, currentVelocity:p.currentVelocity
+      });
+      const rows = nextPoints.map(p => ({p,a:assess(p)}));
+      const best = bestKayakWindow(todayPoints,3);
+      const levelClass = (level:string) => level==='ممتاز'?'excellent':level==='جيد'?'good':level==='حذر'?'caution':'danger';
+      const levelLabel = (level:string) => translateLevel(level);
+      const timeLabel = (iso:string) => iso.slice(11,16);
+      const hourCards = rows.map(({p,a}) => `<article class="sea-hour-card ${levelClass(a.level)}">
+        <div class="sea-hour-time">${timeLabel(p.time)}</div>
+        <strong>${a.score}<small>/100</small></strong>
+        <b>${levelLabel(a.level)}</b>
+        <span>🌊 ${value(p.waveHeight,' m')}</span>
+        <span>💨 ${value(p.windSpeed,' km/h')}</span>
+        <span>💨 ${value(p.windGusts,' km/h')}</span>
+      </article>`).join('');
+      const bestHtml = best
+        ? `<section class="sea-best-window">
+            <div><b>🎣 ${t('أفضل نافذة متوقعة')}</b><strong>${best.score}/100</strong></div>
+            <p>${timeLabel(best.start)} → ${timeLabel(best.end)}</p>
+            <small>${t('نافذة تخطيطية لمدة 3 ساعات، وليست ضماناً لسلامة الرحلة.')}</small>
+          </section>`
+        : '';
+      const overall = todayPoints.length ? Math.round(todayPoints.slice(0,12).map(assess).reduce((n,a)=>n+a.score,0)/Math.min(12,todayPoints.length)) : null;
+      const overallLevel = overall==null ? '—' : overall>=82?'ممتاز':overall>=65?'جيد':overall>=45?'حذر':'غير مناسب';
+      const reasons = rows.flatMap(x => x.a.reasons).filter((v,i,a)=>a.indexOf(v)===i).slice(0,3);
+      const reasonHtml = reasons.length ? `<ul class="sea-reasons">${reasons.map(r=>`<li>• ${translateReason(r)}</li>`).join('')}</ul>` : '';
+      report.innerHTML = `
+        <div class="report-head"><b>🌊 ${t('حالة البحر اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
+        <div class="sea-location">📍 ${ltr(lat.toFixed(4)+', '+lng.toFixed(4))}</div>
+        <section class="sea-overview">
+          <div><span>${t('تقييم اليوم')}</span><strong>${overall ?? '—'}<small>/100</small></strong><b>${overallLevel==='—'?'—':levelLabel(overallLevel)}</b></div>
+          <div><span>🌊 ${t('نطاق الموج')}</span><b>${value(d.waveMin,' m')} – ${value(d.waveMax,' m')}</b></div>
+          <div><span>💨 ${t('نطاق الرياح')}</span><b>${value(d.windMin,' km/h')} – ${value(d.windMax,' km/h')}</b></div>
+          <div><span>💨 ${t('أقصى هبات')}</span><b>${value(d.gustMin,' km/h')} – ${value(d.gustMax,' km/h')}</b></div>
+        </section>
+        ${bestHtml}
+        <h4 class="sea-section-title">🕐 ${t('الساعات القادمة')}</h4>
+        <div class="sea-hour-strip">${hourCards || `<p>${t('لا توجد بيانات ساعية متاحة')}</p>`}</div>
+        ${reasonHtml ? `<section class="sea-reasons-box"><b>${t('أهم عوامل التقييم')}</b>${reasonHtml}</section>` : ''}
+        <div class="sea-source">
+          <span>${t('المصدر:')} Open-Meteo</span>
+          <span>${t('بيانات اليوم حسب الموقع المحدد')}</span>
+        </div>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     } catch {
-      report.innerHTML = `<div class="report-head"><b>${t('تعذر جلب ملخص اليوم')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
+      report.innerHTML = `<div class="report-head"><b>${t('تعذر جلب حالة البحر')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     }
   };
