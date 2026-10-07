@@ -218,10 +218,22 @@ export function createApp(root: HTMLElement) {
       <div class="pkf-layer-note">${getLang()==='fr'?'Les données marines apparaissent dans le rapport du point sélectionné.':'البيانات البحرية تظهر داخل تقرير النقطة المختارة، بدلاً من عرض طبقات غير موجودة فعلياً.'}</div>
     </aside>
     <nav class="pkf-bottom-nav" aria-label="${getLang()==='fr'?'Navigation principale':'التنقل الرئيسي'}">
-      <button id="pkf-nav-map" type="button" class="active"><span>⌖</span><b>${getLang()==='fr'?'Carte':'الخريطة'}</b></button>
-      <button id="pkf-nav-sea" type="button"><span>≈</span><b>${getLang()==='fr'?'Mer':'البحر'}</b></button>
-      <button id="pkf-nav-fish" type="button"><span>◉</span><b>${getLang()==='fr'?'Pêche':'الصيد'}</b></button>
-      <button id="pkf-nav-report" type="button"><span>▤</span><b>${getLang()==='fr'?'Rapport':'التقرير'}</b></button>
+      <button id="pkf-nav-map" type="button" class="active">
+        <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Z"></path><path d="M9 4v13.5M15 6.5V20"></path></svg></span>
+        <b>${getLang()==='fr'?'Carte':'الخريطة'}</b>
+      </button>
+      <button id="pkf-nav-sea" type="button">
+        <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c3-3 5 3 9 0s6 3 9 0"></path><path d="M3 14c3-3 5 3 9 0s6 3 9 0"></path><path d="M3 19c3-3 5 3 9 0s6 3 9 0"></path></svg></span>
+        <b>${getLang()==='fr'?'Mer':'البحر'}</b>
+      </button>
+      <button id="pkf-nav-fish" type="button">
+        <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c3-5 9-6 15-2-2 5-7 7-12 5l-3-3Z"></path><path d="M19 10 22 7v5l-3-2ZM7 15l-2 4"></path><circle cx="14" cy="10" r="1"></circle></svg></span>
+        <b>${getLang()==='fr'?'Pêche':'الصيد'}</b>
+      </button>
+      <button id="pkf-nav-report" type="button">
+        <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6V3Z"></path><path d="M9 11h6M9 15h6M9 7h3"></path></svg></span>
+        <b>${getLang()==='fr'?'Rapport':'التقرير'}</b>
+      </button>
     </nav>
     <aside class="measure-panel hidden" id="measure-panel"></aside>
     <aside class="trip-panel hidden" id="trip-panel">
