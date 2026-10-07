@@ -96,6 +96,7 @@ async function notify(snapshot, location) {
       body,
       largeBody: body,
       group: 'pkf-sea-updates',
+      channelId: 'pkf-sea-updates',
       autoCancel: true
     }
   ]);
