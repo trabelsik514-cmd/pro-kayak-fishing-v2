@@ -1695,3 +1695,141 @@
   .pkf-tool svg{width:19px;height:19px}
   .pkf-layer-panel{top:132px;right:62px;width:calc(100vw - 70px)}
 }
+
+/* PKF MEASURE + TRIP REDESIGN — field-ready controls */
+.measure-panel,
+.trip-panel{
+  right:14px;
+  bottom:18px;
+  width:min(420px,calc(100% - 28px));
+  max-height:min(70vh,620px);
+  padding:15px;
+  overflow:auto;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:18px;
+  background:rgba(4,16,26,.96);
+  box-shadow:0 18px 48px rgba(0,0,0,.42);
+  backdrop-filter:blur(20px);
+}
+.measure-panel.hidden,.trip-panel.hidden{display:none!important}
+.measure-panel strong{
+  font-size:28px;
+  line-height:1.1;
+  letter-spacing:-.4px;
+}
+.measure-panel button{
+  min-height:42px;
+  margin-top:9px;
+  border:1px solid rgba(255,255,255,.11);
+  border-radius:10px;
+  background:rgba(255,255,255,.055);
+  color:#fff;
+  font:inherit;
+  font-weight:700;
+}
+.trip-head{
+  min-height:40px;
+  padding-bottom:10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.trip-head b{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:16px;
+}
+.trip-head-icon{
+  display:grid;
+  place-items:center;
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  background:rgba(53,184,238,.11);
+  border:1px solid rgba(53,184,238,.2);
+  color:#35b8ee;
+  font-size:17px;
+}
+.trip-head button{
+  width:34px!important;
+  height:34px;
+  border-radius:10px!important;
+  background:rgba(255,255,255,.06)!important;
+}
+.trip-recording,.trip-idle{
+  margin:11px 0;
+  padding:12px;
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.08);
+}
+.trip-recording{
+  border-inline-start:3px solid #e11d48;
+}
+.trip-primary{
+  min-height:46px;
+  border-radius:11px;
+  background:#e11d48;
+  box-shadow:0 8px 22px rgba(225,29,72,.20);
+  font-size:13px;
+}
+.trip-primary span{
+  display:inline-block;
+  font-size:9px;
+  margin-inline-end:4px;
+  vertical-align:middle;
+}
+.trip-card{
+  padding:12px;
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.08);
+}
+.trip-actions button,.trip-actions a{
+  min-height:36px;
+  border-radius:9px;
+}
+.route-view{
+  left:14px;
+  bottom:18px;
+  width:min(360px,calc(100% - 28px));
+  padding:13px;
+  border-radius:17px;
+  background:rgba(4,16,26,.96);
+  border-color:rgba(53,184,238,.18);
+}
+.route-view-head button{
+  background:rgba(255,255,255,.06);
+}
+.route-view-stats span{
+  min-height:54px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.route-hide{
+  min-height:40px;
+  border-radius:10px;
+}
+@media(max-width:700px){
+  .measure-panel,.trip-panel{
+    left:10px;
+    right:10px;
+    bottom:76px;
+    width:auto;
+    max-height:68vh;
+    padding:13px;
+    border-radius:17px;
+  }
+  .route-view{
+    left:10px;
+    right:10px;
+    bottom:76px;
+    width:auto;
+  }
+}
+@media(max-width:390px){
+  .measure-panel,.trip-panel{
+    left:8px;right:8px;bottom:72px;padding:12px;border-radius:16px;
+  }
+  .route-view{left:8px;right:8px;bottom:72px}
+}
