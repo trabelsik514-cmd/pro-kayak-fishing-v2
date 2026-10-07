@@ -1296,3 +1296,32 @@
 .substrate-card{margin-top:8px;padding:9px 10px;border:1px solid #ffffff18;border-radius:9px;background:#ffffff06;display:flex;justify-content:space-between;gap:10px}.substrate-card span{font-weight:700}
 
 .species-compat-list details{border-radius:8px;background:#ffffff08;overflow:hidden}.species-compat-list summary{display:flex;justify-content:space-between;gap:8px;padding:8px;cursor:pointer;list-style:none}.species-compat-list summary::-webkit-details-marker{display:none}.species-reasons{display:grid;gap:3px;padding:0 9px 9px;opacity:.72;font-size:10px;line-height:1.35}
+
+
+/* PRO KAYAK FISHING — professional map navigation layer */
+.pkf-map-toolbar{position:absolute;z-index:40;top:94px;right:14px;display:grid;gap:8px}
+.pkf-tool{width:44px;height:44px;border:1px solid rgba(255,255,255,.16);border-radius:13px;background:rgba(5,18,28,.82);backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.24);color:#fff;display:grid;place-items:center;font-size:21px;cursor:pointer;transition:transform .16s ease,background .16s ease}
+.pkf-tool:hover{transform:translateY(-1px);background:rgba(10,30,44,.94)}
+.pkf-layer-panel{position:absolute;z-index:45;top:94px;right:68px;width:min(310px,calc(100vw - 92px));padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:15px;background:rgba(5,18,28,.94);backdrop-filter:blur(18px);box-shadow:0 18px 45px rgba(0,0,0,.3);color:#fff}
+.pkf-layer-panel.hidden{display:none!important}
+.pkf-layer-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.pkf-layer-head button{width:32px;height:32px;border:0;border-radius:9px;background:rgba(255,255,255,.07);color:#fff;font-size:20px;cursor:pointer}
+.pkf-layer-row{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;font-size:13px}
+.pkf-layer-row input{accent-color:#e11d48;width:18px;height:18px}
+.pkf-layer-note{font-size:10px;line-height:1.55;opacity:.5;padding:7px 4px 3px}
+.pkf-bottom-nav{position:absolute;z-index:42;left:50%;bottom:12px;transform:translateX(-50%);width:min(520px,calc(100vw - 22px));height:64px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px;border:1px solid rgba(255,255,255,.13);border-radius:18px;background:rgba(5,18,28,.88);backdrop-filter:blur(16px);box-shadow:0 15px 40px rgba(0,0,0,.3)}
+.pkf-bottom-nav button{border:0;border-radius:13px;background:transparent;color:rgba(255,255,255,.58);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:inherit;cursor:pointer}
+.pkf-bottom-nav button span{font-size:19px;line-height:1}.pkf-bottom-nav button b{font-size:10px;font-weight:700}
+.pkf-bottom-nav button.active{color:#fff;background:rgba(56,189,248,.14);box-shadow:inset 0 0 0 1px rgba(56,189,248,.12)}
+.pkf-bottom-nav button.active span{color:#38bdf8}
+.report{z-index:50!important}.report .report-head{position:sticky;top:0;z-index:2;background:rgba(7,19,29,.94);backdrop-filter:blur(12px)}
+.report-place{font-size:16px!important;font-weight:800!important}.report-grid>span{min-height:54px;display:flex;flex-direction:column;justify-content:center}
+@media(max-width:700px){
+  .pkf-map-toolbar{top:84px;right:9px;gap:7px}.pkf-tool{width:42px;height:42px;border-radius:12px}
+  .pkf-layer-panel{top:84px;right:58px;width:min(300px,calc(100vw - 72px))}
+  .pkf-bottom-nav{bottom:8px;height:62px;width:calc(100vw - 16px)}
+  .map-actions{bottom:82px!important}.map-actions .map-action-label{display:none}
+  .map-actions .map-action-row{gap:5px}.map-actions .map-action span{display:none}
+  .map-actions .map-action{width:42px!important;height:42px!important;padding:0!important;border-radius:12px!important}
+}
+@media(min-width:701px){.pkf-bottom-nav{display:none}}
