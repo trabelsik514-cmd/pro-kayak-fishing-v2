@@ -32,6 +32,23 @@ const FR: Record<string,string> = {
   'بحث':'Rechercher',
   'العربية':'Français',
   'حالة البحر اليوم':"État de la mer aujourd'hui",
+  'حالة الطقس اليوم':"Météo aujourd'hui",
+  'جاري جلب طقس اليوم…':"Chargement de la météo du jour…",
+  'تعذر جلب طقس اليوم':"Impossible de récupérer la météo du jour",
+  'الحرارة':'Température',
+  'احتمال الأمطار':'Probabilité de pluie',
+  'الرطوبة':'Humidité',
+  'الشروق':'Lever',
+  'الغروب':'Coucher',
+  'توقعات اليوم حسب الموقع المحدد':"Prévisions du jour selon la position sélectionnée",
+  'صافي':'Dégagé',
+  'غائم جزئياً':'Partiellement nuageux',
+  'ضباب':'Brouillard',
+  'رذاذ':'Bruine',
+  'أمطار':'Pluie',
+  'ثلوج':'Neige',
+  'عواصف رعدية':'Orages',
+  'متغير':'Variable',
   'حالة البحر 7 أيام':'État de la mer — 7 jours',
   'مقارنة النماذج':'Comparaison des modèles',
   'توافق النماذج':'Accord des modèles',
@@ -73,6 +90,7 @@ const FR: Record<string,string> = {
   'ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.':'Commencez l’enregistrement pour suivre le parcours du kayak via GPS.',
   '▶️ بدء تسجيل رحلة':'▶️ Démarrer une sortie',
   'حالة البحر':'État de la mer',
+  'الطقس اليوم':'Météo aujourd’hui',
   'اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.':'Touchez un point pour obtenir les conditions météo et marines de cette position.',
   'اضغط نقطة في البحر ثم نقطة ثانية على الشاطئ أو أي موقع آخر.':'Touchez un point en mer puis un second point sur la côte ou ailleurs.',
   'تم تحديد النقطة الأولى. اختر النقطة الثانية.':'Premier point sélectionné. Choisissez le second.',
@@ -201,7 +219,7 @@ export function createApp(root: HTMLElement) {
       <div class="map-action-group">
         <span class="map-action-label">${t('البحر والرحلات')}</span>
         <div class="map-action-row">
-          <button id="today-sea" class="map-action map-action-sea" type="button" aria-label="${t('حالة البحر اليوم')}">🌊 <span>${t('حالة البحر')}</span></button>
+          <button id="today-sea" class="map-action map-action-sea" type="button" aria-label="${t('حالة الطقس اليوم')}">🌤️ <span>${t('الطقس اليوم')}</span></button>
           <button id="weekly-sea" class="map-action map-action-weekly-sea" type="button" aria-label="${t('حالة البحر 7 أيام')}">📅 <span>7 ${getLang()==='fr'?'jours':'أيام'}</span></button>
           <button id="measure-toggle" class="map-action map-action-measure" type="button" aria-label="${t('قياس المسافة')}">📏 <span>${t('قياس')}</span></button>
           <button id="trip-toggle" class="map-action map-action-trip" type="button" aria-label="${t('رحلاتي')}">🛶 <span>${t('رحلاتي')}</span></button>
@@ -1125,6 +1143,57 @@ export function createApp(root: HTMLElement) {
     }
   };
 
+  const showTodayWeather = async (lat:number, lng:number) => {
+    if (routeTripId) removeRoute();
+    report.classList.remove('hidden');
+    setReportOpen(true);
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
+    report.innerHTML = `<div class="report-head"><b>🌤️ ${t('حالة الطقس اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><div class="sea-loading">${t('جاري جلب طقس اليوم…')}</div>`;
+    document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    try {
+      const d = await marine.getTodayWeatherSummary(lat,lng);
+      const weatherText = (code:number|null) => {
+        if (code==null) return t('بيانات غير متاحة');
+        if (code===0) return t('صافي');
+        if ([1,2,3].includes(code)) return t('غائم جزئياً');
+        if ([45,48].includes(code)) return t('ضباب');
+        if ([51,53,55,56,57].includes(code)) return t('رذاذ');
+        if ([61,63,65,66,67,80,81,82].includes(code)) return t('أمطار');
+        if ([71,73,75,77,85,86].includes(code)) return t('ثلوج');
+        if ([95,96,99].includes(code)) return t('عواصف رعدية');
+        return t('متغير');
+      };
+      const dir = (deg:number|null) => {
+        if(deg==null) return '—';
+        const dirs=['N','NE','E','SE','S','SW','W','NW'];
+        return dirs[Math.round(deg/45)%8];
+      };
+      const time = (v:string|null) => v ? v.slice(11,16) : '—';
+      report.innerHTML = `
+        <div class="report-head"><b>🌤️ ${t('حالة الطقس اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
+        <section class="sea-overview weather-overview">
+          <div><span>🌡️ ${t('الحرارة')}</span><b>${value(d.temperatureMin,' °C')} – ${value(d.temperatureMax,' °C')}</b></div>
+          <div><span>🌧️ ${t('احتمال الأمطار')}</span><b>${value(d.precipitationProbabilityMax,' %')}</b></div>
+          <div><span>💨 ${t('الرياح')}</span><b>${value(d.windMin,' km/h')} – ${value(d.windMax,' km/h')}</b></div>
+          <div><span>💨 ${t('أقصى هبات')}</span><b>${value(d.gustMax,' km/h')}</b></div>
+          <div><span>🧭 ${t('اتجاه الرياح')}</span><b dir="ltr">${dir(d.windDirectionDominant)}</b></div>
+          <div><span>💧 ${t('الرطوبة')}</span><b>${value(d.humidityMean,' %')}</b></div>
+        </section>
+        <section class="sea-best-window weather-highlight">
+          <div><b>☀️ ${weatherText(d.weatherCode)}</b></div>
+          <p>🌅 ${t('الشروق')} ${time(d.sunrise)} &nbsp; · &nbsp; 🌇 ${t('الغروب')} ${time(d.sunset)}</p>
+          <small>${t('توقعات اليوم حسب الموقع المحدد')}</small>
+        </section>
+        <div class="sea-source"><span>${t('المصدر:')} Open-Meteo</span><span>${t('آخر تحديث:')} ${new Date().toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false})}</span></div>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    } catch {
+      report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب طقس اليوم')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    }
+  };
+
   const showTodaySea = async (lat:number, lng:number) => {
     if (routeTripId) removeRoute();
     report.classList.remove('hidden');
@@ -1294,7 +1363,7 @@ export function createApp(root: HTMLElement) {
     const target = selectedLocation
       ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null)
       ?? (() => { const center = map.getCenter(); return {lat:center.lat, lng:center.lng}; })();
-    showTodaySea(target.lat, target.lng);
+    showTodayWeather(target.lat, target.lng);
   });
 
   map.on('click',event=>{
