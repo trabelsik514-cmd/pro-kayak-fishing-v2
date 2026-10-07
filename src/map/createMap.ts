@@ -8,6 +8,10 @@ export function createMap(container: string) {
     maxZoom: 18,
     minZoom: 5,
     maxBounds: [[7.0, 30.0], [12.5, 38.5]],
+    renderWorldCopies: false,
+    attributionControl: true,
+    dragRotate: false,
+    pitchWithRotate: false,
     style: {
       version: 8,
       sources: {
@@ -16,9 +20,18 @@ export function createMap(container: string) {
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
           attribution: '© Esri'
+        },
+        'esri-reference': {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          attribution: '© Esri'
         }
       },
-      layers: [{ id: 'satellite', type: 'raster', source: 'esri-satellite' }]
+      layers: [
+        { id: 'satellite', type: 'raster', source: 'esri-satellite' },
+        { id: 'place-labels', type: 'raster', source: 'esri-reference', paint: { 'raster-opacity': 0.82 } }
+      ]
     }
   });
 
