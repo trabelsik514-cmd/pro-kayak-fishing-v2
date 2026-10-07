@@ -1146,14 +1146,27 @@ export function createApp(root: HTMLElement) {
           <div><span>💨 ${t('أقصى هبات')}</span><b>${value(d.gustMin,' km/h')} – ${value(d.gustMax,' km/h')}</b></div>
         </section>
         ${bestHtml}
-        <h4 class="sea-section-title">🕐 ${t('الساعات القادمة')}</h4>
-        <div class="sea-hour-strip">${hourCards || `<p>${t('لا توجد بيانات ساعية متاحة')}</p>`}</div>
+        <button type="button" class="sea-section-toggle" id="sea-hours-toggle" aria-expanded="true">
+          <span>🕐 ${t('الساعات القادمة')}</span><span class="sea-section-chevron" aria-hidden="true">⌃</span>
+        </button>
+        <div class="sea-hour-strip" id="sea-hour-strip">${hourCards || `<p>${t('لا توجد بيانات ساعية متاحة')}</p>`}</div>
         ${reasonHtml ? `<section class="sea-reasons-box"><b>${t('أهم عوامل التقييم')}</b>${reasonHtml}</section>` : ''}
         <div class="sea-source">
           <span>${t('المصدر:')} Open-Meteo</span>
           <span>${t('بيانات اليوم حسب الموقع المحدد')}</span>
         </div>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
+
+      const hoursToggle = document.querySelector<HTMLButtonElement>('#sea-hours-toggle');
+      const hoursStrip = document.querySelector<HTMLElement>('#sea-hour-strip');
+      hoursToggle?.addEventListener('click', () => {
+        if (!hoursStrip) return;
+        const open = hoursToggle.getAttribute('aria-expanded') !== 'false';
+        hoursToggle.setAttribute('aria-expanded', String(!open));
+        hoursStrip.classList.toggle('collapsed', open);
+        const chevron = hoursToggle.querySelector<HTMLElement>('.sea-section-chevron');
+        if (chevron) chevron.textContent = open ? '⌄' : '⌃';
+      });
     } catch {
       report.innerHTML = `<div class="report-head"><b>${t('تعذر جلب حالة البحر')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
