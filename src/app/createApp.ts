@@ -5,6 +5,7 @@ import { createMap } from '../map/createMap';
 import { assessKayakConditions } from '../kayak/KayakAssessment';
 import { loadTrips, saveTrip, deleteTrip, makeTrip, type KayakTrip, type TrackPoint } from '../trips/TripStore';
 import { getBathymetryDepth } from '../bathymetry/BathymetryService';
+import { initSeaNotifications, saveBackgroundLocation } from '../notifications/SeaNotificationService';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -190,6 +191,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
 
 export function createApp(root: HTMLElement) {
   setDocumentLanguage();
+  void initSeaNotifications();
   root.innerHTML = `<main class="shell"><header class="topbar"><a class="brand" href="#" aria-label="PRO KAYAK FISHING V2"><img class="brand-logo" src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/></a>
     <button id="lang-toggle" class="lang-toggle" type="button">🌐 ${getLang() === 'ar' ? 'FR' : 'العربية'}</button>
     <form id="search-form" class="search"><input id="search-input" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}" autocomplete="off"/><button type="submit">${t('بحث')}</button></form></header>
@@ -808,6 +810,7 @@ export function createApp(root: HTMLElement) {
     const requestId = ++pointRequestId;
     if (routeTripId) removeRoute();
     selectedLocation = {lat, lng, label};
+    void saveBackgroundLocation(lat, lng, label);
     report.classList.remove('hidden');
     setReportOpen(true);
     tripPanel.classList.add('hidden');
@@ -1287,6 +1290,18 @@ export function createApp(root: HTMLElement) {
       results.querySelectorAll<HTMLButtonElement>('button').forEach(button=>button.addEventListener('click',()=>{const p=places[Number(button.dataset.index)];results.classList.add('hidden');const label=[p.name,p.admin1].filter(Boolean).join(' — ');map.stop();map.jumpTo({center:[p.longitude,p.latitude],zoom:13.5});selectPoint(p.latitude,p.longitude,label)}))
     }catch{results.innerHTML='<div>'+t('تعذر الاتصال بخدمة البحث. حاول مرة أخرى.')+'</div>'}
   });
+  // Live sea data refresh: while the app is open, refresh the selected point every 15 minutes.
+  // A single timer is shared across language/UI re-renders so it cannot multiply.
+  const refreshKey = '__pkfSeaRefreshTimer';
+  const previousRefresh = (window as unknown as Record<string, unknown>)[refreshKey];
+  if (typeof previousRefresh === 'number') window.clearInterval(previousRefresh);
+  const refreshTimer = window.setInterval(() => {
+    if (!selectedLocation || report.classList.contains('hidden')) return;
+    const target = {...selectedLocation};
+    void selectPoint(target.lat, target.lng, target.label);
+  }, 15 * 60 * 1000);
+  (window as unknown as Record<string, unknown>)[refreshKey] = refreshTimer;
+
   map.on('load',()=>geolocate.trigger());
 }
 
