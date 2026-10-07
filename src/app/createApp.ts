@@ -6,6 +6,7 @@ import { assessKayakConditions } from '../kayak/KayakAssessment';
 import { loadTrips, saveTrip, deleteTrip, makeTrip, type KayakTrip, type TrackPoint } from '../trips/TripStore';
 import { getBathymetryDepth } from '../bathymetry/BathymetryService';
 import { initSeaNotifications, saveBackgroundLocation } from '../notifications/SeaNotificationService';
+import { getDeviceLocation } from '../location/DeviceLocationService';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -280,7 +281,23 @@ export function createApp(root: HTMLElement) {
 
   // Professional map controls are presentation shortcuts over existing features.
   const layerPanel = document.querySelector<HTMLElement>('#pkf-layer-panel')!;
-  document.querySelector<HTMLButtonElement>('#pkf-gps')?.addEventListener('click', () => geolocate.trigger());
+  document.querySelector<HTMLButtonElement>('#pkf-gps')?.addEventListener('click', async () => {
+    const button = document.querySelector<HTMLButtonElement>('#pkf-gps');
+    if (button) button.disabled = true;
+    try {
+      const position = await getDeviceLocation();
+      map.flyTo({ center: [position.lng, position.lat], zoom: Math.max(map.getZoom(), 12), essential: true });
+      await selectPoint(position.lat, position.lng, null);
+    } catch (error) {
+      console.error('PKF GPS error', error);
+      const message = getLang() === 'fr'
+        ? 'Accès à la position impossible. Activez la localisation précise et autorisez PRO KAYAK FISHING à utiliser votre position.'
+        : 'تعذر الوصول إلى موقعك. فعّل الموقع الدقيق واسمح لتطبيق PRO KAYAK FISHING باستخدام موقعك.';
+      window.alert(message);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
   document.querySelector<HTMLButtonElement>('#pkf-layers')?.addEventListener('click', () => layerPanel.classList.toggle('hidden'));
   document.querySelector<HTMLButtonElement>('#pkf-layer-close')?.addEventListener('click', () => layerPanel.classList.add('hidden'));
   document.querySelector<HTMLInputElement>('#pkf-satellite-toggle')?.addEventListener('change', e => {
