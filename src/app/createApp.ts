@@ -364,9 +364,9 @@ export function createApp(root: HTMLElement) {
       const rows = 4;
       const points:{lat:number;lng:number}[] = [];
       for (let r=0;r<rows;r++) {
-        const lat = rows===1 ? (south+north)/2 : south + (north-south)*(r/(rows-1));
+        const lat = south + (north-south)*(r/(rows-1));
         for (let col=0;col<cols;col++) {
-          const lng = cols===1 ? (west+east)/2 : west + (east-west)*(col/(cols-1));
+          const lng = west + (east-west)*(col/(cols-1));
           points.push({lat,lng});
         }
       }
