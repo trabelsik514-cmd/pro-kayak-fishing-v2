@@ -932,7 +932,7 @@ export function createApp(root: HTMLElement) {
         const offsets:any = {reef:[0.004,0.006],seagrass:[-0.003,-0.005],bank:[0.001,-0.008],channel:[-0.006,0.004],'artificial-reef':[0.007,-0.003],'scientific-area':[0,0]};
         const features = marinePoints.map((p:any) => {
           const o=offsets[p.id] ?? [0,0];
-          return {type:'Feature',properties:{id:p.id,label:getLang()==='fr'?p.fr:p.ar,icon:p.icon,description:getLang()==='fr'?p.descFr:p.descAr,color:p.color},geometry:{type:'Point',coordinates:[10.669+o[1],36.879+o[0]]}};
+          return {type:'Feature' as const,properties:{id:p.id,label:getLang()==='fr'?p.fr:p.ar,icon:p.icon,description:getLang()==='fr'?p.descFr:p.descAr,color:p.color},geometry:{type:'Point' as const,coordinates:[10.669+o[1],36.879+o[0]]}};
         });
         const sourceId='pkf-marine-points';
         if (!map.getSource(sourceId)) {
