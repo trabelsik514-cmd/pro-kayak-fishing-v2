@@ -1465,3 +1465,15 @@
     width:43px;height:43px;border-radius:13px;
   }
 }
+
+.pkf-bottom-nav .pkf-nav-icon{display:grid;place-items:center;width:25px;height:25px}
+.pkf-bottom-nav .pkf-nav-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pkf-bottom-nav button b{font-weight:700;letter-spacing:.1px}
+@media(max-width:700px){
+  .pkf-bottom-nav{height:66px;padding:5px 7px;border-radius:20px;background:rgba(4,18,28,.96);border:1px solid rgba(255,255,255,.13);box-shadow:0 12px 30px rgba(0,0,0,.28)}
+  .pkf-bottom-nav button{min-width:0;gap:3px;border-radius:16px}
+  .pkf-bottom-nav button.active{background:rgba(37,174,226,.15);box-shadow:inset 0 0 0 1px rgba(37,174,226,.22)}
+  .pkf-bottom-nav button b{font-size:10px}
+  .pkf-bottom-nav .pkf-nav-icon{width:24px;height:24px}
+  .pkf-bottom-nav .pkf-nav-icon svg{width:21px;height:21px}
+}
