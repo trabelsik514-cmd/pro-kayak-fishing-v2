@@ -1559,8 +1559,28 @@
 .sea-best-window strong{font-size:20px}
 .sea-best-window p{margin:5px 0;font-size:16px;font-weight:800}
 .sea-best-window small{opacity:.62;font-size:10px}
-.sea-section-title{font-size:13px;margin:13px 0 7px}
-.sea-hour-strip{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 7px;scrollbar-width:thin}
+.sea-section-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:13px 0 7px;
+  padding:9px 11px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:10px;
+  background:rgba(255,255,255,.035);
+  color:#fff;
+  font:inherit;
+  font-size:13px;
+  font-weight:800;
+  text-align:inherit;
+  cursor:pointer;
+}
+.sea-section-toggle:active{transform:translateY(1px)}
+.sea-section-chevron{font-size:15px;opacity:.75}
+.sea-hour-strip{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 7px;scrollbar-width:thin;max-height:320px;opacity:1;transition:max-height .2s ease,opacity .2s ease,padding .2s ease}
+.sea-hour-strip.collapsed{max-height:0;opacity:0;overflow:hidden;padding-top:0;padding-bottom:0}
 .sea-hour-card{flex:0 0 82px;padding:8px 6px;border-radius:11px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);text-align:center}
 .sea-hour-card .sea-hour-time{font-size:11px;font-weight:800;opacity:.78}
 .sea-hour-card strong{display:block;font-size:18px;margin:3px 0 0}
