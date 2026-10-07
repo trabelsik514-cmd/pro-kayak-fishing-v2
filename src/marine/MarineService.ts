@@ -73,6 +73,24 @@ export type DailySeaSummary = {
 
 
 
+export type DailyWeatherSummary = {
+  date: string;
+  temperatureMin: number|null;
+  temperatureMax: number|null;
+  precipitationProbabilityMax: number|null;
+  precipitationSum: number|null;
+  windMin: number|null;
+  windMax: number|null;
+  gustMax: number|null;
+  windDirectionDominant: number|null;
+  humidityMean: number|null;
+  sunrise: string|null;
+  sunset: string|null;
+  weatherCode: number|null;
+  timezone: string|null;
+  source: 'Open-Meteo';
+};
+
 export type WeeklySeaSummary = {
   date: string;
   waveMin: number|null;
@@ -113,6 +131,41 @@ export type HourlyKayakPoint = {
 };
 
 export class MarineService {
+  async getTodayWeatherSummary(latitude:number, longitude:number):Promise<DailyWeatherSummary> {
+    const u = new URL('https://api.open-meteo.com/v1/forecast');
+    u.searchParams.set('latitude',String(latitude));
+    u.searchParams.set('longitude',String(longitude));
+    u.searchParams.set('daily','temperature_2m_min,temperature_2m_max,precipitation_probability_max,precipitation_sum,wind_speed_10m_min,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,relative_humidity_2m_mean,sunrise,sunset,weather_code');
+    u.searchParams.set('forecast_days','1');
+    u.searchParams.set('timezone','auto');
+    u.searchParams.set('cell_selection','nearest');
+    const p=await getJson(u);
+    const d=p?.daily ?? {};
+    const n=(key:string):number|null => {
+      const x=Number(Array.isArray(d[key])?d[key][0]:NaN);
+      return Number.isFinite(x)?x:null;
+    };
+    const str=(key:string):string|null => Array.isArray(d[key]) && typeof d[key][0]==='string' ? d[key][0] : null;
+    const date=str('time') ?? new Date().toISOString().slice(0,10);
+    return {
+      date,
+      temperatureMin:n('temperature_2m_min'),
+      temperatureMax:n('temperature_2m_max'),
+      precipitationProbabilityMax:n('precipitation_probability_max'),
+      precipitationSum:n('precipitation_sum'),
+      windMin:n('wind_speed_10m_min'),
+      windMax:n('wind_speed_10m_max'),
+      gustMax:n('wind_gusts_10m_max'),
+      windDirectionDominant:n('wind_direction_10m_dominant'),
+      humidityMean:n('relative_humidity_2m_mean'),
+      sunrise:str('sunrise'),
+      sunset:str('sunset'),
+      weatherCode:n('weather_code'),
+      timezone:typeof p?.timezone==='string'?p.timezone:null,
+      source:'Open-Meteo'
+    };
+  }
+
 
   async getWeatherModelComparison(latitude:number, longitude:number):Promise<WeatherModelComparisonDay[]> {
     const models = [
