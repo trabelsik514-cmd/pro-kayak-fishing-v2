@@ -1353,3 +1353,75 @@
 
 .pkf-tool svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .pkf-tool:first-child svg{width:23px;height:23px}
+
+
+/* PKF MOBILE HEADER — logo asset unchanged; only layout is refined */
+@media(max-width:700px){
+  .topbar{
+    min-height:126px;
+    height:auto;
+    padding:8px 12px 10px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:64px 44px;
+    align-items:center;
+    gap:8px 10px;
+    background:rgba(5,16,25,.94);
+    backdrop-filter:blur(16px);
+  }
+  .topbar .brand{
+    grid-column:1;
+    grid-row:1;
+    height:64px;
+  }
+  .topbar .brand-logo{
+    width:64px;
+    height:64px;
+    flex:0 0 64px;
+    object-fit:contain;
+    border-radius:12px;
+  }
+  .topbar .lang-toggle{
+    grid-column:2;
+    grid-row:1;
+    height:44px;
+    min-width:112px;
+    padding:0 13px;
+    border-radius:13px;
+    justify-self:end;
+    font-size:14px;
+  }
+  .topbar .search{
+    grid-column:1 / -1;
+    grid-row:2;
+    width:100%;
+    max-width:none;
+    height:44px;
+    gap:7px;
+  }
+  .search input{
+    height:44px;
+    min-width:0;
+    border-radius:13px;
+    padding:0 13px;
+    font-size:14px;
+  }
+  .search button{
+    height:44px;
+    min-width:84px;
+    padding:0 12px;
+    border-radius:13px;
+    font-size:14px;
+    font-weight:700;
+  }
+  .search-results{
+    top:134px;
+    right:10px;
+    width:calc(100% - 20px);
+  }
+  .pkf-map-toolbar{
+    top:138px;
+    right:9px;
+    gap:7px;
+  }
+}
