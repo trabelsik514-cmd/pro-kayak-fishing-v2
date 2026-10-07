@@ -32,6 +32,14 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
+      - name: Prepare app branding
+        run: |
+          mkdir -p assets
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/logo.png
+
+      - name: Generate Android app icon and splash assets
+        run: npx @capacitor/assets@3.0.5 generate --android --assetPath assets --iconBackgroundColor '#07141f' --iconBackgroundColorDark '#07141f' --splashBackgroundColor '#07141f' --splashBackgroundColorDark '#07141f'
+
       - name: Sync Capacitor
         run: npx cap sync android
 
