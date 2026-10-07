@@ -1544,3 +1544,39 @@
   html[dir="ltr"] .topbar .search{direction:ltr}
   .search-results{top:132px;right:12px;width:calc(100% - 24px)}
 }
+
+.sea-loading{padding:20px 8px;text-align:center;opacity:.75}
+.sea-location{font-size:12px;opacity:.62;margin:4px 0 10px}
+.sea-overview{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin:8px 0}
+.sea-overview>div{padding:10px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.045)}
+.sea-overview>div:first-child{grid-row:span 2;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.sea-overview span{display:block;font-size:11px;opacity:.62}
+.sea-overview strong{font-size:32px;line-height:1.1;margin:4px 0}
+.sea-overview strong small{font-size:12px;opacity:.55}
+.sea-overview b{font-size:13px}
+.sea-best-window{margin:10px 0;padding:11px 12px;border:1px solid rgba(53,184,238,.28);border-radius:12px;background:rgba(53,184,238,.08)}
+.sea-best-window>div{display:flex;justify-content:space-between;gap:10px}
+.sea-best-window strong{font-size:20px}
+.sea-best-window p{margin:5px 0;font-size:16px;font-weight:800}
+.sea-best-window small{opacity:.62;font-size:10px}
+.sea-section-title{font-size:13px;margin:13px 0 7px}
+.sea-hour-strip{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 7px;scrollbar-width:thin}
+.sea-hour-card{flex:0 0 82px;padding:8px 6px;border-radius:11px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);text-align:center}
+.sea-hour-card .sea-hour-time{font-size:11px;font-weight:800;opacity:.78}
+.sea-hour-card strong{display:block;font-size:18px;margin:3px 0 0}
+.sea-hour-card strong small{font-size:8px;opacity:.5}
+.sea-hour-card>b{display:block;font-size:9px;margin-bottom:5px}
+.sea-hour-card span{display:block;font-size:9px;opacity:.72;line-height:1.5}
+.sea-hour-card.excellent{border-color:rgba(34,197,94,.42)}
+.sea-hour-card.good{border-color:rgba(53,184,238,.35)}
+.sea-hour-card.caution{border-color:rgba(245,158,11,.45)}
+.sea-hour-card.danger{border-color:rgba(239,68,68,.45)}
+.sea-reasons-box{margin-top:8px;padding:10px 12px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.035)}
+.sea-reasons{margin:6px 0 0;padding:0;list-style:none;font-size:11px;line-height:1.55}
+.sea-source{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:9px;opacity:.48}
+@media(max-width:700px){
+  .report{max-height:74vh}
+  .sea-overview{grid-template-columns:1fr 1fr}
+  .sea-overview>div:first-child{grid-column:span 2;grid-row:auto;min-height:92px}
+  .sea-hour-card{flex-basis:78px}
+}
