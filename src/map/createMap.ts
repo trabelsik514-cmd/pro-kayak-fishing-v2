@@ -28,8 +28,8 @@ export function createMap(container: string) {
     showUserLocation: true,
     showAccuracyCircle: true
   });
-  map.addControl(geolocate, 'top-right');
-  map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
+  // The app provides its own professional map toolbar; avoid duplicate native controls.
+  // Keep the GeolocateControl instance for the toolbar's GPS action.
 
   return { map, geolocate };
 }
