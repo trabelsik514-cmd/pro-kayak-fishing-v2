@@ -259,8 +259,7 @@ export function createApp(root: HTMLElement) {
       <div class="pkf-layer-head"><b>◈ ${getLang()==='fr'?'Couches':'الطبقات'}</b><button id="pkf-layer-close" type="button" aria-label="${t('إغلاق')}">×</button></div>
       <label class="pkf-layer-row"><span>🛰️ ${getLang()==='fr'?'Satellite':'الأقمار الصناعية'}</span><input id="pkf-satellite-toggle" type="checkbox" checked></label>
       <label class="pkf-layer-row"><span>🌬️ ${t('مرور الرياح')}</span><input id="pkf-wind-toggle" type="checkbox"></label>
-      <label class="pkf-layer-row"><span>🧭 ${getLang()==='fr'?'Carte marine':'الخريطة البحرية'}</span><input id="pkf-nautical-toggle" type="checkbox"></label>
-      <div class="pkf-layer-note">${getLang()==='fr'?'Mode nautique: bathymétrie EMODnet et courbes de profondeur. Les cartes Navionics officielles nécessitent une licence/API Garmin.':'وضع الملاحة البحرية: أعماق EMODnet وخطوط الأعماق. خرائط Navionics الرسمية تحتاج ترخيصاً ومفتاح API من Garmin.'}</div>
+      <div class="pkf-layer-note">${getLang()==='fr'?'Les données marines apparaissent dans le rapport du point sélectionné.':'البيانات البحرية تظهر داخل تقرير النقطة المختارة، بدلاً من عرض طبقات غير موجودة فعلياً.'}</div>
     </aside>
     <nav class="pkf-bottom-nav" aria-label="${getLang()==='fr'?'Navigation principale':'التنقل الرئيسي'}">
       <button id="pkf-nav-map" type="button" class="active">
@@ -457,12 +456,6 @@ export function createApp(root: HTMLElement) {
   });
   document.querySelector<HTMLInputElement>('#pkf-wind-toggle')?.addEventListener('change', e => {
     setWindFlow((e.currentTarget as HTMLInputElement).checked);
-  });
-  document.querySelector<HTMLInputElement>('#pkf-nautical-toggle')?.addEventListener('change', e => {
-    const enabled = (e.currentTarget as HTMLInputElement).checked;
-    if (map.getLayer('satellite')) map.setLayoutProperty('satellite', 'visibility', enabled ? 'none' : 'visible');
-    if (map.getLayer('nautical-bathymetry')) map.setLayoutProperty('nautical-bathymetry', 'visibility', enabled ? 'visible' : 'none');
-    if (map.getLayer('nautical-contours')) map.setLayoutProperty('nautical-contours', 'visibility', enabled ? 'visible' : 'none');
   });
   document.querySelector<HTMLButtonElement>('#pkf-wind')?.addEventListener('click', () => {
     const next = !windFlowEnabled;
@@ -1005,3 +998,561 @@ export function createApp(root: HTMLElement) {
   renderTrips();
 
   const selectPoint = async (lat:number,lng:number,label:string|null=null): Promise<void> => {
+    const requestId = ++pointRequestId;
+    if (routeTripId) removeRoute();
+    selectedLocation = {lat, lng, label};
+    void saveBackgroundLocation(lat, lng, label);
+    report.classList.remove('hidden');
+    setReportOpen(true);
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
+
+    marker?.remove();
+    marker = new maplibregl.Marker({color:'#e11d48'}).setLngLat([lng,lat]).addTo(map);
+
+    const isCurrent = () => requestId === pointRequestId;
+    const bindClose = () => document.querySelector('#close-report')?.addEventListener('click',closeReport);
+    const renderLoading = (title:string, body:string) => {
+      report.innerHTML = `<div class="report-head"><b>${title}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><p>${body}</p>`;
+      bindClose();
+    };
+    const renderDepth = (depthLabel:string, depthSource:string) => {
+      const card = report.querySelector('.depth-card');
+      if (card) {
+        card.innerHTML = `🪸 ${t('العمق التقريبي')} <b>${depthLabel}</b><small>${t('المصدر:')} ${escapeHtml(depthSource)}</small>`;
+      }
+    };
+
+    renderLoading(t('جاري جلب آخر البيانات…'), `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+
+    const placeNamePromise: Promise<string|null> = label
+      ? Promise.resolve(label)
+      : Promise.race([
+          reverseCoastalName(lat,lng,getLang()).catch(() => null),
+          new Promise<string|null>(resolve => window.setTimeout(() => resolve(null), 3500))
+        ]);
+
+    try {
+      // The core sea/weather reading is the only blocking operation.
+      // Optional enrichments are started independently and may update the report later.
+      const [data, hourlyForecast] = await Promise.all([
+        marine.getPointConditions(lat,lng),
+        marine.getHourlyKayakForecast(lat,lng)
+      ]);
+      if (!isCurrent()) return;
+
+      // Reverse geocoding is optional: never hold the current sea report for a place-name lookup.
+      const placeName = label;
+      if (!isCurrent()) return;
+
+      const assessment = assessKayakConditions({
+        windSpeed:data.weather.windSpeed,
+        windGusts:data.weather.windGusts,
+        windDirection:data.weather.windDirection,
+        waveHeight:data.sea.waveHeight,
+        waveDirection:data.sea.waveDirection,
+        wavePeriod:data.sea.wavePeriod,
+        swellHeight:data.sea.swellHeight,
+        swellDirection:data.sea.swellDirection,
+        swellPeriod:data.sea.swellPeriod,
+        currentVelocity:data.sea.currentVelocity
+      });
+
+      const forecastDate = hourlyForecast[0]?.time.slice(0,10) ?? '';
+      const todayForecast = hourlyForecast.filter(p => p.time.slice(0,10) === forecastDate);
+      const futureHours = todayForecast.slice(0,12);
+      const forecastRows = futureHours.map(p => ({
+        p,
+        a: assessKayakConditions({
+          windSpeed:p.windSpeed,
+          windGusts:p.windGusts,
+          windDirection:p.windDirection,
+          waveHeight:p.waveHeight,
+          waveDirection:p.waveDirection,
+          wavePeriod:p.wavePeriod,
+          swellHeight:p.swellHeight,
+          swellDirection:p.swellDirection,
+          swellPeriod:p.swellPeriod,
+          currentVelocity:p.currentVelocity
+        })
+      }));
+      const planningScore = futureHours.length
+        ? Math.round(forecastRows.reduce((sum,row)=>sum+row.a.score,0)/forecastRows.length)
+        : assessment.score;
+      const planningLevel = planningScore>=82?'ممتاز':planningScore>=65?'جيد':planningScore>=45?'حذر':'غير مناسب';
+      const bestPlanningWindow = bestKayakWindow(todayForecast,3);
+      const planningTime = (iso:string) => iso.slice(11,16);
+      const levelClass = (level:string) => level==='ممتاز'?'excellent':level==='جيد'?'good':level==='حذر'?'caution':'danger';
+      const planningReasons = forecastRows
+        .flatMap(row=>row.a.reasons)
+        .filter((reason,index,array)=>array.indexOf(reason)===index)
+        .slice(0,3);
+      const planningHoursHtml = forecastRows.slice(0,8).map(({p,a}) =>
+        `<article class="departure-hour ${levelClass(a.level)}">
+          <b>${planningTime(p.time)}</b>
+          <strong>${a.score}<small>/100</small></strong>
+          <span>${translateLevel(a.level)}</span>
+          <small>🌊 ${value(p.waveHeight,' m')} · 💨 ${value(p.windSpeed,' km/h')}</small>
+        </article>`
+      ).join('');
+      const planningWindowHtml = bestPlanningWindow
+        ? `<div class="departure-best">
+            <span>🎣 ${t('أفضل نافذة متوقعة')}</span>
+            <strong>${planningTime(bestPlanningWindow.start)} → ${planningTime(bestPlanningWindow.end)}</strong>
+            <small>${t('نافذة تخطيطية لمدة 3 ساعات، وليست ضماناً لسلامة الرحلة.')}</small>
+          </div>`
+        : '';
+      const planningReasonsHtml = planningReasons.length
+        ? `<ul class="departure-reasons">${planningReasons.map(reason=>`<li>• ${translateReason(reason)}</li>`).join('')}</ul>`
+        : '';
+      const departurePlanning = `<section class="departure-planning">
+        <div class="departure-planning-head">
+          <div><b>🎣 ${t('تخطيط الخروج')}</b><small>${t('مبني على الساعات القادمة عند هذه النقطة')}</small></div>
+          <strong class="${levelClass(planningLevel)}">${planningScore}/100</strong>
+        </div>
+        <div class="departure-status ${levelClass(planningLevel)}">${translateLevel(planningLevel)}</div>
+        ${planningWindowHtml}
+        <div class="departure-hours">${planningHoursHtml || `<small>${t('لا توجد بيانات ساعية كافية للتخطيط.')}</small>`}</div>
+        ${planningReasonsHtml}
+        <small class="departure-note">${t('هذا تقييم تخطيطي للظروف البحرية والرياح، وليس شهادة سلامة. أعد التحقق من التوقعات قبل الانطلاق.')}</small>
+      </section>`;
+      const reportBase = reportHtml(data,placeName)
+        .replace('<div class="report-grid">', departurePlanning + '<div class="report-grid">')
+        + (
+          data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
+            ? `<div class="sea-wave-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
+            : ''
+        );
+      const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`;
+      const initialHtml = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) +
+        `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
+      report.innerHTML = initialHtml;
+      bindClose();
+
+      // Add the coastal name whenever reverse geocoding finishes, without rebuilding the report.
+      void placeNamePromise.then(resolvedName => {
+        if (!isCurrent() || !resolvedName) return;
+        const placeEl = report.querySelector<HTMLElement>('.report-place');
+        if (placeEl) placeEl.innerHTML = '📍 ' + escapeHtml(resolvedName);
+      });
+
+      // Species compatibility enrichment: uses the selected point's bathymetry and current sea temperature.
+      void (async () => {
+        try {
+          const bathy = await getBathymetryDepth(map,lng,lat);
+          if (!isCurrent()) return;
+          renderDepth(
+            bathy ? `${bathy.depthMeters.toFixed(1)} m` : t('غير متاح'),
+            bathy?.source ?? t('لا توجد قراءة متاحة')
+          );
+          const depth = bathy?.depthMeters;
+          const seaTemp = data.sea.seaTemperature;
+          const substrateCode = bathy?.substrate?.code ?? null;
+          const substrateLabel = bathy?.substrate?.label ?? null;
+          const substrateName = substrateCode===1?'mud':substrateCode===2?'sandy':substrateCode===3?'coarse':substrateCode===4?'mixed':substrateCode===5?'rocky':null;
+          const month = new Date().getMonth()+1;
+          const species = [
+            {ar:'الدنيس / Daurade',fr:'Daurade',min:2,max:50,tmin:14,tmax:28,bottom:['sandy','rocky','seagrass'],season:[3,4,5,6,7,8,9,10,11]},
+            {ar:'السار / Sar',fr:'Sar',min:3,max:55,tmin:15,tmax:27,bottom:['rocky','reef','seagrass'],season:[4,5,6,7,8,9,10,11]},
+            {ar:'الشرغو / Diplodus',fr:'Diplodus',min:2,max:45,tmin:14,tmax:27,bottom:['rocky','reef','seagrass'],season:[3,4,5,6,7,8,9,10]},
+            {ar:'القاروص / Loup',fr:'Loup de mer',min:1,max:30,tmin:10,tmax:25,bottom:['sandy','rocky','estuary'],season:[9,10,11,12,1,2,3,4]},
+            {ar:'المرمار / Pageot',fr:'Pageot',min:15,max:120,tmin:13,tmax:24,bottom:['sandy','rocky'],season:[4,5,6,7,8,9,10]},
+            {ar:'الحلوفة / Balistes capriscus',fr:'Baliste gris / Balistes capriscus',min:10,max:100,tmin:18,tmax:24,bottom:['rocky','reef','seagrass','sandy'],season:[5,6,7,8,9,10]}
+          ];
+          const compatibility = (s:{min:number;max:number;tmin:number;tmax:number,bottom?:string[],season?:number[]}) => {
+            if (depth == null) return {score:0, reasons:[] as string[]};
+            const reasons:string[]=[];
+            const depthFit = depth >= s.min && depth <= s.max;
+            const depthScore = depthFit ? 35 : Math.max(0, 35 - Math.min(Math.abs(depth-s.min),Math.abs(depth-s.max))*1.2);
+            reasons.push(depthFit ? (getLang()==='fr'?'Profondeur adaptée':'العمق مناسب') : (getLang()==='fr'?'Profondeur moins adaptée':'العمق أقل ملاءمة'));
+            const tempScore = seaTemp == null ? 15 : (seaTemp >= s.tmin && seaTemp <= s.tmax ? 25 : Math.max(0,25-Math.min(Math.abs(seaTemp-s.tmin),Math.abs(seaTemp-s.tmax))*4));
+            if (seaTemp != null) reasons.push(seaTemp >= s.tmin && seaTemp <= s.tmax ? (getLang()==='fr'?'Température adaptée':'الحرارة مناسبة') : (getLang()==='fr'?'Température moins adaptée':'الحرارة أقل ملاءمة'));
+            const seasonFit = s.season?.includes(month);
+            const seasonScore = seasonFit ? 20 : 8;
+            reasons.push(seasonFit ? (getLang()==='fr'?'Saison favorable':'الموسم مناسب') : (getLang()==='fr'?'Saison moins favorable':'الموسم أقل ملاءمة'));
+            const current = Number(data.sea.currentVelocity);
+            const currentScore = Number.isFinite(current) ? (current>=0.2&&current<=1.2 ? 10 : current<0.2 ? 5 : 3) : 5;
+            if (Number.isFinite(current)) reasons.push(current>=0.2&&current<=1.2 ? (getLang()==='fr'?'Courant favorable':'التيار مناسب') : (getLang()==='fr'?'Courant moins favorable':'التيار أقل ملاءمة'));
+            const bottomFit = !!(substrateName && s.bottom?.includes(substrateName));
+            const substrateScore = bottomFit ? 20 : (substrateName ? 6 : 10);
+            if (substrateName) reasons.push(bottomFit ? (getLang()==='fr'?'Fond marin adapté':'نوع القاع مناسب') : (getLang()==='fr'?'Fond marin moins adapté':'نوع القاع أقل ملاءمة'));
+            return {score:Math.round(Math.min(100,depthScore+tempScore+seasonScore+currentScore+substrateScore)),reasons};
+          };
+          const ranked = species.map(s=>({...s,...compatibility(s)})).sort((a,b)=>b.score-a.score).slice(0,4);
+          const card = document.createElement('div');
+          card.className='species-compat';
+          card.innerHTML = `<div class="species-compat-head"><b>🐟 ${getLang()==='fr'?'Espèces potentielles':'الأنواع المحتملة'}</b><small>${getLang()==='fr'?'Compatibilité environnementale':'ملاءمة بيئية'}</small></div><div class="species-compat-list">${ranked.map((s,i)=>`<details ${i===0?'open':''}><summary><span>🐟 ${escapeHtml(getLang()==='fr'?s.fr:s.ar)}</span><strong>${s.score}/100</strong></summary><div class="species-reasons">${s.reasons.map(r=>`<span>• ${escapeHtml(r)}</span>`).join('')}</div></details>`).join('')}</div><small>${getLang()==='fr'?'La note explique la compatibilité environnementale; elle ne garantit pas la présence du poisson.':'الدرجة تشرح الملاءمة البيئية ولا تضمن وجود السمك في النقطة.'}</small>`;
+          if (!isCurrent()) return;
+          const depthCardEl = report.querySelector('.depth-card');
+          if (depthCardEl) {
+            if (substrateLabel) {
+              const sub = document.createElement('div');
+              sub.className='substrate-card';
+              sub.innerHTML=`🪨 <b>${getLang()==='fr'?'Fond marin':'نوع القاع'}</b><span>${escapeHtml(getLang()==='fr' ? ({'Mud to muddy Sand':'Vase / sable vaseux','Sand':'Sable','Coarse substrate':'Sédiment grossier','Mixed sediment':'Sédiment mixte','Rock & boulders':'Roche et blocs'} as Record<string,string>)[substrateLabel] || substrateLabel : ({'Mud to muddy Sand':'طين / رمل طيني','Sand':'رمل','Coarse substrate':'رواسب خشنة','Mixed sediment':'رواسب مختلطة','Rock & boulders':'صخور وكتل'} as Record<string,string>)[substrateLabel] || substrateLabel)}</span>`;
+              depthCardEl.insertAdjacentElement('afterend',sub);
+            }
+            depthCardEl.insertAdjacentElement('afterend',card);
+          }
+        } catch {
+          // Species enrichment is optional and never blocks the sea report.
+        }
+      })();
+
+      // Verified marine reference points.
+      // These are scientific sampling locations, NOT fabricated fishing spots.
+      // Coordinates/substrate are taken from a published Tunisia marine survey.
+      try {
+        const marinePoints = [
+          {id:'ras-blat',ar:'رأس بلاط · رفراف',fr:'Ras Blat · Rafraf',icon:'🪨',color:'#f59e0b',lat:37.1969,lng:10.2089,descAr:'نقطة بحرية موثقة — قاع رملي/صخري',descFr:'Point marin documenté — fond sableux/rocheux'},
+          {id:'ras-ettarf',ar:'رأس الطرف · رفراف',fr:'Ras Ettarf · Rafraf',icon:'🔵',color:'#38bdf8',lat:37.1822,lng:10.2653,descAr:'نقطة بحرية موثقة — قاع رملي',descFr:'Point marin documenté — fond sableux'},
+          {id:'ghar-el-melh',ar:'غار الملح',fr:'Ghar El Melh',icon:'🟠',color:'#fb923c',lat:37.1625,lng:10.2147,descAr:'نقطة بحرية موثقة — قاع رملي/طيني',descFr:'Point marin documenté — fond sableux/vaseux'},
+          {id:'la-marsa',ar:'المرسى',fr:'La Marsa',icon:'🌿',color:'#22c55e',lat:36.8956,lng:10.3219,descAr:'نقطة بحرية موثقة — قاع رملي/صخري',descFr:'Point marin documenté — fond sableux/rocheux'},
+          {id:'sidi-bou-said',ar:'سيدي بوسعيد',fr:'Sidi Bou Saïd',icon:'🪨',color:'#ef4444',lat:36.8661,lng:10.3519,descAr:'نقطة بحرية موثقة — قاع صخري',descFr:'Point marin documenté — fond rocheux'},
+          {id:'salammbo',ar:'قرطاج / سلامبو',fr:'Carthage / Salammbo',icon:'🪨',color:'#a78bfa',lat:36.8447,lng:10.3272,descAr:'نقطة بحرية موثقة — قاع صخري',descFr:'Point marin documenté — fond rocheux'}
+        ];
+        const features = marinePoints.map((p:any) => ({
+          type:'Feature' as const,
+          properties:{
+            id:p.id,
+            label:getLang()==='fr'?p.fr:p.ar,
+            icon:p.icon,
+            description:getLang()==='fr'?p.descFr:p.descAr,
+            color:p.color
+          },
+          geometry:{type:'Point' as const,coordinates:[p.lng,p.lat]}
+        }));
+        const sourceId='pkf-marine-points';
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId,{type:'geojson',data:{type:'FeatureCollection',features}});
+          map.addLayer({
+            id:'pkf-marine-points-layer',
+            type:'circle',
+            source:sourceId,
+            paint:{
+              'circle-radius':7,
+              'circle-color':['get','color'],
+              'circle-stroke-color':'#fff',
+              'circle-stroke-width':2,
+              'circle-opacity':0.90
+            }
+          });
+        } else {
+          (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData({type:'FeatureCollection',features} as any);
+        }
+        (window as any).__rlxMarinePointsTypes=marinePoints;
+      } catch {}
+      
+      // Optional services must never delay the core sea-state report.
+      void (async () => {
+        try {
+          const bathy = await getBathymetryDepth(map,lng,lat);
+          if (!isCurrent()) return;
+          renderDepth(
+            bathy ? `${bathy.depthMeters.toFixed(1)} m` : t('غير متاح'),
+            bathy?.source ?? t('لا توجد قراءة متاحة')
+          );
+        } catch {
+          if (!isCurrent()) return;
+          renderDepth(t('غير متاح'),t('لا توجد قراءة متاحة'));
+        }
+      })();
+
+      void (async () => {
+        try {
+          const hourly = await marine.getHourlyKayakForecast(lat,lng);
+          if (!isCurrent()) return;
+          const best = bestKayakWindow(hourly,3);
+          if (!best) return;
+          const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'});
+          const level=best.score>=82?'ممتاز':best.score>=65?'جيد':best.score>=45?'حذر':'غير مناسب';
+          const card = document.createElement('div');
+          card.className='kayak-window';
+          card.innerHTML=`<b>⏰ ${t('أفضل نافذة للرحلة')}</b><strong>${fmt(best.start)} – ${fmt(best.end)}</strong><span>${t('متوسط ملاءمة النافذة')}: ${best.score}/100 · ${translateLevel(level)}</span>`;
+          if (!isCurrent()) return;
+          const assessmentEl = report.querySelector('.kayak-assessment');
+          if (assessmentEl) assessmentEl.insertAdjacentElement('beforebegin',card);
+          else report.appendChild(card);
+        } catch {
+          // Forecast enrichment is optional; the already rendered current report remains valid.
+        }
+      })();
+    } catch {
+      if (!isCurrent()) return;
+      report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب البيانات')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><p>${t('تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.')}</p><button id="retry-report">${getLang()==='fr' ? 'Réessayer' : 'إعادة المحاولة'}</button>`;
+      bindClose();
+      document.querySelector('#retry-report')?.addEventListener('click',()=>selectPoint(lat,lng,label));
+    }
+  };
+
+  const showTodayWeather = async (lat:number, lng:number) => {
+    if (routeTripId) removeRoute();
+    report.classList.remove('hidden');
+    setReportOpen(true);
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
+    report.innerHTML = `<div class="report-head"><b>🌤️ ${t('حالة الطقس اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><div class="sea-loading">${t('جاري جلب طقس اليوم…')}</div>`;
+    document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    try {
+      const d = await marine.getTodayWeatherSummary(lat,lng);
+      const weatherText = (code:number|null) => {
+        if (code==null) return t('بيانات غير متاحة');
+        if (code===0) return t('صافي');
+        if ([1,2,3].includes(code)) return t('غائم جزئياً');
+        if ([45,48].includes(code)) return t('ضباب');
+        if ([51,53,55,56,57].includes(code)) return t('رذاذ');
+        if ([61,63,65,66,67,80,81,82].includes(code)) return t('أمطار');
+        if ([71,73,75,77,85,86].includes(code)) return t('ثلوج');
+        if ([95,96,99].includes(code)) return t('عواصف رعدية');
+        return t('متغير');
+      };
+      const dir = (deg:number|null) => {
+        if(deg==null) return '—';
+        const dirs=['N','NE','E','SE','S','SW','W','NW'];
+        return dirs[Math.round(deg/45)%8];
+      };
+      const time = (v:string|null) => v ? v.slice(11,16) : '—';
+      report.innerHTML = `
+        <div class="report-head"><b>🌤️ ${t('حالة الطقس اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
+        <section class="sea-overview weather-overview">
+          <div><span>🌡️ ${t('الحرارة')}</span><b>${value(d.temperatureMin,' °C')} – ${value(d.temperatureMax,' °C')}</b></div>
+          <div><span>🌧️ ${t('احتمال الأمطار')}</span><b>${value(d.precipitationProbabilityMax,' %')}</b></div>
+          <div><span>💨 ${t('الرياح')}</span><b>${value(d.windMin,' km/h')} – ${value(d.windMax,' km/h')}</b></div>
+          <div><span>💨 ${t('أقصى هبات')}</span><b>${value(d.gustMax,' km/h')}</b></div>
+          <div><span>🧭 ${t('اتجاه الرياح')}</span><b dir="ltr">${dir(d.windDirectionDominant)}</b></div>
+          <div><span>💧 ${t('الرطوبة')}</span><b>${value(d.humidityMean,' %')}</b></div>
+        </section>
+        <section class="sea-best-window weather-highlight">
+          <div><b>☀️ ${weatherText(d.weatherCode)}</b></div>
+          <p>🌅 ${t('الشروق')} ${time(d.sunrise)} &nbsp; · &nbsp; 🌇 ${t('الغروب')} ${time(d.sunset)}</p>
+          <small>${t('توقعات اليوم حسب الموقع المحدد')}</small>
+        </section>
+        <div class="sea-source"><span>${t('المصدر:')} Open-Meteo</span><span>${t('آخر تحديث:')} ${new Date().toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false})}</span></div>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    } catch {
+      report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب طقس اليوم')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    }
+  };
+
+  const showTodaySea = async (lat:number, lng:number) => {
+    if (routeTripId) removeRoute();
+    report.classList.remove('hidden');
+    setReportOpen(true);
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
+    report.innerHTML = `<div class="report-head"><b>🌊 ${t('حالة البحر اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><div class="sea-loading">${t('جاري جلب توقعات اليوم…')}</div>`;
+    document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    try {
+      const [d, hourly] = await Promise.all([
+        marine.getTodaySummary(lat, lng),
+        marine.getHourlyKayakForecast(lat, lng)
+      ]);
+      const todayPoints = hourly.filter(p => p.time.slice(0,10) === d.date);
+      const nextPoints = todayPoints.slice(0,12);
+      const assess = (p:HourlyKayakPoint) => assessKayakConditions({
+        windSpeed:p.windSpeed, windGusts:p.windGusts, windDirection:p.windDirection,
+        waveHeight:p.waveHeight, waveDirection:p.waveDirection, wavePeriod:p.wavePeriod,
+        swellHeight:p.swellHeight, swellPeriod:p.swellPeriod, currentVelocity:p.currentVelocity
+      });
+      const rows = nextPoints.map(p => ({p,a:assess(p)}));
+      const best = bestKayakWindow(todayPoints,3);
+      const levelClass = (level:string) => level==='ممتاز'?'excellent':level==='جيد'?'good':level==='حذر'?'caution':'danger';
+      const levelLabel = (level:string) => translateLevel(level);
+      const timeLabel = (iso:string) => iso.slice(11,16);
+      const hourCards = rows.map(({p,a}) => `<article class="sea-hour-card ${levelClass(a.level)}">
+        <div class="sea-hour-time">${timeLabel(p.time)}</div>
+        <strong>${a.score}<small>/100</small></strong>
+        <b>${levelLabel(a.level)}</b>
+        <span>🌊 ${value(p.waveHeight,' m')}</span>
+        <span>💨 ${value(p.windSpeed,' km/h')}</span>
+        <span>💨 ${value(p.windGusts,' km/h')}</span>
+      </article>`).join('');
+      const bestHtml = best
+        ? `<section class="sea-best-window">
+            <div><b>🎣 ${t('أفضل نافذة متوقعة')}</b><strong>${best.score}/100</strong></div>
+            <p>${timeLabel(best.start)} → ${timeLabel(best.end)}</p>
+            <small>${t('نافذة تخطيطية لمدة 3 ساعات، وليست ضماناً لسلامة الرحلة.')}</small>
+          </section>`
+        : '';
+      const overall = todayPoints.length ? Math.round(todayPoints.slice(0,12).map(assess).reduce((n,a)=>n+a.score,0)/Math.min(12,todayPoints.length)) : null;
+      const overallLevel = overall==null ? '—' : overall>=82?'ممتاز':overall>=65?'جيد':overall>=45?'حذر':'غير مناسب';
+      const reasons = rows.flatMap(x => x.a.reasons).filter((v,i,a)=>a.indexOf(v)===i).slice(0,3);
+      const reasonHtml = reasons.length ? `<ul class="sea-reasons">${reasons.map(r=>`<li>• ${translateReason(r)}</li>`).join('')}</ul>` : '';
+      report.innerHTML = `
+        <div class="report-head"><b>🌊 ${t('حالة البحر اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
+        <div class="sea-location">📍 ${ltr(lat.toFixed(4)+', '+lng.toFixed(4))}</div>
+        <section class="sea-overview">
+          <div><span>${t('تقييم اليوم')}</span><strong>${overall ?? '—'}<small>/100</small></strong><b>${overallLevel==='—'?'—':levelLabel(overallLevel)}</b></div>
+          <div><span>🌊 ${t('نطاق الموج')}</span><b>${value(d.waveMin,' m')} – ${value(d.waveMax,' m')}</b></div>
+          <div><span>💨 ${t('نطاق الرياح')}</span><b>${value(d.windMin,' km/h')} – ${value(d.windMax,' km/h')}</b></div>
+          <div><span>💨 ${t('أقصى هبات')}</span><b>${value(d.gustMin,' km/h')} – ${value(d.gustMax,' km/h')}</b></div>
+        </section>
+        ${bestHtml}
+        <button type="button" class="sea-section-toggle" id="sea-hours-toggle" aria-expanded="true">
+          <span>🕐 ${t('الساعات القادمة')}</span><span class="sea-section-chevron" aria-hidden="true">⌃</span>
+        </button>
+        <div class="sea-hour-strip" id="sea-hour-strip">${hourCards || `<p>${t('لا توجد بيانات ساعية متاحة')}</p>`}</div>
+        ${reasonHtml ? `<section class="sea-reasons-box"><b>${t('أهم عوامل التقييم')}</b>${reasonHtml}</section>` : ''}
+        <div class="sea-source">
+          <span>${t('المصدر:')} Open-Meteo</span>
+          <span>${t('بيانات اليوم حسب الموقع المحدد')}</span>
+        </div>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+
+      const hoursToggle = document.querySelector<HTMLButtonElement>('#sea-hours-toggle');
+      const hoursStrip = document.querySelector<HTMLElement>('#sea-hour-strip');
+      hoursToggle?.addEventListener('click', () => {
+        if (!hoursStrip) return;
+        const open = hoursToggle.getAttribute('aria-expanded') !== 'false';
+        hoursToggle.setAttribute('aria-expanded', String(!open));
+        hoursStrip.classList.toggle('collapsed', open);
+        const chevron = hoursToggle.querySelector<HTMLElement>('.sea-section-chevron');
+        if (chevron) chevron.textContent = open ? '⌄' : '⌃';
+      });
+    } catch {
+      report.innerHTML = `<div class="report-head"><b>${t('تعذر جلب حالة البحر')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    }
+  };
+
+  const showWeeklySea = async (lat:number, lng:number) => {
+    if (routeTripId) removeRoute();
+    report.classList.remove('hidden');
+    setReportOpen(true);
+    tripPanel.classList.add('hidden');
+    measurePanel.classList.add('hidden');
+    measuring = false;
+    report.innerHTML = `<div class="report-head"><b>${t('حالة البحر 7 أيام')}</b><button id="close-report">×</button></div><p>${t('جاري حساب توقعات الأسبوع…')}</p>`;
+    document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    try {
+      const [days, modelDays] = await Promise.all([marine.getWeeklySeaSummary(lat,lng), marine.getWeatherModelComparison(lat,lng)]);
+      const formatForecastDate=(date:string)=> {
+        const d = new Date(date + 'T12:00:00');
+        return new Intl.DateTimeFormat(locale(), {
+          weekday:'long', day:'numeric', month:'long'
+        }).format(d);
+      };
+      const dayLabel=(date:string,index:number)=>{
+        if(index===0) return t('اليوم');
+        if(index===1) return t('غداً');
+        if(index===2) return t('بعد غد');
+        return formatForecastDate(date);
+      };
+      const score=(d:WeeklySeaSummary)=>{
+        let s=100;
+        if(d.waveMax!=null) s-=d.waveMax<=0.5?0:d.waveMax<=0.8?10:d.waveMax<=1.2?25:45;
+        if(d.windMax!=null) s-=d.windMax<=15?0:d.windMax<=25?10:d.windMax<=35?25:40;
+        if(d.gustMax!=null) s-=d.gustMax<=25?0:d.gustMax<=40?10:25;
+        return Math.max(0,Math.min(100,Math.round(s)));
+      };
+      const level=(s:number)=>s>=82?'ممتاز':s>=65?'جيد':s>=45?'حذر':'غير مناسب';
+      const cards=days.map((d,i)=>{
+        const s=score(d);
+        return `<article class="weekly-sea-card">
+          <div class="weekly-sea-day"><b>${dayLabel(d.date,i)}</b><strong>${translateLevel(level(s))}</strong></div>
+          <div class="weekly-sea-values">
+            <span>🌊 ${t('أقصى موج')} <b>${value(d.waveMax,' m')}</b></span>
+            <span>🧭 ${t('اتجاه الموج السائد')} <b>${value(d.waveDirection,'°')}</b></span>
+            <span>💨 ${t('أقصى رياح')} <b>${value(d.windMax,' km/h')}</b></span>
+            <span>💨 ${t('أقصى هبات')} <b>${value(d.gustMax,' km/h')}</b></span>
+          </div>
+        </article>`;
+      }).join('');
+      const currentByDate = new Map(days.map(d=>[d.date,d]));
+      const modelCards = modelDays.map((m:WeatherModelComparisonDay,i:number)=>{
+        const label=dayLabel(m.date,i);
+        const fmt=(v:number|null,unit:string)=>v==null?'--':v.toFixed(0)+unit;
+        const current=currentByDate.get(m.date);
+        return '<article class="model-compare-card">' +
+          '<div class="model-compare-head"><b>'+label+'</b><strong>'+(m.agreement==null?'--':m.agreement+'%')+'</strong></div>' +
+          '<div class="model-compare-grid">' +
+          '<span>ECMWF <b>'+fmt(m.ecmwf.windMax,' km/h')+'</b></span>' +
+          '<span>GFS <b>'+fmt(m.gfs.windMax,' km/h')+'</b></span>' +
+          '<span>ICON <b>'+fmt(m.icon.windMax,' km/h')+'</b></span>' +
+          '<span>'+t('فرق الرياح')+' <b>'+fmt(m.windSpread,' km/h')+'</b></span>' +
+          '<span>'+t('متوسط التيار')+' <b>'+fmt(current?.currentAvg ?? null,' km/h')+'</b></span>' +
+          '<span>'+t('أقصى تيار')+' <b>'+fmt(current?.currentMax ?? null,' km/h')+'</b></span>' +
+          '<span>'+t('اتجاه التيار')+' <b>'+directionValue(current?.currentDirection ?? null,current?.currentAvg ?? null)+'</b></span>' +
+          '</div></article>';
+      }).join('');
+      report.innerHTML = '<div class="report-head"><b>'+t('حالة البحر 7 أيام')+'</b><button id="close-report">×</button></div>' +
+        '<p>📍 '+ltr(lat.toFixed(4)+', '+lng.toFixed(4))+'</p>' +
+        '<div class="weekly-sea-list">'+(cards || '<p>'+t('لا توجد بيانات أسبوعية متاحة')+'</p>')+'</div>' +
+        '<section class="model-comparison">' +
+          '<div class="model-comparison-title"><b>📊 '+t('مقارنة النماذج')+'</b><small>'+t('توافق النماذج')+'</small></div>' +
+          '<div class="model-comparison-list">'+(modelCards || '<p>'+t('بيانات غير متاحة')+'</p>')+'</div>' +
+          '<small>'+t('الثقة هنا تقيس تقارب نماذج الرياح الثلاثة، وليست دقة مضمونة.')+'</small>' +
+        '</section>' +
+        '<small>'+t('المصدر:')+' Open-Meteo · ECMWF · GFS · ICON</small>';
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    } catch {
+      report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب توقعات الأسبوع')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    }
+  };
+
+  document.querySelector('#weekly-sea')?.addEventListener('click', () => {
+    const markerPoint = marker?.getLngLat();
+    const target = selectedLocation ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null) ?? (() => { const center=map.getCenter(); return {lat:center.lat,lng:center.lng}; })();
+    showWeeklySea(target.lat,target.lng);
+  });
+
+  document.querySelector('#today-sea')?.addEventListener('click', () => {
+    const markerPoint = marker?.getLngLat();
+    const target = selectedLocation
+      ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null)
+      ?? (() => { const center = map.getCenter(); return {lat:center.lat, lng:center.lng}; })();
+    showTodayWeather(target.lat, target.lng);
+  });
+
+  map.on('click',event=>{
+    if (measuring) {
+      if (measurePoints.length>=2) return;
+      const point:[number,number]=[event.lngLat.lng,event.lngLat.lat];
+      measurePoints.push(point);
+      const marker=new maplibregl.Marker({color: measurePoints.length===1 ? '#f59e0b' : '#22c55e'}).setLngLat(point).addTo(map);
+      measureMarkers.push(marker);
+      if (measurePoints.length===2) {
+        map.addSource('measure-source',{type:'geojson',data:{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:measurePoints}}});
+        map.addLayer({id:'measure-line',type:'line',source:'measure-source',paint:{'line-color':'#f59e0b','line-width':4,'line-dasharray':[1,1]}});
+      }
+      renderMeasurement();
+      return;
+    }
+    selectPoint(event.lngLat.lat,event.lngLat.lng);
+  });
+  document.querySelector('#search-form')?.addEventListener('submit',async event=>{
+    event.preventDefault(); const input=document.querySelector<HTMLInputElement>('#search-input')!; const results=document.querySelector<HTMLElement>('#search-results')!; const query=input.value.trim(); if(!query)return;
+    results.classList.remove('hidden'); results.innerHTML='<div>'+t('جاري البحث…')+'</div>';
+    try{const places=await geocoder.search(query,getLang()); if(!places.length){results.innerHTML='<div>'+t('لم يتم العثور على موقع تونسي مطابق.')+'</div>';return}
+      results.innerHTML=places.map((p,i)=>`<button data-index="${i}"><b>${p.name}</b><small>${p.admin1??''} ${p.country??''}</small></button>`).join('');
+      results.querySelectorAll<HTMLButtonElement>('button').forEach(button=>button.addEventListener('click',()=>{const p=places[Number(button.dataset.index)];results.classList.add('hidden');const label=[p.name,p.admin1].filter(Boolean).join(' — ');map.stop();map.jumpTo({center:[p.longitude,p.latitude],zoom:13.5});selectPoint(p.latitude,p.longitude,label)}))
+    }catch{results.innerHTML='<div>'+t('تعذر الاتصال بخدمة البحث. حاول مرة أخرى.')+'</div>'}
+  });
+  // Keep the wind layer synchronized with map navigation without fetching on every pixel.
+  let windMoveTimer:number|null = null;
+  map.on('moveend', () => {
+    if (!windFlowEnabled) return;
+    if (windMoveTimer != null) window.clearTimeout(windMoveTimer);
+    windMoveTimer = window.setTimeout(() => { void refreshWindFlow(); }, 350);
+  });
+
+  // Live sea data refresh: while the app is open, refresh the selected point every 15 minutes.
+  // A single timer is shared across language/UI re-renders so it cannot multiply.
+  const refreshKey = '__pkfSeaRefreshTimer';
+  const previousRefresh = (window as unknown as Record<string, unknown>)[refreshKey];
+  if (typeof previousRefresh === 'number') window.clearInterval(previousRefresh);
+  const refreshTimer = window.setInterval(() => {
+    if (!selectedLocation || report.classList.contains('hidden')) return;
+    const target = {...selectedLocation};
+    void selectPoint(target.lat, target.lng, target.label);
+  }, 15 * 60 * 1000);
+  (window as unknown as Record<string, unknown>)[refreshKey] = refreshTimer;
+
+  map.on('load',()=>geolocate.trigger());
+}
+
+// Production deployment refresh: 2026-10-05T20:39:12.734Z
