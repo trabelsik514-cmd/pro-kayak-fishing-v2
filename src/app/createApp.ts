@@ -389,41 +389,20 @@ export function createApp(root: HTMLElement) {
       let legendSpeed:number|null = null;
       let legendFrom:number|null = null;
 
-      locations.forEach((location:any, index:number) => {
-        const current = location?.current;
-        const speed = Number(current?.wind_speed_10m);
-        const from = Number(current?.wind_direction_10m);
-        if (!Number.isFinite(speed) || !Number.isFinite(from) || !points[index]) return;
-        if (legendSpeed == null || speed > legendSpeed) { legendSpeed = speed; legendFrom = from; }
-        const to = (from + 180) % 360;
-        const el = document.createElement('div');
-        el.className = 'pkf-wind-arrow';
-        el.setAttribute('aria-hidden','true');
-        const intensity = Math.max(0,Math.min(1,speed/45));
-        el.style.setProperty('--wind-opacity',(0.48 + intensity*0.42).toFixed(2));
-        el.innerHTML = '<svg viewBox="0 0 44 44" focusable="false"><path class="pkf-wind-tail" d="M22 37V13"></path><path class="pkf-wind-head" d="M11 24 22 9l11 15"></path></svg>';
-        new maplibregl.Marker({element:el,anchor:'center',rotation:to,rotationAlignment:'map',pitchAlignment:'map'})
-          .setLngLat([points[index].lng,points[index].lat])
-          .addTo(map);
-        const marker = new maplibregl.Marker({element:el,anchor:'center',rotation:to,rotationAlignment:'map',pitchAlignment:'map'})
-          .setLngLat([points[index].lng,points[index].lat]);
-        // The first Marker construction above is intentionally replaced below so the
-        // marker is tracked for clean toggling without relying on DOM queries.
-        marker.addTo(map);
-        windMarkers.push(marker);
-      });
-      // Remove the untracked duplicate markers created by the compatibility-safe path above.
-      // Re-render once using tracked markers only.
-      windMarkers.splice(0).forEach(m=>m.remove());
       locations.forEach((location:any,index:number)=>{
         const current=location?.current;
         const speed=Number(current?.wind_speed_10m), from=Number(current?.wind_direction_10m);
         if(!Number.isFinite(speed)||!Number.isFinite(from)||!points[index]) return;
+        if(legendSpeed == null || speed > legendSpeed) { legendSpeed = speed; legendFrom = from; }
         const to=(from+180)%360;
-        const el=document.createElement('div'); el.className='pkf-wind-arrow'; el.setAttribute('aria-hidden','true');
+        const el=document.createElement('div');
+        el.className='pkf-wind-arrow';
+        el.setAttribute('aria-hidden','true');
         el.style.setProperty('--wind-opacity',(0.48+Math.max(0,Math.min(1,speed/45))*0.42).toFixed(2));
         el.innerHTML='<svg viewBox="0 0 44 44" focusable="false"><path class="pkf-wind-tail" d="M22 37V13"></path><path class="pkf-wind-head" d="M11 24 22 9l11 15"></path></svg>';
-        const marker=new maplibregl.Marker({element:el,anchor:'center',rotation:to,rotationAlignment:'map',pitchAlignment:'map',subpixelPositioning:true}).setLngLat([points[index].lng,points[index].lat]).addTo(map);
+        const marker=new maplibregl.Marker({element:el,anchor:'center',rotation:to,rotationAlignment:'map',pitchAlignment:'map',subpixelPositioning:true})
+          .setLngLat([points[index].lng,points[index].lat])
+          .addTo(map);
         windMarkers.push(marker);
       });
       updateWindLegend(legendSpeed,legendFrom);
