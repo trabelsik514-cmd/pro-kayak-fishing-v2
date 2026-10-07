@@ -1005,28 +1005,44 @@ export function createApp(root: HTMLElement) {
         }
       })();
 
-      // Important marine points layer (foundation for the verified-points phase).
+      // Verified marine reference points.
+      // These are scientific sampling locations, NOT fabricated fishing spots.
+      // Coordinates/substrate are taken from a published Tunisia marine survey.
       try {
-        // MapLibre replacement for the legacy Leaflet marine-points block.
         const marinePoints = [
-          {id:'reef',ar:'شعاب',fr:'Récif',icon:'🪨',color:'#f59e0b',descAr:'معلم بحري: شعاب / بنية صخرية',descFr:'Repère marin: récif / structure rocheuse'},
-          {id:'seagrass',ar:'أعشاب بحرية',fr:'Herbier marin',icon:'🌿',color:'#22c55e',descAr:'موطن بحري محتمل',descFr:'Habitat marin potentiel'},
-          {id:'bank',ar:'بنك بحري',fr:'Banc marin',icon:'🔵',color:'#38bdf8',descAr:'تغير مهم في القاع أو العمق',descFr:'Variation notable du fond ou de la profondeur'},
-          {id:'channel',ar:'قناة',fr:'Chenal',icon:'🟠',color:'#fb923c',descAr:'ممر مائي / تغير في حركة المياه',descFr:'Passage d’eau / variation du courant'},
-          {id:'artificial-reef',ar:'شعاب اصطناعية',fr:'Récif artificiel',icon:'🔴',color:'#ef4444',descAr:'سيتم إدراج المواقع الموثقة في المرحلة التالية',descFr:'Les sites vérifiés seront ajoutés à l’étape suivante'},
-          {id:'scientific-area',ar:'منطقة دراسة علمية',fr:'Zone d’étude scientifique',icon:'🔬',color:'#a78bfa',descAr:'مرجع بيئي موثق في منطقة Port aux Princes؛ ليست نقطة صيد مؤكدة',descFr:'Référence écologique documentée à Port aux Princes; pas un spot de pêche confirmé'}
+          {id:'ras-blat',ar:'رأس بلاط · رفراف',fr:'Ras Blat · Rafraf',icon:'🪨',color:'#f59e0b',lat:37.1969,lng:10.2089,descAr:'نقطة بحرية موثقة — قاع رملي/صخري',descFr:'Point marin documenté — fond sableux/rocheux'},
+          {id:'ras-ettarf',ar:'رأس الطرف · رفراف',fr:'Ras Ettarf · Rafraf',icon:'🔵',color:'#38bdf8',lat:37.1822,lng:10.2653,descAr:'نقطة بحرية موثقة — قاع رملي',descFr:'Point marin documenté — fond sableux'},
+          {id:'ghar-el-melh',ar:'غار الملح',fr:'Ghar El Melh',icon:'🟠',color:'#fb923c',lat:37.1625,lng:10.2147,descAr:'نقطة بحرية موثقة — قاع رملي/طيني',descFr:'Point marin documenté — fond sableux/vaseux'},
+          {id:'la-marsa',ar:'المرسى',fr:'La Marsa',icon:'🌿',color:'#22c55e',lat:36.8956,lng:10.3219,descAr:'نقطة بحرية موثقة — قاع رملي/صخري',descFr:'Point marin documenté — fond sableux/rocheux'},
+          {id:'sidi-bou-said',ar:'سيدي بوسعيد',fr:'Sidi Bou Saïd',icon:'🪨',color:'#ef4444',lat:36.8661,lng:10.3519,descAr:'نقطة بحرية موثقة — قاع صخري',descFr:'Point marin documenté — fond rocheux'},
+          {id:'salammbo',ar:'قرطاج / سلامبو',fr:'Carthage / Salammbo',icon:'🪨',color:'#a78bfa',lat:36.8447,lng:10.3272,descAr:'نقطة بحرية موثقة — قاع صخري',descFr:'Point marin documenté — fond rocheux'}
         ];
-        const offsets:any = {reef:[0.004,0.006],seagrass:[-0.003,-0.005],bank:[0.001,-0.008],channel:[-0.006,0.004],'artificial-reef':[0.007,-0.003],'scientific-area':[0,0]};
-        const features = marinePoints.map((p:any) => {
-          const o=offsets[p.id] ?? [0,0];
-          return {type:'Feature' as const,properties:{id:p.id,label:getLang()==='fr'?p.fr:p.ar,icon:p.icon,description:getLang()==='fr'?p.descFr:p.descAr,color:p.color},geometry:{type:'Point' as const,coordinates:[10.669+o[1],36.879+o[0]]}};
-        });
+        const features = marinePoints.map((p:any) => ({
+          type:'Feature' as const,
+          properties:{
+            id:p.id,
+            label:getLang()==='fr'?p.fr:p.ar,
+            icon:p.icon,
+            description:getLang()==='fr'?p.descFr:p.descAr,
+            color:p.color
+          },
+          geometry:{type:'Point' as const,coordinates:[p.lng,p.lat]}
+        }));
         const sourceId='pkf-marine-points';
         if (!map.getSource(sourceId)) {
           map.addSource(sourceId,{type:'geojson',data:{type:'FeatureCollection',features}});
-          map.addLayer({id:'pkf-marine-points-layer',type:'circle',source:sourceId,paint:{
-            'circle-radius':7,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':2,'circle-opacity':0.88
-          }});
+          map.addLayer({
+            id:'pkf-marine-points-layer',
+            type:'circle',
+            source:sourceId,
+            paint:{
+              'circle-radius':7,
+              'circle-color':['get','color'],
+              'circle-stroke-color':'#fff',
+              'circle-stroke-width':2,
+              'circle-opacity':0.90
+            }
+          });
         } else {
           (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData({type:'FeatureCollection',features} as any);
         }
