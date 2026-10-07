@@ -830,7 +830,10 @@ export function createApp(root: HTMLElement) {
     try {
       // The core sea/weather reading is the only blocking operation.
       // Optional enrichments are started independently and may update the report later.
-      const data = await marine.getPointConditions(lat,lng);
+      const [data, hourlyForecast] = await Promise.all([
+        marine.getPointConditions(lat,lng),
+        marine.getHourlyKayakForecast(lat,lng)
+      ]);
       if (!isCurrent()) return;
 
       // Reverse geocoding is optional: never hold the current sea report for a place-name lookup.
@@ -850,11 +853,71 @@ export function createApp(root: HTMLElement) {
         currentVelocity:data.sea.currentVelocity
       });
 
-      const reportBase = reportHtml(data,placeName) + (
-        data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
-          ? `<div class="sea-wave-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
-          : ''
-      );
+      const forecastDate = hourlyForecast[0]?.time.slice(0,10) ?? '';
+      const todayForecast = hourlyForecast.filter(p => p.time.slice(0,10) === forecastDate);
+      const futureHours = todayForecast.slice(0,12);
+      const forecastRows = futureHours.map(p => ({
+        p,
+        a: assessKayakConditions({
+          windSpeed:p.windSpeed,
+          windGusts:p.windGusts,
+          windDirection:p.windDirection,
+          waveHeight:p.waveHeight,
+          waveDirection:p.waveDirection,
+          wavePeriod:p.wavePeriod,
+          swellHeight:p.swellHeight,
+          swellDirection:p.swellDirection,
+          swellPeriod:p.swellPeriod,
+          currentVelocity:p.currentVelocity
+        })
+      }));
+      const planningScore = futureHours.length
+        ? Math.round(forecastRows.reduce((sum,row)=>sum+row.a.score,0)/forecastRows.length)
+        : assessment.score;
+      const planningLevel = planningScore>=82?'ممتاز':planningScore>=65?'جيد':planningScore>=45?'حذر':'غير مناسب';
+      const bestPlanningWindow = bestKayakWindow(todayForecast,3);
+      const planningTime = (iso:string) => iso.slice(11,16);
+      const levelClass = (level:string) => level==='ممتاز'?'excellent':level==='جيد'?'good':level==='حذر'?'caution':'danger';
+      const planningReasons = forecastRows
+        .flatMap(row=>row.a.reasons)
+        .filter((reason,index,array)=>array.indexOf(reason)===index)
+        .slice(0,3);
+      const planningHoursHtml = forecastRows.slice(0,8).map(({p,a}) =>
+        `<article class="departure-hour ${levelClass(a.level)}">
+          <b>${planningTime(p.time)}</b>
+          <strong>${a.score}<small>/100</small></strong>
+          <span>${translateLevel(a.level)}</span>
+          <small>🌊 ${value(p.waveHeight,' m')} · 💨 ${value(p.windSpeed,' km/h')}</small>
+        </article>`
+      ).join('');
+      const planningWindowHtml = bestPlanningWindow
+        ? `<div class="departure-best">
+            <span>🎣 ${t('أفضل نافذة متوقعة')}</span>
+            <strong>${planningTime(bestPlanningWindow.start)} → ${planningTime(bestPlanningWindow.end)}</strong>
+            <small>${t('نافذة تخطيطية لمدة 3 ساعات، وليست ضماناً لسلامة الرحلة.')}</small>
+          </div>`
+        : '';
+      const planningReasonsHtml = planningReasons.length
+        ? `<ul class="departure-reasons">${planningReasons.map(reason=>`<li>• ${translateReason(reason)}</li>`).join('')}</ul>`
+        : '';
+      const departurePlanning = `<section class="departure-planning">
+        <div class="departure-planning-head">
+          <div><b>🎣 ${t('تخطيط الخروج')}</b><small>${t('مبني على الساعات القادمة عند هذه النقطة')}</small></div>
+          <strong class="${levelClass(planningLevel)}">${planningScore}/100</strong>
+        </div>
+        <div class="departure-status ${levelClass(planningLevel)}">${translateLevel(planningLevel)}</div>
+        ${planningWindowHtml}
+        <div class="departure-hours">${planningHoursHtml || `<small>${t('لا توجد بيانات ساعية كافية للتخطيط.')}</small>`}</div>
+        ${planningReasonsHtml}
+        <small class="departure-note">${t('هذا تقييم تخطيطي للظروف البحرية والرياح، وليس شهادة سلامة. أعد التحقق من التوقعات قبل الانطلاق.')}</small>
+      </section>`;
+      const reportBase = reportHtml(data,placeName)
+        .replace('<div class="report-grid">', departurePlanning + '<div class="report-grid">')
+        + (
+          data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
+            ? `<div class="sea-wave-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
+            : ''
+        );
       const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`;
       const initialHtml = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) +
         `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
