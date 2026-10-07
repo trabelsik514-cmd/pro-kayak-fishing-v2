@@ -35,6 +35,54 @@ export function createMap(container: string) {
     }
   });
 
+  // Coastal reference labels: kept lightweight so the satellite map remains clean on mobile.
+  const coastalLabels = [
+    { name: 'طبرقة · Tabarka', lng: 8.757, lat: 36.954 },
+    { name: 'بنزرت · Bizerte', lng: 9.873, lat: 37.274 },
+    { name: 'تونس · Tunis', lng: 10.181, lat: 36.806 },
+    { name: 'الحمامات · Hammamet', lng: 10.616, lat: 36.400 },
+    { name: 'سوسة · Sousse', lng: 10.637, lat: 35.825 },
+    { name: 'المنستير · Monastir', lng: 10.826, lat: 35.764 },
+    { name: 'المهدية · Mahdia', lng: 11.062, lat: 35.504 },
+    { name: 'صفاقس · Sfax', lng: 10.760, lat: 34.740 },
+    { name: 'قابس · Gabès', lng: 10.099, lat: 33.882 },
+    { name: 'جربة · Djerba', lng: 10.855, lat: 33.807 },
+    { name: 'جرجيس · Zarzis', lng: 11.112, lat: 33.504 }
+  ];
+
+  const labelMarkers = coastalLabels.map(({ name, lng, lat }) => {
+    const el = document.createElement('div');
+    el.className = 'pkf-coastal-label';
+    el.textContent = name;
+    Object.assign(el.style, {
+      background: 'rgba(5, 18, 29, 0.82)',
+      border: '1px solid rgba(70, 196, 255, 0.55)',
+      borderRadius: '999px',
+      color: '#f4f8fb',
+      padding: '4px 8px',
+      fontSize: '11px',
+      fontWeight: '700',
+      lineHeight: '1.1',
+      whiteSpace: 'nowrap',
+      boxShadow: '0 2px 8px rgba(0,0,0,.35)',
+      pointerEvents: 'none',
+      backdropFilter: 'blur(4px)'
+    });
+    return new maplibregl.Marker({ element, anchor: 'bottom' })
+      .setLngLat([lng, lat])
+      .addTo(map);
+  });
+
+  const syncCoastalLabels = () => {
+    const visible = map.getZoom() >= 6.15;
+    labelMarkers.forEach(marker => {
+      const element = marker.getElement();
+      element.style.display = visible ? 'block' : 'none';
+    });
+  };
+  map.on('zoom', syncCoastalLabels);
+  syncCoastalLabels();
+
   const geolocate = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
     trackUserLocation: true,
