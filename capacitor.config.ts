@@ -1,3 +1,4 @@
+/// <reference types="@capacitor/background-runner" />
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -10,6 +11,20 @@ const config: CapacitorConfig = {
   },
   android: {
     backgroundColor: '#07141f'
+  },
+  plugins: {
+    BackgroundRunner: {
+      label: 'com.prokayakfishing.app.background',
+      src: 'runners/background.js',
+      event: 'pkfBackgroundRefresh',
+      repeat: true,
+      interval: 15,
+      autoStart: true
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon_config_sample',
+      iconColor: '#e91e4d'
+    }
   }
 };
 
