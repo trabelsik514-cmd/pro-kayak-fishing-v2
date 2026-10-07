@@ -249,9 +249,9 @@ export function createApp(root: HTMLElement) {
     </nav>
     <aside class="measure-panel hidden" id="measure-panel"></aside>
     <aside class="trip-panel hidden" id="trip-panel">
-      <div class="trip-head"><b>🛶 ${t('سجل الرحلات')}</b><button id="close-trips" aria-label="${t('إغلاق')}">×</button></div>
+      <div class="trip-head"><b><span class="trip-head-icon">↗</span> ${t('سجل الرحلات')}</b><button id="close-trips" aria-label="${t('إغلاق')}">×</button></div>
       <div id="trip-status" class="trip-idle"><b>${t('لا توجد رحلة قيد التسجيل')}</b><span>${t('ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.')}</span></div>
-      <button id="trip-record" class="trip-primary">▶️ ${t('بدء تسجيل رحلة')}</button>
+      <button id="trip-record" class="trip-primary"><span aria-hidden="true">●</span> ${t('بدء تسجيل رحلة')}</button>
       <div id="trip-list" class="trip-list"></div>
     </aside>
     <aside class="route-view hidden" id="route-view" aria-live="polite"></aside>
