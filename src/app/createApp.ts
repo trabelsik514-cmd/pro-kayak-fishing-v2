@@ -6,7 +6,7 @@ import { assessKayakConditions } from '../kayak/KayakAssessment';
 import { loadTrips, saveTrip, deleteTrip, makeTrip, type KayakTrip, type TrackPoint } from '../trips/TripStore';
 import { getBathymetryDepth } from '../bathymetry/BathymetryService';
 import { initSeaNotifications, saveBackgroundLocation } from '../notifications/SeaNotificationService';
-import { getDeviceLocation } from '../location/DeviceLocationService';
+import { getDeviceLocation, watchDeviceLocation, clearDeviceLocationWatch } from '../location/DeviceLocationService';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -318,7 +318,7 @@ export function createApp(root: HTMLElement) {
   const routeView = document.querySelector<HTMLElement>('#route-view')!;
   const tripRecord = document.querySelector<HTMLButtonElement>('#trip-record')!;
   let recording = false;
-  let watchId: number | null = null;
+  let watchId: string | number | null = null;
   let recordedPoints: TrackPoint[] = [];
   let lastRecordedAt = 0;
   let routeTripId: string | null = null;
@@ -786,7 +786,7 @@ export function createApp(root: HTMLElement) {
   };
 
   const stopRecording = () => {
-    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    if (watchId !== null) void clearDeviceLocationWatch(watchId);
     watchId = null;
     recording = false;
     if (recordedPoints.length < 2) {
@@ -805,19 +805,33 @@ export function createApp(root: HTMLElement) {
   };
 
   const startRecording = () => {
-    if (!navigator.geolocation) {
-      tripStatus.className = 'trip-error';
-      tripStatus.textContent = getLang()==='fr' ? 'Cet appareil ne fournit pas de GPS.' : 'هذا الجهاز لا يوفر GPS.';
-      return;
-    }
     recording = true;
     recordedPoints = [];
     lastRecordedAt = 0;
     setRecordingStatus();
-    watchId = navigator.geolocation.watchPosition(recordPosition, () => {
-      tripStatus.className = 'trip-error';
-      tripStatus.innerHTML = getLang()==='fr' ? '<b>Accès au GPS impossible</b><span>Activez la localisation dans les réglages du téléphone puis réessayez.</span>' : '<b>تعذر الوصول إلى GPS</b><span>فعّل الموقع من إعدادات الهاتف ثم حاول مرة أخرى.</span>';
-    }, {enableHighAccuracy: true, maximumAge: 5000, timeout: 15000});
+    void watchDeviceLocation(
+      position => recordPosition({
+        coords: {
+          latitude: position.lat,
+          longitude: position.lng,
+          accuracy: position.accuracy,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null
+        },
+        timestamp: Date.now()
+      } as GeolocationPosition),
+      error => {
+        recording = false;
+        setRecordingStatus();
+        tripStatus.className = 'trip-error';
+        tripStatus.innerHTML = getLang()==='fr'
+          ? '<b>Accès au GPS impossible</b><span>Activez la localisation précise et autorisez l’accès à votre position.</span>'
+          : '<b>تعذر الوصول إلى GPS</b><span>فعّل الموقع الدقيق واسمح للتطبيق بالوصول إلى موقعك.</span>';
+        console.error('PKF trip GPS error', error);
+      }
+    ).then(id => { watchId = id; });
   };
 
   tripRecord.addEventListener('click', () => recording ? stopRecording() : startRecording());
