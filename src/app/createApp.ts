@@ -242,6 +242,10 @@ export function createApp(root: HTMLElement) {
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"></path><path d="m4 12 8 4 8-4"></path><path d="m4 16 8 4 8-4"></path></svg>
         <span class="pkf-tool-label">${getLang()==='fr'?'Couches':'الطبقات'}</span>
       </button>
+      <button id="pkf-wind" class="pkf-tool pkf-tool-wind" type="button" title="${getLang()==='fr'?'Vent':'الرياح'}" aria-label="${getLang()==='fr'?'Vent':'الرياح'}">
+        <span aria-hidden="true">🌬️</span>
+        <span class="pkf-tool-label">${getLang()==='fr'?'Vent':'الرياح'}</span>
+      </button>
       <button id="pkf-measure" class="pkf-tool" type="button" title="${t('قياس المسافة')}" aria-label="${t('قياس المسافة')}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16 16 4l4 4L8 20H4v-4Z"></path><path d="m8 16 2 2M11 13l2 2M14 10l2 2"></path></svg>
         <span class="pkf-tool-label">${getLang()==='fr'?'Mesurer':'قياس'}</span>
@@ -418,6 +422,9 @@ export function createApp(root: HTMLElement) {
     windFlowEnabled = enabled;
     const toggle = document.querySelector<HTMLInputElement>('#pkf-wind-toggle');
     if (toggle) toggle.checked = enabled;
+    const button = document.querySelector<HTMLButtonElement>('#pkf-wind');
+    button?.classList.toggle('active', enabled);
+    button?.setAttribute('aria-pressed', String(enabled));
     if (windFlowTimer != null) { window.clearInterval(windFlowTimer); windFlowTimer = null; }
     if (!enabled) { clearWindFlow(); return; }
     void refreshWindFlow();
@@ -449,6 +456,13 @@ export function createApp(root: HTMLElement) {
   });
   document.querySelector<HTMLInputElement>('#pkf-wind-toggle')?.addEventListener('change', e => {
     setWindFlow((e.currentTarget as HTMLInputElement).checked);
+  });
+  document.querySelector<HTMLButtonElement>('#pkf-wind')?.addEventListener('click', () => {
+    const next = !windFlowEnabled;
+    setWindFlow(next);
+    const button = document.querySelector<HTMLButtonElement>('#pkf-wind');
+    button?.classList.toggle('active', next);
+    button?.setAttribute('aria-pressed', String(next));
   });
   document.querySelector<HTMLButtonElement>('#pkf-measure')?.addEventListener('click', () => document.querySelector<HTMLButtonElement>('#measure-toggle')?.click());
   document.querySelector<HTMLButtonElement>('#pkf-trip')?.addEventListener('click', () => document.querySelector<HTMLButtonElement>('#trip-toggle')?.click());
