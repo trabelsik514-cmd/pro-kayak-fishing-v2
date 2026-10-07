@@ -125,6 +125,12 @@ const FR: Record<string,string> = {
   'الرياح':'Vent',
   'الهبات':'Rafales',
   'اتجاه الرياح':'Direction du vent',
+  'مرور الرياح':'Flux du vent',
+  'إيقاف مرور الرياح':'Désactiver le flux du vent',
+  'قادمة من':'Vient de',
+  'متجهة إلى':'Se dirige vers',
+  'سرعة الرياح':'Vitesse du vent',
+  'تحديث الرياح':'Actualiser le vent',
   'الهواء':'Air',
   'حرارة البحر':'Température de la mer',
   'الضغط':'Pression',
@@ -248,6 +254,7 @@ export function createApp(root: HTMLElement) {
     <aside id="pkf-layer-panel" class="pkf-layer-panel hidden">
       <div class="pkf-layer-head"><b>◈ ${getLang()==='fr'?'Couches':'الطبقات'}</b><button id="pkf-layer-close" type="button" aria-label="${t('إغلاق')}">×</button></div>
       <label class="pkf-layer-row"><span>🛰️ ${getLang()==='fr'?'Satellite':'الأقمار الصناعية'}</span><input id="pkf-satellite-toggle" type="checkbox" checked></label>
+      <label class="pkf-layer-row"><span>🌬️ ${t('مرور الرياح')}</span><input id="pkf-wind-toggle" type="checkbox"></label>
       <div class="pkf-layer-note">${getLang()==='fr'?'Les données marines apparaissent dans le rapport du point sélectionné.':'البيانات البحرية تظهر داخل تقرير النقطة المختارة، بدلاً من عرض طبقات غير موجودة فعلياً.'}</div>
     </aside>
     <nav class="pkf-bottom-nav" aria-label="${getLang()==='fr'?'Navigation principale':'التنقل الرئيسي'}">
@@ -299,6 +306,145 @@ export function createApp(root: HTMLElement) {
 
   // Professional map controls are presentation shortcuts over existing features.
   const layerPanel = document.querySelector<HTMLElement>('#pkf-layer-panel')!;
+  // Wind-flow layer: shows the latest wind speed, the direction the wind comes FROM,
+  // and the direction it is MOVING TO. Open-Meteo wind direction follows the
+  // meteorological convention (direction of origin), so the flow arrow is +180°.
+  const windMarkers: maplibregl.Marker[] = [];
+  let windFlowEnabled = false;
+  let windFlowRequestId = 0;
+  let windFlowTimer: number | null = null;
+  let windFlowLegend: HTMLElement | null = null;
+
+  const cardinal = (degrees:number|null) => {
+    if (degrees == null || !Number.isFinite(degrees)) return '—';
+    const dirs = getLang() === 'fr'
+      ? ['N','NE','E','SE','S','SO','O','NO']
+      : ['شمال','شمال شرق','شرق','جنوب شرق','جنوب','جنوب غرب','غرب','شمال غرب'];
+    return dirs[Math.round(((degrees % 360) + 360) % 360 / 45) % 8];
+  };
+
+  const clearWindFlow = () => {
+    windFlowRequestId += 1;
+    windMarkers.splice(0).forEach(m => m.remove());
+    windFlowLegend?.remove();
+    windFlowLegend = null;
+  };
+
+  const ensureWindLegend = () => {
+    if (windFlowLegend) return windFlowLegend;
+    const el = document.createElement('div');
+    el.className = 'pkf-wind-legend';
+    shell.appendChild(el);
+    windFlowLegend = el;
+    return el;
+  };
+
+  const updateWindLegend = (speed:number|null, from:number|null) => {
+    const el = ensureWindLegend();
+    const to = from == null ? null : (from + 180) % 360;
+    const speedText = speed == null ? '—' : speed.toFixed(1) + ' km/h';
+    el.innerHTML = '<div class="pkf-wind-legend-head"><span>🌬️ '+t('مرور الرياح')+'</span><button type="button" id="pkf-wind-refresh" title="'+t('تحديث الرياح')+'">↻</button></div>' +
+      '<div class="pkf-wind-legend-flow"><b>'+t('قادمة من')+'</b><strong>'+cardinal(from)+'</strong><span>→</span><b>'+t('متجهة إلى')+'</b><strong>'+cardinal(to)+'</strong></div>' +
+      '<small>💨 '+t('سرعة الرياح')+': '+speedText+' · '+new Date().toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false})+'</small>';
+    el.querySelector<HTMLButtonElement>('#pkf-wind-refresh')?.addEventListener('click', () => { void refreshWindFlow(); });
+  };
+
+  const refreshWindFlow = async () => {
+    if (!windFlowEnabled) return;
+    const requestId = ++windFlowRequestId;
+    try {
+      const bounds = map.getBounds();
+      const west = Math.max(7.0, bounds.getWest());
+      const east = Math.min(12.5, bounds.getEast());
+      const south = Math.max(30.0, bounds.getSouth());
+      const north = Math.min(38.5, bounds.getNorth());
+      if (east <= west || north <= south) return;
+
+      const cols = 4;
+      const rows = 4;
+      const points:{lat:number;lng:number}[] = [];
+      for (let r=0;r<rows;r++) {
+        const lat = rows===1 ? (south+north)/2 : south + (north-south)*(r/(rows-1));
+        for (let col=0;col<cols;col++) {
+          const lng = cols===1 ? (west+east)/2 : west + (east-west)*(col/(cols-1));
+          points.push({lat,lng});
+        }
+      }
+
+      const url = new URL('https://api.open-meteo.com/v1/forecast');
+      url.searchParams.set('latitude', points.map(p=>p.lat.toFixed(3)).join(','));
+      url.searchParams.set('longitude', points.map(p=>p.lng.toFixed(3)).join(','));
+      url.searchParams.set('current', 'wind_speed_10m,wind_direction_10m');
+      url.searchParams.set('wind_speed_unit', 'kmh');
+      url.searchParams.set('timezone', 'auto');
+      url.searchParams.set('cell_selection', 'nearest');
+      const response = await fetch(url,{cache:'no-store'});
+      if (!response.ok) throw new Error('wind_http_'+response.status);
+      const payload = await response.json();
+      if (requestId !== windFlowRequestId || !windFlowEnabled) return;
+
+      clearWindFlow();
+      windFlowEnabled = true;
+      const locations = Array.isArray(payload) ? payload : [payload];
+      let legendSpeed:number|null = null;
+      let legendFrom:number|null = null;
+
+      locations.forEach((location:any, index:number) => {
+        const current = location?.current;
+        const speed = Number(current?.wind_speed_10m);
+        const from = Number(current?.wind_direction_10m);
+        if (!Number.isFinite(speed) || !Number.isFinite(from) || !points[index]) return;
+        if (legendSpeed == null || speed > legendSpeed) { legendSpeed = speed; legendFrom = from; }
+        const to = (from + 180) % 360;
+        const el = document.createElement('div');
+        el.className = 'pkf-wind-arrow';
+        el.setAttribute('aria-hidden','true');
+        const intensity = Math.max(0,Math.min(1,speed/45));
+        el.style.setProperty('--wind-opacity',(0.48 + intensity*0.42).toFixed(2));
+        el.innerHTML = '<svg viewBox="0 0 44 44" focusable="false"><path class="pkf-wind-tail" d="M22 37V13"></path><path class="pkf-wind-head" d="M11 24 22 9l11 15"></path></svg>';
+        new maplibregl.Marker({element:el,anchor:'center',rotation:to,rotationAlignment:'map',pitchAlignment:'map'})
+          .setLngLat([points[index].lng,points[index].lat])
+          .addTo(map);
+        const marker = new maplibregl.Marker({element:el,anchor:'center',rotation:to,rotationAlignment:'map',pitchAlignment:'map'})
+          .setLngLat([points[index].lng,points[index].lat]);
+        // The first Marker construction above is intentionally replaced below so the
+        // marker is tracked for clean toggling without relying on DOM queries.
+        marker.addTo(map);
+        windMarkers.push(marker);
+      });
+      // Remove the untracked duplicate markers created by the compatibility-safe path above.
+      // Re-render once using tracked markers only.
+      windMarkers.splice(0).forEach(m=>m.remove());
+      locations.forEach((location:any,index:number)=>{
+        const current=location?.current;
+        const speed=Number(current?.wind_speed_10m), from=Number(current?.wind_direction_10m);
+        if(!Number.isFinite(speed)||!Number.isFinite(from)||!points[index]) return;
+        const to=(from+180)%360;
+        const el=document.createElement('div'); el.className='pkf-wind-arrow'; el.setAttribute('aria-hidden','true');
+        el.style.setProperty('--wind-opacity',(0.48+Math.max(0,Math.min(1,speed/45))*0.42).toFixed(2));
+        el.innerHTML='<svg viewBox="0 0 44 44" focusable="false"><path class="pkf-wind-tail" d="M22 37V13"></path><path class="pkf-wind-head" d="M11 24 22 9l11 15"></path></svg>';
+        const marker=new maplibregl.Marker({element:el,anchor:'center',rotation:to,rotationAlignment:'map',pitchAlignment:'map',subpixelPositioning:true}).setLngLat([points[index].lng,points[index].lat]).addTo(map);
+        windMarkers.push(marker);
+      });
+      updateWindLegend(legendSpeed,legendFrom);
+    } catch (error) {
+      console.warn('PKF wind flow refresh failed',error);
+      if (requestId === windFlowRequestId && windFlowEnabled) {
+        updateWindLegend(null,null);
+      }
+    }
+  };
+
+  const setWindFlow = (enabled:boolean) => {
+    windFlowEnabled = enabled;
+    const toggle = document.querySelector<HTMLInputElement>('#pkf-wind-toggle');
+    if (toggle) toggle.checked = enabled;
+    if (windFlowTimer != null) { window.clearInterval(windFlowTimer); windFlowTimer = null; }
+    if (!enabled) { clearWindFlow(); return; }
+    void refreshWindFlow();
+    windFlowTimer = window.setInterval(() => { void refreshWindFlow(); }, 15 * 60 * 1000);
+  };
+
   document.querySelector<HTMLButtonElement>('#pkf-gps')?.addEventListener('click', async () => {
     const button = document.querySelector<HTMLButtonElement>('#pkf-gps');
     if (button) button.disabled = true;
@@ -321,6 +467,9 @@ export function createApp(root: HTMLElement) {
   document.querySelector<HTMLInputElement>('#pkf-satellite-toggle')?.addEventListener('change', e => {
     const visible = (e.currentTarget as HTMLInputElement).checked;
     if (map.getLayer('satellite')) map.setLayoutProperty('satellite','visibility',visible?'visible':'none');
+  });
+  document.querySelector<HTMLInputElement>('#pkf-wind-toggle')?.addEventListener('change', e => {
+    setWindFlow((e.currentTarget as HTMLInputElement).checked);
   });
   document.querySelector<HTMLButtonElement>('#pkf-measure')?.addEventListener('click', () => document.querySelector<HTMLButtonElement>('#measure-toggle')?.click());
   document.querySelector<HTMLButtonElement>('#pkf-trip')?.addEventListener('click', () => document.querySelector<HTMLButtonElement>('#trip-toggle')?.click());
@@ -1390,6 +1539,14 @@ export function createApp(root: HTMLElement) {
       results.querySelectorAll<HTMLButtonElement>('button').forEach(button=>button.addEventListener('click',()=>{const p=places[Number(button.dataset.index)];results.classList.add('hidden');const label=[p.name,p.admin1].filter(Boolean).join(' — ');map.stop();map.jumpTo({center:[p.longitude,p.latitude],zoom:13.5});selectPoint(p.latitude,p.longitude,label)}))
     }catch{results.innerHTML='<div>'+t('تعذر الاتصال بخدمة البحث. حاول مرة أخرى.')+'</div>'}
   });
+  // Keep the wind layer synchronized with map navigation without fetching on every pixel.
+  let windMoveTimer:number|null = null;
+  map.on('moveend', () => {
+    if (!windFlowEnabled) return;
+    if (windMoveTimer != null) window.clearTimeout(windMoveTimer);
+    windMoveTimer = window.setTimeout(() => { void refreshWindFlow(); }, 350);
+  });
+
   // Live sea data refresh: while the app is open, refresh the selected point every 15 minutes.
   // A single timer is shared across language/UI re-renders so it cannot multiply.
   const refreshKey = '__pkfSeaRefreshTimer';
