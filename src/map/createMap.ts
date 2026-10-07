@@ -35,7 +35,8 @@ export function createMap(container: string) {
     }
   });
 
-  // Coastal reference labels: add after map load so they are reliably visible on MapLibre.
+  // Coastal labels: render as a DOM overlay positioned from map coordinates.
+  // This avoids relying on MapLibre marker styling/CSS and is reliable on mobile.
   const coastalLabels = [
     { name: 'طبرقة · Tabarka', lng: 8.757, lat: 36.954 },
     { name: 'بنزرت · Bizerte', lng: 9.873, lat: 37.274 },
@@ -51,39 +52,61 @@ export function createMap(container: string) {
   ];
 
   const addCoastalLabels = () => {
-    const labelMarkers = coastalLabels.map(({ name, lng, lat }) => {
+    const container = map.getContainer();
+    const layer = document.createElement('div');
+    layer.className = 'pkf-coastal-label-layer';
+    Object.assign(layer.style, {
+      position: 'absolute',
+      inset: '0',
+      zIndex: '8',
+      pointerEvents: 'none',
+      overflow: 'hidden'
+    });
+
+    const items = coastalLabels.map(({ name, lng, lat }) => {
       const el = document.createElement('div');
       el.className = 'pkf-coastal-label';
       el.textContent = name;
       Object.assign(el.style, {
-        background: 'rgba(5, 18, 29, 0.90)',
-        border: '1px solid rgba(70, 196, 255, 0.65)',
+        position: 'absolute',
+        transform: 'translate(-50%, -100%)',
+        background: 'rgba(5,18,29,.92)',
+        border: '1px solid rgba(53,184,238,.65)',
         borderRadius: '999px',
-        color: '#f4f8fb',
+        color: '#fff',
         padding: '5px 9px',
         fontSize: '12px',
-        fontWeight: '700',
+        fontWeight: '800',
         lineHeight: '1.1',
         whiteSpace: 'nowrap',
-        boxShadow: '0 2px 8px rgba(0,0,0,.45)',
-        pointerEvents: 'none',
-        zIndex: '10',
-        display: 'block'
+        boxShadow: '0 3px 12px rgba(0,0,0,.48)',
+        display: 'none'
       });
-      return new maplibregl.Marker({ element, anchor: 'bottom' })
-        .setLngLat([lng, lat])
-        .addTo(map);
+      layer.appendChild(el);
+      return { el, lng, lat };
     });
 
-    const syncCoastalLabels = () => {
-      const visible = map.getZoom() >= 6.0;
-      labelMarkers.forEach(marker => {
-        marker.getElement().style.display = visible ? 'block' : 'none';
+    container.appendChild(layer);
+
+    const updateLabels = () => {
+      const zoom = map.getZoom();
+      const visible = zoom >= 6.0;
+      items.forEach(({ el, lng, lat }) => {
+        const p = map.project([lng, lat]);
+        const inside =
+          p.x >= -120 && p.x <= container.clientWidth + 120 &&
+          p.y >= -60 && p.y <= container.clientHeight + 60;
+        el.style.display = visible && inside ? 'block' : 'none';
+        if (inside) {
+          el.style.left = Math.round(p.x) + 'px';
+          el.style.top = Math.round(p.y) + 'px';
+        }
       });
     };
 
-    map.on('zoomend', syncCoastalLabels);
-    syncCoastalLabels();
+    map.on('move', updateLabels);
+    map.on('resize', updateLabels);
+    updateLabels();
   };
 
   if (map.loaded()) addCoastalLabels();
