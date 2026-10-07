@@ -1477,3 +1477,12 @@
   .pkf-bottom-nav .pkf-nav-icon{width:24px;height:24px}
   .pkf-bottom-nav .pkf-nav-icon svg{width:21px;height:21px}
 }
+.pkf-bottom-nav button:not(.active){color:rgba(235,244,249,.72)}
+.pkf-bottom-nav button.active{color:#35b8ee}
+@media(max-width:700px){
+  .pkf-bottom-nav{height:62px;padding:4px 7px;border-radius:19px}
+  .pkf-bottom-nav button{gap:2px}
+  .pkf-bottom-nav .pkf-nav-icon{width:23px;height:23px}
+  .pkf-bottom-nav .pkf-nav-icon svg{width:20px;height:20px}
+  .pkf-bottom-nav button b{font-size:10px}
+}
