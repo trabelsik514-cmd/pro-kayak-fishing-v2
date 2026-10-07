@@ -206,11 +206,23 @@ export function createApp(root: HTMLElement) {
         </div>
       </div>
     </nav>
-    <div class="pkf-map-toolbar" aria-label="${getLang()==='fr'?'Outils de carte':'أدوات الخريطة'}">
-      <button id="pkf-gps" class="pkf-tool" type="button" aria-label="${getLang()==='fr'?'Ma position':'موقعي'}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path></svg></button>
-      <button id="pkf-layers" class="pkf-tool" type="button" aria-label="${getLang()==='fr'?'Couches':'الطبقات'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"></path><path d="m4 12 8 4 8-4"></path><path d="m4 16 8 4 8-4"></path></svg></button>
-      <button id="pkf-measure" class="pkf-tool" type="button" aria-label="${t('قياس المسافة')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16 16 4l4 4L8 20H4v-4Z"></path><path d="m8 16 2 2M11 13l2 2M14 10l2 2"></path></svg></button>
-      <button id="pkf-trip" class="pkf-tool" type="button" aria-label="${t('رحلاتي')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c5-1 7-8 12-8h4"></path><path d="m16 7 4 4-4 4"></path><circle cx="5" cy="19" r="1.5"></circle></svg></button>
+    <div class="pkf-map-toolbar" aria-label="${getLang()==='fr'?'Outils de navigation':'أدوات الملاحة'}">
+      <button id="pkf-gps" class="pkf-tool pkf-tool-gps" type="button" title="${getLang()==='fr'?'Ma position':'موقعي'}" aria-label="${getLang()==='fr'?'Ma position':'موقعي'}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path></svg>
+        <span class="pkf-tool-label">${getLang()==='fr'?'Position':'موقعي'}</span>
+      </button>
+      <button id="pkf-layers" class="pkf-tool" type="button" title="${getLang()==='fr'?'Couches':'الطبقات'}" aria-label="${getLang()==='fr'?'Couches':'الطبقات'}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"></path><path d="m4 12 8 4 8-4"></path><path d="m4 16 8 4 8-4"></path></svg>
+        <span class="pkf-tool-label">${getLang()==='fr'?'Couches':'الطبقات'}</span>
+      </button>
+      <button id="pkf-measure" class="pkf-tool" type="button" title="${t('قياس المسافة')}" aria-label="${t('قياس المسافة')}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16 16 4l4 4L8 20H4v-4Z"></path><path d="m8 16 2 2M11 13l2 2M14 10l2 2"></path></svg>
+        <span class="pkf-tool-label">${getLang()==='fr'?'Mesurer':'قياس'}</span>
+      </button>
+      <button id="pkf-trip" class="pkf-tool pkf-tool-route" type="button" title="${t('رحلاتي')}" aria-label="${t('رحلاتي')}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c5-1 7-8 12-8h4"></path><path d="m16 7 4 4-4 4"></path><circle cx="5" cy="19" r="1.5"></circle></svg>
+        <span class="pkf-tool-label">${getLang()==='fr'?'Sorties':'رحلاتي'}</span>
+      </button>
     </div>
     <aside id="pkf-layer-panel" class="pkf-layer-panel hidden">
       <div class="pkf-layer-head"><b>◈ ${getLang()==='fr'?'Couches':'الطبقات'}</b><button id="pkf-layer-close" type="button" aria-label="${t('إغلاق')}">×</button></div>
