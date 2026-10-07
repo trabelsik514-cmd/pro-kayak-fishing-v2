@@ -14,7 +14,9 @@
     "maplibre-gl": "^5.0.0",
     "pmtiles": "^4.0.0",
     "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/local-notifications": "^7.0.7",
+    "@capacitor/background-runner": "^2.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
