@@ -1325,3 +1325,28 @@
   .map-actions .map-action{width:42px!important;height:42px!important;padding:0!important;border-radius:12px!important}
 }
 @media(min-width:701px){.pkf-bottom-nav{display:none}}
+
+
+/* PKF MOBILE CLEANUP — the new toolbar/bottom nav replaces the legacy action dock */
+@media(max-width:700px){
+  .map-actions{display:none!important}
+  .pkf-map-toolbar{top:78px;right:9px;gap:7px}
+  .pkf-tool{
+    width:44px;height:44px;border-radius:13px;
+    background:rgba(6,20,31,.90);
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 7px 20px rgba(0,0,0,.28);
+  }
+  .pkf-bottom-nav{
+    bottom:8px;
+    height:64px;
+    width:calc(100vw - 18px);
+    border-radius:19px;
+  }
+  .pkf-bottom-nav button span{font-size:18px}
+  .pkf-bottom-nav button b{font-size:10px}
+}
+@media(max-width:390px){
+  .pkf-tool{width:42px;height:42px}
+  .pkf-bottom-nav{height:61px}
+}
