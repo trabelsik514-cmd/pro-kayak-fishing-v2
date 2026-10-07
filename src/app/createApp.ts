@@ -206,6 +206,23 @@ export function createApp(root: HTMLElement) {
         </div>
       </div>
     </nav>
+    <div class="pkf-map-toolbar" aria-label="${getLang()==='fr'?'Outils de carte':'أدوات الخريطة'}">
+      <button id="pkf-gps" class="pkf-tool" type="button" aria-label="${getLang()==='fr'?'Ma position':'موقعي'}"><span>⌖</span></button>
+      <button id="pkf-layers" class="pkf-tool" type="button" aria-label="${getLang()==='fr'?'Couches':'الطبقات'}"><span>◈</span></button>
+      <button id="pkf-measure" class="pkf-tool" type="button" aria-label="${t('قياس المسافة')}"><span>⌁</span></button>
+      <button id="pkf-trip" class="pkf-tool" type="button" aria-label="${t('رحلاتي')}"><span>➤</span></button>
+    </div>
+    <aside id="pkf-layer-panel" class="pkf-layer-panel hidden">
+      <div class="pkf-layer-head"><b>◈ ${getLang()==='fr'?'Couches':'الطبقات'}</b><button id="pkf-layer-close" type="button" aria-label="${t('إغلاق')}">×</button></div>
+      <label class="pkf-layer-row"><span>🛰️ ${getLang()==='fr'?'Satellite':'الأقمار الصناعية'}</span><input id="pkf-satellite-toggle" type="checkbox" checked></label>
+      <div class="pkf-layer-note">${getLang()==='fr'?'Les données marines apparaissent dans le rapport du point sélectionné.':'البيانات البحرية تظهر داخل تقرير النقطة المختارة، بدلاً من عرض طبقات غير موجودة فعلياً.'}</div>
+    </aside>
+    <nav class="pkf-bottom-nav" aria-label="${getLang()==='fr'?'Navigation principale':'التنقل الرئيسي'}">
+      <button id="pkf-nav-map" type="button" class="active"><span>⌖</span><b>${getLang()==='fr'?'Carte':'الخريطة'}</b></button>
+      <button id="pkf-nav-sea" type="button"><span>≈</span><b>${getLang()==='fr'?'Mer':'البحر'}</b></button>
+      <button id="pkf-nav-fish" type="button"><span>◉</span><b>${getLang()==='fr'?'Pêche':'الصيد'}</b></button>
+      <button id="pkf-nav-report" type="button"><span>▤</span><b>${getLang()==='fr'?'Rapport':'التقرير'}</b></button>
+    </nav>
     <aside class="measure-panel hidden" id="measure-panel"></aside>
     <aside class="trip-panel hidden" id="trip-panel">
       <div class="trip-head"><b>🛶 ${t('سجل الرحلات')}</b><button id="close-trips" aria-label="${t('إغلاق')}">×</button></div>
@@ -235,6 +252,18 @@ export function createApp(root: HTMLElement) {
 
   const { map, geolocate } = createMap('map'); const marine = new MarineService(); const geocoder = new GeocodingService();
 
+  // Professional map controls are presentation shortcuts over existing features.
+  const layerPanel = document.querySelector<HTMLElement>('#pkf-layer-panel')!;
+  document.querySelector<HTMLButtonElement>('#pkf-gps')?.addEventListener('click', () => geolocate.trigger());
+  document.querySelector<HTMLButtonElement>('#pkf-layers')?.addEventListener('click', () => layerPanel.classList.toggle('hidden'));
+  document.querySelector<HTMLButtonElement>('#pkf-layer-close')?.addEventListener('click', () => layerPanel.classList.add('hidden'));
+  document.querySelector<HTMLInputElement>('#pkf-satellite-toggle')?.addEventListener('change', e => {
+    const visible = (e.currentTarget as HTMLInputElement).checked;
+    if (map.getLayer('satellite')) map.setLayoutProperty('satellite','visibility',visible?'visible':'none');
+  });
+  document.querySelector<HTMLButtonElement>('#pkf-measure')?.addEventListener('click', () => document.querySelector<HTMLButtonElement>('#measure-toggle')?.click());
+  document.querySelector<HTMLButtonElement>('#pkf-trip')?.addEventListener('click', () => document.querySelector<HTMLButtonElement>('#trip-toggle')?.click());
+
 
   let marker: maplibregl.Marker | null = null; const report = document.querySelector<HTMLElement>('#report')!;
   let selectedLocation: {lat:number; lng:number; label:string|null} | null = null;
@@ -257,6 +286,23 @@ export function createApp(root: HTMLElement) {
   const shell = root.querySelector<HTMLElement>('.shell')!;
   const setReportOpen = (open:boolean) => shell.classList.toggle('report-open', open);
   const closeReport = () => { report.classList.add('hidden'); setReportOpen(false); };
+  const setBottomNav = (active:string) => {
+    document.querySelectorAll<HTMLButtonElement>('.pkf-bottom-nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelector<HTMLButtonElement>('#pkf-nav-'+active)?.classList.add('active');
+  };
+  document.querySelector<HTMLButtonElement>('#pkf-nav-map')?.addEventListener('click', () => {
+    closeReport(); tripPanel.classList.add('hidden'); setBottomNav('map');
+  });
+  document.querySelector<HTMLButtonElement>('#pkf-nav-sea')?.addEventListener('click', () => {
+    document.querySelector<HTMLButtonElement>('#today-sea')?.click(); setBottomNav('sea');
+  });
+  document.querySelector<HTMLButtonElement>('#pkf-nav-fish')?.addEventListener('click', () => {
+    document.querySelector<HTMLButtonElement>('#kayak-intelligence-toggle')?.click(); setBottomNav('fish');
+  });
+  document.querySelector<HTMLButtonElement>('#pkf-nav-report')?.addEventListener('click', () => {
+    if (selectedLocation) { report.classList.remove('hidden'); setReportOpen(true); setBottomNav('report'); }
+    else { document.querySelector<HTMLButtonElement>('#today-sea')?.click(); setBottomNav('sea'); }
+  });
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
 
 
