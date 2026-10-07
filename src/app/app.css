@@ -1350,3 +1350,6 @@
   .pkf-tool{width:42px;height:42px}
   .pkf-bottom-nav{height:61px}
 }
+
+.pkf-tool svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pkf-tool:first-child svg{width:23px;height:23px}
