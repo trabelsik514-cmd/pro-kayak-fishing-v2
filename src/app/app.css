@@ -1486,3 +1486,61 @@
   .pkf-bottom-nav .pkf-nav-icon svg{width:20px;height:20px}
   .pkf-bottom-nav button b{font-size:10px}
 }
+/* Final mobile header refinement */
+@media(max-width:700px){
+  .topbar{
+    box-sizing:border-box;
+    min-height:122px;
+    height:122px;
+    padding:9px 12px 10px;
+    display:grid;
+    grid-template-columns:1fr auto;
+    grid-template-rows:55px 45px;
+    grid-template-areas:"lang brand" "search search";
+    gap:8px 12px;
+    align-items:center;
+  }
+  .topbar .brand{grid-area:brand;justify-self:end;align-self:center}
+  .topbar .brand-logo{
+    width:58px;height:58px;flex-basis:58px;border-radius:12px;
+  }
+  .topbar .lang-toggle{
+    grid-area:lang;
+    justify-self:start;
+    align-self:center;
+    min-width:126px;
+    width:auto;
+    height:42px;
+    padding:0 14px;
+    border-radius:14px;
+  }
+  .topbar .search{
+    grid-area:search;
+    width:100%;
+    height:45px;
+    display:flex;
+    gap:8px;
+    align-items:stretch;
+  }
+  .topbar .search input{
+    height:45px;
+    border-radius:14px;
+    padding:0 14px;
+    font-size:14px;
+  }
+  .topbar .search button{
+    height:45px;
+    min-width:84px;
+    padding:0 13px;
+    border-radius:14px;
+  }
+  html[dir="rtl"] .topbar{
+    grid-template-areas:"lang brand" "search search";
+  }
+  html[dir="ltr"] .topbar{
+    grid-template-areas:"brand lang" "search search";
+  }
+  html[dir="rtl"] .topbar .search{direction:rtl}
+  html[dir="ltr"] .topbar .search{direction:ltr}
+  .search-results{top:132px;right:12px;width:calc(100% - 24px)}
+}
