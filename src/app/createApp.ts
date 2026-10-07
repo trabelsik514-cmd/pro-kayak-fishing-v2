@@ -920,6 +920,7 @@ export function createApp(root: HTMLElement) {
 
       // Important marine points layer (foundation for the verified-points phase).
       try {
+        // MapLibre replacement for the legacy Leaflet marine-points block.
         const marinePoints = [
           {id:'reef',ar:'شعاب',fr:'Récif',icon:'🪨',color:'#f59e0b',descAr:'معلم بحري: شعاب / بنية صخرية',descFr:'Repère marin: récif / structure rocheuse'},
           {id:'seagrass',ar:'أعشاب بحرية',fr:'Herbier marin',icon:'🌿',color:'#22c55e',descAr:'موطن بحري محتمل',descFr:'Habitat marin potentiel'},
@@ -928,18 +929,23 @@ export function createApp(root: HTMLElement) {
           {id:'artificial-reef',ar:'شعاب اصطناعية',fr:'Récif artificiel',icon:'🔴',color:'#ef4444',descAr:'سيتم إدراج المواقع الموثقة في المرحلة التالية',descFr:'Les sites vérifiés seront ajoutés à l’étape suivante'},
           {id:'scientific-area',ar:'منطقة دراسة علمية',fr:'Zone d’étude scientifique',icon:'🔬',color:'#a78bfa',descAr:'مرجع بيئي موثق في منطقة Port aux Princes؛ ليست نقطة صيد مؤكدة',descFr:'Référence écologique documentée à Port aux Princes; pas un spot de pêche confirmé'}
         ];
-        const layer = L.layerGroup();
-        (window as any).__rlxMarinePointsLayer = layer;
-        marinePoints.forEach((p:any) => {
-          const lat = 36.879 + ({reef:0.004,seagrass:-0.003,bank:0.001,channel:-0.006,'artificial-reef':0.007,'scientific-area':0.000} as any)[p.id];
-          const lng = 10.669 + ({reef:0.006,seagrass:-0.005,bank:-0.008,channel:0.004,'artificial-reef':-0.003,'scientific-area':0.000} as any)[p.id];
-          const m = L.circleMarker([lat,lng],{radius:7,weight:2,color:p.color,fillColor:p.color,fillOpacity:.85});
-          m.bindPopup(`<b>${p.icon} ${getLang()==='fr'?p.fr:p.ar}</b><br><small>${getLang()==='fr'?p.descFr:p.descAr}</small><br><small style="opacity:.65">${lat.toFixed(5)}, ${lng.toFixed(5)}</small>`);
-          m.addTo(layer);
+        const offsets:any = {reef:[0.004,0.006],seagrass:[-0.003,-0.005],bank:[0.001,-0.008],channel:[-0.006,0.004],'artificial-reef':[0.007,-0.003],'scientific-area':[0,0]};
+        const features = marinePoints.map((p:any) => {
+          const o=offsets[p.id] ?? [0,0];
+          return {type:'Feature',properties:{id:p.id,label:getLang()==='fr'?p.fr:p.ar,icon:p.icon,description:getLang()==='fr'?p.descFr:p.descAr,color:p.color},geometry:{type:'Point',coordinates:[10.669+o[1],36.879+o[0]]}};
         });
-        (window as any).__rlxMarinePointsTypes = marinePoints;
+        const sourceId='pkf-marine-points';
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId,{type:'geojson',data:{type:'FeatureCollection',features}});
+          map.addLayer({id:'pkf-marine-points-layer',type:'circle',source:sourceId,paint:{
+            'circle-radius':7,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':2,'circle-opacity':0.88
+          }});
+        } else {
+          (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData({type:'FeatureCollection',features} as any);
+        }
+        (window as any).__rlxMarinePointsTypes=marinePoints;
       } catch {}
-
+      
       // Optional services must never delay the core sea-state report.
       void (async () => {
         try {
