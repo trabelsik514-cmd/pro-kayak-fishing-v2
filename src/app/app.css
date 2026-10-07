@@ -1425,3 +1425,43 @@
     gap:7px;
   }
 }
+
+
+/* Final mobile navigation polish */
+.maplibregl-ctrl-top-right,
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left{
+  display:none!important;
+}
+@media(max-width:700px){
+  .topbar{
+    min-height:122px;
+    padding:7px 12px 9px;
+    grid-template-rows:62px 44px;
+    gap:7px 10px;
+  }
+  .topbar .brand-logo{
+    width:62px;height:62px;flex-basis:62px;
+  }
+  .topbar .lang-toggle{
+    height:42px;
+    min-width:108px;
+    padding:0 12px;
+  }
+  .topbar .search{height:44px;gap:9px}
+  .search input{height:44px}
+  .search button{
+    height:44px;
+    min-width:78px;
+    padding:0 10px;
+  }
+  .search-results{top:129px}
+  .pkf-map-toolbar{
+    top:134px;
+    right:10px;
+    gap:8px;
+  }
+  .pkf-tool{
+    width:43px;height:43px;border-radius:13px;
+  }
+}
