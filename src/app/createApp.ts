@@ -259,6 +259,8 @@ export function createApp(root: HTMLElement) {
       <div class="pkf-layer-head"><b>◈ ${getLang()==='fr'?'Couches':'الطبقات'}</b><button id="pkf-layer-close" type="button" aria-label="${t('إغلاق')}">×</button></div>
       <label class="pkf-layer-row"><span>🛰️ ${getLang()==='fr'?'Satellite':'الأقمار الصناعية'}</span><input id="pkf-satellite-toggle" type="checkbox" checked></label>
       <label class="pkf-layer-row"><span>🌬️ ${t('مرور الرياح')}</span><input id="pkf-wind-toggle" type="checkbox"></label>
+      <label class="pkf-layer-row"><span>🧭 ${getLang()==='fr'?'Carte marine':'الخريطة البحرية'}</span><input id="pkf-nautical-toggle" type="checkbox"></label>
+      <div class="pkf-layer-note">${getLang()==='fr'?'Mode nautique: bathymétrie EMODnet et courbes de profondeur. Les cartes Navionics officielles nécessitent une licence/API Garmin.':'وضع الملاحة البحرية: أعماق EMODnet وخطوط الأعماق. خرائط Navionics الرسمية تحتاج ترخيصاً ومفتاح API من Garmin.'}</div>
       <div class="pkf-layer-note">${getLang()==='fr'?'Les données marines apparaissent dans le rapport du point sélectionné.':'البيانات البحرية تظهر داخل تقرير النقطة المختارة، بدلاً من عرض طبقات غير موجودة فعلياً.'}</div>
     </aside>
     <nav class="pkf-bottom-nav" aria-label="${getLang()==='fr'?'Navigation principale':'التنقل الرئيسي'}">
@@ -456,6 +458,12 @@ export function createApp(root: HTMLElement) {
   });
   document.querySelector<HTMLInputElement>('#pkf-wind-toggle')?.addEventListener('change', e => {
     setWindFlow((e.currentTarget as HTMLInputElement).checked);
+  });
+  document.querySelector<HTMLInputElement>('#pkf-nautical-toggle')?.addEventListener('change', e => {
+    const enabled = (e.currentTarget as HTMLInputElement).checked;
+    if (map.getLayer('satellite')) map.setLayoutProperty('satellite', 'visibility', enabled ? 'none' : 'visible');
+    if (map.getLayer('nautical-bathymetry')) map.setLayoutProperty('nautical-bathymetry', 'visibility', enabled ? 'visible' : 'none');
+    if (map.getLayer('nautical-contours')) map.setLayoutProperty('nautical-contours', 'visibility', enabled ? 'visible' : 'none');
   });
   document.querySelector<HTMLButtonElement>('#pkf-wind')?.addEventListener('click', () => {
     const next = !windFlowEnabled;
