@@ -227,7 +227,7 @@ export function createApp(root: HTMLElement) {
         <b>${getLang()==='fr'?'Mer':'البحر'}</b>
       </button>
       <button id="pkf-nav-fish" type="button">
-        <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c3-5 9-6 15-2-2 5-7 7-12 5l-3-3Z"></path><path d="M19 10 22 7v5l-3-2ZM7 15l-2 4"></path><circle cx="14" cy="10" r="1"></circle></svg></span>
+        <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3.2-4.5 7.3-6.2 12.2-5 2.2.6 4.1 2 5.8 5-1.7 3-3.6 4.4-5.8 5C10.3 18.2 6.2 16.5 3 12Z"></path><path d="M21 12 24 9v6l-3-3Z"></path><circle cx="15" cy="10.2" r="1.05"></circle><path d="M8 16.2 5.8 19"></path></svg></span>
         <b>${getLang()==='fr'?'Pêche':'الصيد'}</b>
       </button>
       <button id="pkf-nav-report" type="button">
