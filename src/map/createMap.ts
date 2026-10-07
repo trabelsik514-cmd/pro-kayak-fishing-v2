@@ -9,7 +9,7 @@ export function createMap(container: string) {
     minZoom: 5,
     maxBounds: [[7.0, 30.0], [12.5, 38.5]],
     renderWorldCopies: false,
-    attributionControl: true,
+    attributionControl: { compact: true },
     dragRotate: false,
     pitchWithRotate: false,
     style: {
