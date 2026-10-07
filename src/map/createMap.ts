@@ -26,10 +26,25 @@ export function createMap(container: string) {
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
           attribution: '© Esri'
+        },
+        'emodnet-bathymetry': {
+          type: 'raster',
+          tiles: ['https://ows.emodnet-bathymetry.eu/wms?service=WMS&version=1.1.1&request=GetMap&layers=emodnet:mean_multicolour&styles=&format=image/png&transparent=true&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}'],
+          tileSize: 256,
+          attribution: '© EMODnet Bathymetry'
+        },
+        'emodnet-contours': {
+          type: 'raster',
+          tiles: ['https://ows.emodnet-bathymetry.eu/wms?service=WMS&version=1.1.1&request=GetMap&layers=emodnet:contours&styles=&format=image/png&transparent=true&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}'],
+          tileSize: 256,
+          attribution: '© EMODnet Bathymetry'
         }
       },
       layers: [
+        { id: 'nautical-background', type: 'background', paint: { 'background-color': '#062b3a' } },
         { id: 'satellite', type: 'raster', source: 'esri-satellite' },
+        { id: 'nautical-bathymetry', type: 'raster', source: 'emodnet-bathymetry', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.82 } },
+        { id: 'nautical-contours', type: 'raster', source: 'emodnet-contours', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.92 } },
         { id: 'place-labels', type: 'raster', source: 'esri-reference', paint: { 'raster-opacity': 0.82 } }
       ]
     }
