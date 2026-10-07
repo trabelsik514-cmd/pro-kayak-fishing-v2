@@ -35,7 +35,7 @@ export function createMap(container: string) {
     }
   });
 
-  // City labels are intentionally not rendered as custom black badges.\n  // The underlying Esri reference layer remains available for native map place names.\n\n  const geolocate = new maplibregl.GeolocateControl({
+  const geolocate = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
     trackUserLocation: true,
     showUserLocation: true,
