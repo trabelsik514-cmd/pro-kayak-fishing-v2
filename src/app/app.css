@@ -2197,3 +2197,23 @@
 .fishing-intelligence-source{font-size:8px;opacity:.42}
 .fishing-intelligence-loading,.fishing-intelligence-error{font-size:10px;opacity:.6}
 @media(max-width:390px){.fishing-intelligence-grid{grid-template-columns:1fr}}
+
+/* Advanced fishing advisor — phases 3 to 10 */
+.dashboard-advisor-slot{margin-top:9px;padding:10px;border:1px solid rgba(90,210,255,.14);border-radius:14px;background:linear-gradient(135deg,rgba(8,29,44,.94),rgba(3,16,25,.96))}
+.advisor-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.advisor-head>div{display:grid;gap:3px}.advisor-head b{font-size:14px}.advisor-head small{font-size:9px;opacity:.5}
+.advisor-confidence{padding:5px 8px;border-radius:99px;background:rgba(22,197,94,.12);font-size:9px;white-space:nowrap}
+.advisor-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px}
+.advisor-grid>div{padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:3px}
+.advisor-grid span{font-size:9px;opacity:.58}.advisor-grid b{font-size:12px;direction:ltr}
+.advisor-section{margin-top:9px}.advisor-section>b{display:block;font-size:11px;margin-bottom:5px}
+.advisor-species{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);margin-top:4px}
+.advisor-species span{font-size:10px}.advisor-species strong{font-size:11px;direction:ltr}.advisor-species small{grid-column:1/-1;font-size:8px;opacity:.5}
+.advisor-windows{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.advisor-window{padding:7px 5px;border-radius:8px;text-align:center;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035)}
+.advisor-window b,.advisor-window strong{display:block;direction:ltr;font-size:9px}.advisor-window strong{font-size:12px;margin-top:3px}
+.advisor-window.excellent,.advisor-window.good{background:rgba(22,163,74,.13);border-color:rgba(34,197,94,.25)}
+.advisor-window.caution{background:rgba(234,179,8,.11)}.advisor-window.danger{background:rgba(220,38,38,.12)}
+.advisor-note{margin-top:8px;font-size:9px;line-height:1.45;opacity:.62}.advisor-source{display:block;margin-top:4px;font-size:8px;opacity:.38}
+.advisor-loading,.advisor-error{font-size:10px;opacity:.6}
+@media(max-width:600px){.advisor-grid{grid-template-columns:repeat(2,1fr)}.advisor-windows{grid-template-columns:1fr}.advisor-head{align-items:flex-start}}
