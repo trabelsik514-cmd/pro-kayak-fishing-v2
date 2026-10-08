@@ -1801,13 +1801,8 @@ export function createApp(root: HTMLElement) {
       return;
     }
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        if (!navigator.geolocation) return reject(new Error('Geolocation unavailable'));
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true, timeout: 10000, maximumAge: 300000
-        });
-      });
-      const gps = {lat: position.coords.latitude, lng: position.coords.longitude};
+      const position = await getDeviceLocation();
+      const gps = {lat: position.lat, lng: position.lng};
       selectedLocation = {lat:gps.lat, lng:gps.lng, label:null};
       showTodayWeather(gps.lat, gps.lng);
     } catch {
