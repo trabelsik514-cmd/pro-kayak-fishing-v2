@@ -7,7 +7,7 @@ import { loadTrips, saveTrip, deleteTrip, makeTrip, type KayakTrip, type TrackPo
 import { getBathymetryDepth } from '../bathymetry/BathymetryService';
 import { initSeaNotifications, saveBackgroundLocation } from '../notifications/SeaNotificationService';
 import { getDeviceLocation, watchDeviceLocation, clearDeviceLocationWatch } from '../location/DeviceLocationService';
-import { loadWaypoints, saveWaypoint, type FishingWaypoint } from '../waypoints/WaypointStore';
+import { loadWaypoints, saveWaypoint, deleteWaypoint, type FishingWaypoint, type WaypointCategory } from '../waypoints/WaypointStore';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -460,26 +460,78 @@ export function createApp(root: HTMLElement) {
     }
   });
   const waypointMarkers = new Map<string, maplibregl.Marker>();
+  const waypointIcon = (category: WaypointCategory) => ({
+    fish:'🐟', anchor:'⚓', rock:'🪨', danger:'⚠️', nav:'🧭', kayak:'🛶', personal:'📌'
+  }[category]);
+
+  const waypointLabel = (category: WaypointCategory) => {
+    const ar:Record<WaypointCategory,string> = {fish:'صيد',anchor:'مرسى',rock:'صخور',danger:'خطر',nav:'ملاحة',kayak:'كاياك',personal:'شخصية'};
+    const fr:Record<WaypointCategory,string> = {fish:'Pêche',anchor:'Mouillage',rock:'Roches',danger:'Danger',nav:'Navigation',kayak:'Kayak',personal:'Personnel'};
+    return (getLang()==='fr'?fr:ar)[category];
+  };
+
+  const showWaypointPopup = (wp:FishingWaypoint) => {
+    const popup = new maplibregl.Popup({offset:18,maxWidth:'300px'})
+      .setLngLat([wp.lng,wp.lat])
+      .setHTML(`
+        <div class="pkf-wp-popup" dir="${getLang()==='fr'?'ltr':'rtl'}">
+          <div class="pkf-wp-title">${waypointIcon(wp.category)} ${wp.name}</div>
+          <div class="pkf-wp-type">${waypointLabel(wp.category)}</div>
+          <div class="pkf-wp-grid">
+            <span>📍 ${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}</span>
+            ${wp.depth!=null ? `<span>〽️ ${wp.depth} m</span>` : ''}
+            ${wp.species ? `<span>🐟 ${wp.species}</span>` : ''}
+          </div>
+          ${wp.notes ? `<div class="pkf-wp-notes">${wp.notes}</div>` : ''}
+          <button class="pkf-wp-delete" data-wp-delete="${wp.id}" type="button">${getLang()==='fr'?'Supprimer':'حذف النقطة'}</button>
+        </div>`)
+      .addTo(map);
+    setTimeout(() => {
+      document.querySelector<HTMLButtonElement>(`[data-wp-delete="${wp.id}"]`)?.addEventListener('click', () => {
+        deleteWaypoint(wp.id);
+        waypointMarkers.get(wp.id)?.remove();
+        waypointMarkers.delete(wp.id);
+        popup.remove();
+      });
+    },0);
+  };
+
   const renderWaypointMarker = (wp:FishingWaypoint) => {
     if (waypointMarkers.has(wp.id)) return;
     const el=document.createElement('button');
-    el.className='pkf-waypoint-marker'; el.type='button'; el.textContent='📍';
-    el.title=wp.name; el.setAttribute('aria-label',wp.name);
-    el.addEventListener('click', ev => { ev.stopPropagation(); void selectPoint(wp.lat,wp.lng,wp.name); });
+    el.className='pkf-waypoint-marker'; el.type='button'; el.textContent=waypointIcon(wp.category);
+    el.title=`${wp.name} — ${waypointLabel(wp.category)}`;
+    el.setAttribute('aria-label',wp.name);
+    el.addEventListener('click', ev => { ev.stopPropagation(); void selectPoint(wp.lat,wp.lng,wp.name); showWaypointPopup(wp); });
     const marker=new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([wp.lng,wp.lat]).addTo(map);
     waypointMarkers.set(wp.id,marker);
   };
   loadWaypoints().forEach(renderWaypointMarker);
+
   document.querySelector<HTMLButtonElement>('#pkf-waypoint')?.addEventListener('click', () => {
-    if (!selectedLocation) { window.alert(getLang()==='fr' ? 'Sélectionnez d’abord un point sur la carte.' : 'حدد نقطة على الخريطة أولاً.'); return; }
-    const name=window.prompt(getLang()==='fr' ? 'Nom du spot' : 'اسم نقطة الصيد', getLang()==='fr' ? 'Spot de pêche' : 'نقطة صيد')?.trim();
+    if (!selectedLocation) {
+      window.alert(getLang()==='fr' ? 'Sélectionnez d’abord un point sur la carte.' : 'حدد نقطة على الخريطة أولاً.');
+      return;
+    }
+    const fr=getLang()==='fr';
+    const name=window.prompt(fr ? 'Nom du point' : 'اسم النقطة', fr ? 'Spot de pêche' : 'نقطة صيد')?.trim();
     if (!name) return;
-    const wp=saveWaypoint({lat:selectedLocation.lat,lng:selectedLocation.lng,name});
+    const categoryInput=window.prompt(
+      fr ? 'Type: fish / anchor / rock / danger / nav / kayak / personal' : 'النوع: fish / anchor / rock / danger / nav / kayak / personal',
+      'fish'
+    )?.trim().toLowerCase() as WaypointCategory | undefined;
+    const category:WaypointCategory = categoryInput && ['fish','anchor','rock','danger','nav','kayak','personal'].includes(categoryInput) ? categoryInput : 'fish';
+    const depthRaw=window.prompt(fr ? 'Profondeur (m), optionnel' : 'العمق بالمتر، اختياري', '')?.trim();
+    const depth=depthRaw && Number.isFinite(Number(depthRaw)) ? Number(depthRaw) : undefined;
+    const species=window.prompt(fr ? 'Espèce ciblée, optionnel' : 'نوع السمك المستهدف، اختياري', '')?.trim() || undefined;
+    const notes=window.prompt(fr ? 'Notes, optionnel' : 'ملاحظات، اختيارية', '')?.trim() || undefined;
+    const wp=saveWaypoint({lat:selectedLocation.lat,lng:selectedLocation.lng,name,category,depth,species,notes});
     renderWaypointMarker(wp);
     const notice=document.createElement('div'); notice.className='pkf-waypoint-notice';
-    notice.textContent='📍 '+(getLang()==='fr' ? 'Spot enregistré sur votre carte privée.' : 'تم حفظ نقطة الصيد على خريطتك الخاصة.');
+    notice.textContent=`${waypointIcon(category)} ${fr ? 'Point enregistré: ' : 'تم حفظ النقطة: '}${name}`;
     report.prepend(notice); window.setTimeout(()=>notice.remove(),3000);
   });
+
 
   document.querySelector<HTMLButtonElement>('#pkf-layers')?.addEventListener('click', () => layerPanel.classList.toggle('hidden'));
   document.querySelector<HTMLButtonElement>('#pkf-layer-close')?.addEventListener('click', () => layerPanel.classList.add('hidden'));
