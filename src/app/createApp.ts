@@ -1475,6 +1475,8 @@ export function createApp(root: HTMLElement) {
           ? `<div class="sea-wave-warning dashboard-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
           : '');
       report.innerHTML = reportBase;
+      // Open every newly selected point at the top of the dashboard.
+      report.scrollTop = 0;
       bindClose();
 
       report.querySelector<HTMLButtonElement>('#save-dashboard-point')?.addEventListener('click', () => {
@@ -1710,25 +1712,6 @@ export function createApp(root: HTMLElement) {
         }
       })();
 
-      void (async () => {
-        try {
-          const hourly = await marine.getHourlyKayakForecast(lat,lng);
-          if (!isCurrent()) return;
-          const best = bestKayakWindow(hourly,3);
-          if (!best) return;
-          const fmt=(x:string)=>new Date(x).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'});
-          const level=best.score>=82?'ممتاز':best.score>=65?'جيد':best.score>=45?'حذر':'غير مناسب';
-          const card = document.createElement('div');
-          card.className='kayak-window';
-          card.innerHTML=`<b>⏰ ${t('أفضل نافذة للرحلة')}</b><strong>${fmt(best.start)} – ${fmt(best.end)}</strong><span>${t('متوسط ملاءمة النافذة')}: ${best.score}/100 · ${translateLevel(level)}</span>`;
-          if (!isCurrent()) return;
-          const assessmentEl = report.querySelector('.kayak-assessment');
-          if (assessmentEl) assessmentEl.insertAdjacentElement('beforebegin',card);
-          else report.appendChild(card);
-        } catch {
-          // Forecast enrichment is optional; the already rendered current report remains valid.
-        }
-      })();
     } catch {
       if (!isCurrent()) return;
       report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب البيانات')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div><p>${t('تم تحديد النقطة، لكن مصادر البيانات لم تستجب الآن.')}</p><button id="retry-report">${getLang()==='fr' ? 'Réessayer' : 'إعادة المحاولة'}</button>`;
