@@ -13,10 +13,11 @@ export type FishingWaypoint = {
 };
 
 const KEY = 'pro-kayak-fishing.waypoints.v2';
+const LEGACY_KEY = 'pro-kayak-fishing.waypoints.v1';
 
 export function loadWaypoints(): FishingWaypoint[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
     if (!raw) return [];
     const value = JSON.parse(raw);
     return Array.isArray(value) ? value.filter((x) =>
