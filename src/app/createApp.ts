@@ -301,6 +301,8 @@ export function createApp(root: HTMLElement) {
       <div class="trip-head"><b><span class="trip-head-icon">↗</span> ${t('سجل الرحلات')}</b><button id="close-trips" aria-label="${t('إغلاق')}">×</button></div>
       <div id="trip-status" class="trip-idle"><b>${t('لا توجد رحلة قيد التسجيل')}</b><span>${t('ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.')}</span></div>
       <button id="trip-record" class="trip-primary"><span aria-hidden="true">●</span> ${t('بدء تسجيل رحلة')}</button>
+      <button id="route-planner-open" class="trip-secondary">🛶 ${getLang()==='fr'?'Créer une route depuis mes points':'إنشاء مسار من نقاطي'}</button>
+      <div id="route-planner" class="route-planner hidden"></div>
       <div id="trip-list" class="trip-list"></div>
     </aside>
     <aside class="route-view hidden" id="route-view" aria-live="polite"></aside>
@@ -1128,6 +1130,47 @@ export function createApp(root: HTMLElement) {
     ).then(id => { watchId = id; });
   };
 
+  const routePlanner = document.querySelector<HTMLElement>('#route-planner')!;
+  const routePlannerOpen = document.querySelector<HTMLButtonElement>('#route-planner-open')!;
+  const haversineKm = (a:{lat:number,lng:number}, b:{lat:number,lng:number}) => {
+    const R=6371, rad=Math.PI/180, dLat=(b.lat-a.lat)*rad, dLng=(b.lng-a.lng)*rad;
+    const q=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
+    return 2*R*Math.asin(Math.sqrt(q));
+  };
+  const bearingDeg = (a:{lat:number,lng:number}, b:{lat:number,lng:number}) => {
+    const rad=Math.PI/180, y=Math.sin((b.lng-a.lng)*rad)*Math.cos(b.lat*rad);
+    const x=Math.cos(a.lat*rad)*Math.sin(b.lat*rad)-Math.sin(a.lat*rad)*Math.cos(b.lat*rad)*Math.cos((b.lng-a.lng)*rad);
+    return (Math.atan2(y,x)*180/Math.PI+360)%360;
+  };
+  const bearingLabel = (deg:number) => ['N','NE','E','SE','S','SW','W','NW'][Math.round(deg/45)%8];
+  const clearSavedRoute = () => {
+    if(map.getLayer('saved-route-line')) map.removeLayer('saved-route-line');
+    if(map.getSource('saved-route-source')) map.removeSource('saved-route-source');
+    routeView.classList.add('hidden');
+  };
+  const drawWaypointRoute = (points:FishingWaypoint[]) => {
+    clearSavedRoute();
+    if(points.length<2) return;
+    const coordinates=points.map(p=>[p.lng,p.lat] as [number,number]);
+    map.addSource('saved-route-source',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates},properties:{}}});
+    map.addLayer({id:'saved-route-line',type:'line',source:'saved-route-source',paint:{'line-color':'#32c5ff','line-width':4,'line-opacity':.9,'line-dasharray':[1,1]}});
+    const bounds=coordinates.slice(1).reduce((b,p)=>b.extend(p),new maplibregl.LngLatBounds(coordinates[0],coordinates[0]));
+    map.fitBounds(bounds,{padding:80,maxZoom:14,duration:800});
+    const distance=points.slice(1).reduce((sum,p,i)=>sum+haversineKm(points[i],p),0);
+    const legs=points.slice(1).map((p,i)=>({km:haversineKm(points[i],p),bearing:bearingDeg(points[i],p),dir:bearingLabel(bearingDeg(points[i],p))}));
+    routeView.classList.remove('hidden');
+    routeView.innerHTML=`<div class="route-view-head"><div><b>🛶 ${getLang()==='fr'?'Route kayak':'مسار الكاياك'}</b><small>${points.length} ${getLang()==='fr'?'points':'نقاط'}</small></div><button id="close-route-view" aria-label="${t('إغلاق')}">×</button></div><div class="route-view-stats"><span>📏 <b>${distance.toFixed(2)}</b> km</span><span>🧭 <b>${legs[0]?.dir||'—'}</b></span><span>📍 <b>${points.length}</b></span></div><div class="route-legs">${legs.map((l,i)=>`<div><span>${i+1}. ${escapeHtml(points[i].name)} → ${escapeHtml(points[i+1].name)}</span><small>${l.km.toFixed(2)} km • ${Math.round(l.bearing)}° ${l.dir}</small></div>`).join('')}</div><button id="hide-route" class="route-hide">${t('إخفاء المسار')}</button>`;
+    routeView.querySelector('#close-route-view')?.addEventListener('click',clearSavedRoute);
+    routeView.querySelector('#hide-route')?.addEventListener('click',clearSavedRoute);
+  };
+  const openRoutePlanner = () => {
+    const points=loadWaypoints();
+    if(points.length<2){ window.alert(getLang()==='fr'?'Enregistrez au moins deux points.':'احفظ نقطتين على الأقل أولاً.'); return; }
+    routePlanner.innerHTML=`<div class="route-planner-head"><b>${getLang()==='fr'?'Choisir les points':'اختر نقاط المسار'}</b><small>${getLang()==='fr'?'Sélectionnez les points dans l’ordre.':'حدد النقاط حسب ترتيب الملاحة.'}</small></div><div class="route-planner-list">${points.map(p=>`<label><input type="checkbox" value="${p.id}" data-route-point><span>${waypointIcon(p.category)} ${escapeHtml(p.name)}</span></label>`).join('')}</div><button id="route-build" class="trip-primary">${getLang()==='fr'?'Tracer la route':'رسم المسار'}</button>`;
+    routePlanner.classList.remove('hidden');
+    routePlanner.querySelector('#route-build')?.addEventListener('click',()=>{const ids=[...routePlanner.querySelectorAll<HTMLInputElement>('[data-route-point]:checked')].map(x=>x.value);const selected=ids.map(id=>points.find(p=>p.id===id)).filter(Boolean) as FishingWaypoint[];if(selected.length<2){window.alert(getLang()==='fr'?'Choisissez au moins deux points.':'اختر نقطتين على الأقل.');return;}drawWaypointRoute(selected);routePlanner.classList.add('hidden');tripPanel.classList.add('hidden');});
+  };
+  routePlannerOpen.addEventListener('click',openRoutePlanner);
   tripRecord.addEventListener('click', () => recording ? stopRecording() : startRecording());
   renderTrips();
 
