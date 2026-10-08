@@ -1969,3 +1969,16 @@
 .pkf-wp-grid{display:grid;gap:5px;font-size:11px}
 .pkf-wp-notes{margin-top:8px;padding:7px 8px;border-radius:8px;background:#eef5f8;font-size:11px}
 .pkf-wp-delete{margin-top:10px;width:100%;border:0;border-radius:8px;padding:7px;background:#b42318;color:#fff;font-weight:800;cursor:pointer}
+
+.saved-waypoints-panel{position:absolute;z-index:30;left:16px;right:16px;bottom:88px;max-height:min(62vh,560px);overflow:auto;padding:14px;border:1px solid rgba(90,210,255,.18);border-radius:18px;background:rgba(4,17,27,.96);box-shadow:0 18px 45px rgba(0,0,0,.45);backdrop-filter:blur(18px)}
+.saved-waypoints-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:16px}
+.saved-waypoints-head button{width:34px;height:34px;border:0;border-radius:10px;background:rgba(255,255,255,.07);color:#fff;font-size:24px;cursor:pointer}
+.saved-waypoint-empty{text-align:center;padding:32px 12px;opacity:.65;font-size:13px}
+.saved-waypoint-card{display:flex;align-items:center;gap:10px;padding:11px;margin:7px 0;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.035);cursor:pointer}
+.saved-waypoint-card:hover{background:rgba(70,190,240,.08)}
+.saved-waypoint-icon{width:38px;text-align:center;font-size:24px}
+.saved-waypoint-main{min-width:0;flex:1;display:grid;gap:3px}
+.saved-waypoint-main b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saved-waypoint-main small{font-size:10px;opacity:.68}
+.saved-waypoint-delete{border:0;background:transparent;color:#ff8d8d;padding:7px;font-size:16px;cursor:pointer}
+@media(max-width:700px){.saved-waypoints-panel{left:10px;right:10px;bottom:82px;max-height:58vh}}
