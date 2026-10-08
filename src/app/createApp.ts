@@ -202,6 +202,18 @@ const FR_KI: Record<string,string> = {
   'القرار':'Décision',
 };
 const t = (ar: string) => getLang() === 'fr' ? (FR_KI[ar] ?? FR[ar] ?? ar) : ar;
+const moonInfo = (date=new Date()) => {
+  const synodic = 29.530588853;
+  const knownNewMoon = Date.UTC(2000,0,6,18,14);
+  let age = ((date.getTime()-knownNewMoon)/86400000)%synodic;
+  if (age < 0) age += synodic;
+  const illumination = Math.round((1-Math.cos(2*Math.PI*age/synodic))/2*100);
+  const phase = age < 1.85 ? 'قمر جديد' : age < 7.38 ? 'هلال متزايد' : age < 11.07 ? 'التربيع الأول' : age < 14.77 ? 'أحدب متزايد' : age < 16.61 ? 'بدر' : age < 22.15 ? 'أحدب متناقص' : age < 25.84 ? 'التربيع الأخير' : age < 29.53 ? 'هلال متناقص' : 'قمر جديد';
+  const symbols = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
+  const symbol = symbols[Math.round(age/synodic*8)%8];
+  return {age,illumination,phase,symbol};
+};
+
 const translateReason = (reason: string) => {
   if (getLang() !== 'fr') return reason;
   if (reason.startsWith('بيانات غير مكتملة:')) {
@@ -259,8 +271,8 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
     <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الأيام القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t('جاري حساب توقعات الأسبوع…')}</div></div></section>
     <section class="dashboard-bottom-cards">
       <article class="dashboard-mini-card dashboard-fishing-window"><b>🎣 ${t('أفضل ساعات الصيد')}</b><div class="mini-window"><span>${t('جاري الحساب…')}</span></div></article>
-      <article class="dashboard-mini-card"><b>🌊 ${t('المد والجزر')}</b><div class="tide-placeholder"><strong>—</strong><small>${t('بيانات المد والجزر غير متاحة من مصدر البحر الحالي')}</small></div></article>
-      <article class="dashboard-mini-card dashboard-sun"><b>🌙 ${t('القمر')}</b><div class="moon-row"><span class="moon-symbol">◐</span><span><strong>${t('مرحلة القمر')}</strong><small>${t('تستخدم للتخطيط فقط')}</small></span></div><div class="sun-times"><span>🌅 ${t('الشروق')} <b>—</b></span><span>🌇 ${t('الغروب')} <b>—</b></span></div></article>
+      <article class="dashboard-mini-card dashboard-tide-card"><b>🌊 ${t('المد والجزر')}</b><div class="tide-placeholder" id="dashboard-tide-content"><strong>…</strong><small>${t('جاري جلب بيانات المد والجزر…')}</small></div></article>
+      <article class="dashboard-mini-card dashboard-sun"><b>🌙 ${t('القمر')}</b><div class="moon-row"><span class="moon-symbol">${moonInfo().symbol}</span><span><strong>${t(moonInfo().phase)}</strong><small>${moonInfo().illumination}% ${t('إضاءة')}</small></span></div><div class="sun-times"><span>🌅 ${t('الشروق')} <b>${data.weather.sunrise ? new Date(data.weather.sunrise).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span><span>🌇 ${t('الغروب')} <b>${data.weather.sunset ? new Date(data.weather.sunset).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span></div></article>
     </section>
     <div class="dashboard-actions"><button id="save-dashboard-point" type="button">📍 ${t('حفظ النقطة')}</button><button id="share-dashboard-coords" type="button">↗ ${t('مشاركة الإحداثيات')}</button><button id="dashboard-report-action" type="button">📄 ${t('تقرير تفصيلي')}</button><button id="dashboard-planner-action" type="button">🗓️ ${t('مخطط الصيد الذكي')}</button></div>
     <div class="dashboard-footer"><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small></div>
@@ -1509,6 +1521,28 @@ export function createApp(root: HTMLElement) {
           mini.innerHTML = `<b>${new Date(bestPlanningWindow.start).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})} → ${new Date(bestPlanningWindow.end).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})}</b><span class="mini-score">${bestPlanningWindow.score}/100</span><i style="width:${Math.max(0,Math.min(100,bestPlanningWindow.score))}%"></i>`;
         }
       }
+
+      // Tide enrichment is optional and never blocks the main sea report.
+      void (async () => {
+        try {
+          const tides = await marine.getTideExtremes(lat,lng);
+          if (!isCurrent()) return;
+          const tideEl = report.querySelector<HTMLElement>('#dashboard-tide-content');
+          if (!tideEl) return;
+          const fmtTime = (iso:string) => {
+            const d = new Date(iso);
+            return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false});
+          };
+          const next = tides.filter(e => Date.parse(e.time) >= Date.now()).slice(0,4);
+          tideEl.innerHTML = next.length
+            ? '<div class="tide-events">'+next.map(e=>'<span class="tide-event '+e.type+'"><b>'+ (e.type==='high' ? '⬆️ '+t('مد عالٍ') : '⬇️ '+t('جزر منخفض')) +'</b><strong>'+fmtTime(e.time)+'</strong><small>'+ (e.height==null ? '—' : e.height.toFixed(2)+' m') +'</small></span>').join('')+'</div>'
+            : '<strong>—</strong><small>'+t('لا توجد أحداث مد وجزر متاحة الآن')+'</small>';
+        } catch {
+          if (!isCurrent()) return;
+          const tideEl = report.querySelector<HTMLElement>('#dashboard-tide-content');
+          if (tideEl) tideEl.innerHTML = '<strong>—</strong><small>'+t('تعذر جلب بيانات المد والجزر')+'</small>';
+        }
+      })();
 
       // Daily forecast table: this replaces the old hourly strip in the dashboard.
       void (async () => {
