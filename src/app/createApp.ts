@@ -661,45 +661,55 @@ export function createApp(root: HTMLElement) {
   document.querySelector<HTMLButtonElement>('#pkf-nav-fish')?.addEventListener('click', () => {
     savedWaypointsPanel?.classList.add('hidden'); document.querySelector<HTMLButtonElement>('#kayak-intelligence-toggle')?.click(); setBottomNav('fish');
   });
-  // Coordinate parser: accepts decimal, DDM (N 36°55.510), DMS, and pasted lat/lng pairs.
+  // Marine GPS coordinate parser: Decimal, DDM and DMS, with hemisphere-aware validation.
   const parseCoordinate = (raw:string, axis:'lat'|'lng'): number | null => {
-    let s = raw.trim().replace(/[，,;]/g, ' ').replace(/[−–—]/g, '-');
+    let s = String(raw || '').trim().replace(/[−–—]/g, '-');
     if (!s) return null;
     const hemi = (s.match(/[NSEW]/i)?.[0] || '').toUpperCase();
-    const nums = (s.match(/-?\\d+(?:[.,]\\d+)?/g) || []).map(v => Number(v.replace(',', '.')));
-    if (!nums.length) return null;
-    const sign = hemi === 'S' || hemi === 'W' ? -1 : 1;
-    let value:number;
-    if (nums.length >= 3) {
-      value = Math.abs(nums[0]) + nums[1] / 60 + nums[2] / 3600;
-    } else if (nums.length >= 2 && /[°'′]/.test(s)) {
-      value = Math.abs(nums[0]) + nums[1] / 60;
-    } else {
-      value = nums[0];
-    }
-    if (nums[0] < 0 && !hemi) value = -Math.abs(value);
-    else value *= sign;
     const max = axis === 'lat' ? 90 : 180;
-    return Number.isFinite(value) && Math.abs(value) <= max ? value : null;
+    let value:number | null = null;
+    const dms = s.match(/([+-]?\d+(?:[.,]\d+)?)\s*[°º]\s*(\d+(?:[.,]\d+)?)\s*(?:[′']\s*(\d+(?:[.,]\d+)?)\s*(?:[″"])?|(?:\s+)(\d+(?:[.,]\d+)?))?/);
+    if (dms) {
+      const deg = Number(dms[1].replace(',', '.'));
+      const min = Number(dms[2].replace(',', '.'));
+      const sec = dms[3] ? Number(dms[3].replace(',', '.')) : 0;
+      if (Number.isFinite(deg) && Number.isFinite(min) && Number.isFinite(sec) && min >= 0 && min < 60 && sec >= 0 && sec < 60) {
+        value = Math.abs(deg) + min / 60 + sec / 3600;
+        if (deg < 0 && !hemi) value = -value;
+      }
+    }
+    if (value == null) {
+      const decimal = s.match(/[+-]?\d+(?:[.,]\d+)?/);
+      if (decimal) value = Number(decimal[0].replace(',', '.'));
+    }
+    if (value == null || !Number.isFinite(value)) return null;
+    if (hemi === 'S' || hemi === 'W') value = -Math.abs(value);
+    else if (hemi === 'N' || hemi === 'E') value = Math.abs(value);
+    return Math.abs(value) <= max ? value : null;
   };
+
   const parseCoordinatePair = (raw:string): {lat:number;lng:number} | null => {
-    const s = raw.trim().replace(/[−–—]/g, '-');
-    const latMatch = s.match(/([NS])\\s*[-+]?\\d+(?:[.,]\\d+)?(?:[°º]\\s*\\d+(?:[.,]\\d+)?)?/i);
-    const lngMatch = s.match(/([EW])\\s*[-+]?\\d+(?:[.,]\\d+)?(?:[°º]\\s*\\d+(?:[.,]\\d+)?)?/i);
-    if (latMatch && lngMatch) {
-      const lat = parseCoordinate(latMatch[0], 'lat');
-      const lng = parseCoordinate(lngMatch[0], 'lng');
+    const s = String(raw || '').trim().replace(/[−–—]/g, '-');
+    if (!s) return null;
+    const latPart = s.match(/[NS]\s*[-+]?\d+(?:[.,]\d+)?(?:\s*[°º]\s*\d+(?:[.,]\d+)?(?:\s*[′']\s*\d+(?:[.,]\d+)?)?)?/i);
+    const lngPart = s.match(/[EW]\s*[-+]?\d+(?:[.,]\d+)?(?:\s*[°º]\s*\d+(?:[.,]\d+)?(?:\s*[′']\s*\d+(?:[.,]\d+)?)?)?/i);
+    if (latPart && lngPart) {
+      const lat = parseCoordinate(latPart[0], 'lat');
+      const lng = parseCoordinate(lngPart[0], 'lng');
       if (lat != null && lng != null) return {lat,lng};
     }
-    const nums = s.match(/-?\\d+(?:[.,]\\d+)?/g)?.map(v=>Number(v.replace(',','.'))) || [];
-    if (nums.length === 2 && nums[0] >= 30 && nums[0] <= 38.6 && nums[1] >= 7 && nums[1] <= 12.2) {
-      return {lat:nums[0],lng:nums[1]};
+    const nums = s.match(/[+-]?\d+(?:[.,]\d+)?/g)?.map(v => Number(v.replace(',', '.'))) || [];
+    if (nums.length === 2) {
+      const [x,y] = nums;
+      if (x >= 30 && x <= 38.6 && y >= 7 && y <= 12.2) return {lat:x,lng:y};
+      if (y >= 30 && y <= 38.6 && x >= 7 && x <= 12.2) return {lat:y,lng:x};
     }
     return null;
   };
+
   const coordinateLatInput = document.querySelector<HTMLInputElement>('#coordinate-point-lat')!;
   const coordinateLngInput = document.querySelector<HTMLInputElement>('#coordinate-point-lng')!;
-  coordinateLatInput.addEventListener('paste', ev => {
+  const handleCoordinatePaste = (ev: ClipboardEvent) => {
     const pasted = ev.clipboardData?.getData('text') || '';
     const pair = parseCoordinatePair(pasted);
     if (pair) {
@@ -707,7 +717,9 @@ export function createApp(root: HTMLElement) {
       coordinateLatInput.value = pair.lat.toFixed(7);
       coordinateLngInput.value = pair.lng.toFixed(7);
     }
-  });
+  };
+  coordinateLatInput.addEventListener('paste', handleCoordinatePaste);
+  coordinateLngInput.addEventListener('paste', handleCoordinatePaste);
   const coordinateWaypointModal = document.querySelector<HTMLElement>('#coordinate-waypoint-modal')!;
   const coordinateError = document.querySelector<HTMLElement>('#coordinate-point-error')!;
   const openCoordinateWaypoint = () => {
@@ -724,9 +736,14 @@ export function createApp(root: HTMLElement) {
     const name = document.querySelector<HTMLInputElement>('#coordinate-point-name')?.value.trim() || '';
     const latRaw = document.querySelector<HTMLInputElement>('#coordinate-point-lat')?.value || '';
     const lngRaw = document.querySelector<HTMLInputElement>('#coordinate-point-lng')?.value || '';
-    const pair = parseCoordinatePair(latRaw);
-    const lat = pair?.lat ?? parseCoordinate(latRaw, 'lat');
-    const lng = pair?.lng ?? parseCoordinate(lngRaw, 'lng');
+    const pair = parseCoordinatePair(latRaw) || parseCoordinatePair(lngRaw);
+    let lat = pair?.lat ?? parseCoordinate(latRaw, 'lat');
+    let lng = pair?.lng ?? parseCoordinate(lngRaw, 'lng');
+    // Safety net for reversed Lat/Lng entry: Tunisia latitude is ~30–38.6 and longitude ~7–12.2.
+    if (!(lat != null && lng != null && lat >= 30 && lat <= 38.6 && lng >= 7 && lng <= 12.2) &&
+        lng != null && lat != null && lng >= 30 && lng <= 38.6 && lat >= 7 && lat <= 12.2) {
+      [lat, lng] = [lng, lat];
+    }
     const category = document.querySelector<HTMLSelectElement>('#coordinate-point-category')?.value as WaypointCategory;
     const notes = document.querySelector<HTMLTextAreaElement>('#coordinate-point-notes')?.value.trim() || '';
     if (!name) { coordinateError.textContent = getLang()==='fr' ? 'Entrez un nom.' : 'أدخل اسم النقطة.'; return; }
