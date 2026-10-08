@@ -9,6 +9,8 @@ export type PointConditions = {
     pressure: number|null;
     humidity: number|null;
     precipitation: number|null;
+    sunrise: string|null;
+    sunset: string|null;
   };
   sea: {
     waveHeight: number|null;
@@ -138,6 +140,26 @@ export type HourlyKayakPoint = {
 };
 
 export class MarineService {
+  async getTideExtremes(latitude:number, longitude:number):Promise<{time:string;type:'high'|'low';height:number|null}[]> {
+    const u = new URL('https://api.openwaters.io/tides/extremes');
+    u.searchParams.set('latitude',String(latitude));
+    u.searchParams.set('longitude',String(longitude));
+    u.searchParams.set('units','meters');
+    const now = new Date();
+    const end = new Date(now.getTime() + 36*60*60*1000);
+    u.searchParams.set('start',now.toISOString());
+    u.searchParams.set('end',end.toISOString());
+    const p = await getJson(u,15000);
+    const raw = Array.isArray(p) ? p : (Array.isArray(p?.extremes) ? p.extremes : Array.isArray(p?.predictions) ? p.predictions : []);
+    return raw.map((e:any) => {
+      const time = String(e?.time ?? e?.datetime ?? e?.timestamp ?? '');
+      const typeRaw = String(e?.type ?? e?.event ?? '').toLowerCase();
+      const type = typeRaw.includes('high') || typeRaw.includes('max') ? 'high' : 'low';
+      const n = Number(e?.height ?? e?.height_m ?? e?.value);
+      return {time,type,height:Number.isFinite(n)?n:null};
+    }).filter((e:any) => e.time && (e.type==='high'||e.type==='low')).sort((a:any,b:any)=>Date.parse(a.time)-Date.parse(b.time));
+  }
+
   async getTodayWeatherSummary(latitude:number, longitude:number):Promise<DailyWeatherSummary> {
     const u = new URL('https://api.open-meteo.com/v1/forecast');
     u.searchParams.set('latitude',String(latitude));
@@ -457,6 +479,7 @@ export class MarineService {
       'current',
       'temperature_2m,relative_humidity_2m,precipitation,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m'
     );
+    weatherUrl.searchParams.set('daily','sunrise,sunset');
     weatherUrl.searchParams.set('timezone', 'auto');
     weatherUrl.searchParams.set('cell_selection', 'nearest');
 
@@ -561,7 +584,9 @@ export class MarineService {
         windDirection: getWeather('wind_direction_10m', 'wind_direction_10m'),
         pressure: getWeather('pressure_msl', 'pressure_msl'),
         humidity: getWeather('relative_humidity_2m', 'relative_humidity_2m'),
-        precipitation: getWeather('precipitation', 'precipitation')
+        precipitation: getWeather('precipitation', 'precipitation'),
+        sunrise: Array.isArray(weatherPayload?.daily?.sunrise) && typeof weatherPayload.daily.sunrise[0]==='string' ? weatherPayload.daily.sunrise[0] : null,
+        sunset: Array.isArray(weatherPayload?.daily?.sunset) && typeof weatherPayload.daily.sunset[0]==='string' ? weatherPayload.daily.sunset[0] : null
       },
       sea: {
         waveHeight: getSea('wave_height', 'wave_height'),
