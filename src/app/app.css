@@ -1986,3 +1986,16 @@
 .saved-waypoints-panel.hidden{display:none!important;pointer-events:none!important}
 .saved-waypoints-panel:not(.hidden){pointer-events:auto!important}
 .saved-waypoints-head button{position:relative;z-index:101;pointer-events:auto!important;touch-action:manipulation}
+
+.saved-waypoints-title{display:flex;align-items:center;gap:8px;min-width:0}
+.saved-waypoints-add{border:1px solid rgba(90,210,255,.28)!important;background:rgba(40,150,200,.12)!important;color:#7dd3fc!important;width:auto!important;height:34px;padding:0 10px!important;font-size:12px!important;white-space:nowrap}
+.coordinate-waypoint-modal{position:absolute;inset:0;z-index:120;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.58);backdrop-filter:blur(5px)}
+.coordinate-waypoint-modal.hidden{display:none!important}
+.coordinate-waypoint-card{width:min(430px,100%);padding:16px;border:1px solid rgba(90,210,255,.2);border-radius:18px;background:rgba(4,17,27,.98);box-shadow:0 20px 55px rgba(0,0,0,.5)}
+.coordinate-waypoint-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;font-size:17px}
+.coordinate-waypoint-head button{width:36px;height:36px;border:0;border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font-size:24px;cursor:pointer;touch-action:manipulation}
+.coordinate-waypoint-card label{display:grid;gap:6px;margin:10px 0;font-size:12px;opacity:.9}
+.coordinate-waypoint-card input,.coordinate-waypoint-card select,.coordinate-waypoint-card textarea{width:100%;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:10px;background:#07141f;color:#fff;outline:none;font:inherit}
+.coordinate-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.coordinate-point-error{min-height:18px;margin:5px 0;color:#fda4af;font-size:12px;line-height:1.4}
+@media(max-width:520px){.saved-waypoints-title{gap:5px}.saved-waypoints-add{padding:0 7px!important}.coordinate-grid{grid-template-columns:1fr}}
