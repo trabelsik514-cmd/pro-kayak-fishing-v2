@@ -293,10 +293,10 @@ export function createApp(root: HTMLElement) {
     <aside class="measure-panel hidden" id="measure-panel"></aside>
     <aside class="saved-waypoints-panel hidden" id="saved-waypoints-panel">
       <div class="saved-waypoints-head">
-        <div class="saved-waypoints-title"><b>${{getLang()==='fr'?'Mes points enregistrés':'نقاطي المحفوظة'}</b></div>
+        <div class="saved-waypoints-title"><b>${getLang()==='fr'?'Mes points enregistrés':'نقاطي المحفوظة'}</b></div>
         <div class="saved-waypoints-actions">
-          <button id="add-coordinate-waypoint" class="saved-waypoints-add" type="button">＋ ${{getLang()==='fr'?'Coordonnées':'إحداثيات'}</button>
-          <button id="close-saved-waypoints" type="button" aria-label="${{getLang()==='fr'?'Fermer':'إغلاق'}">×</button>
+          <button id="add-coordinate-waypoint" class="saved-waypoints-add" type="button">＋ ${getLang()==='fr'?'Coordonnées':'إحداثيات'}</button>
+          <button id="close-saved-waypoints" type="button" aria-label="${getLang()==='fr'?'Fermer':'إغلاق'}">×</button>
         </div>
       </div>
       <div id="saved-waypoints-list"></div>
@@ -304,36 +304,36 @@ export function createApp(root: HTMLElement) {
     <div id="coordinate-waypoint-modal" class="coordinate-waypoint-modal hidden" role="dialog" aria-modal="true" aria-labelledby="coordinate-waypoint-title">
       <form class="coordinate-waypoint-card" id="coordinate-waypoint-form">
         <div class="coordinate-waypoint-head">
-          <b id="coordinate-waypoint-title">${{getLang()==='fr'?'Ajouter un point par coordonnées':'إضافة نقطة بالإحداثيات'}</b>
-          <button id="close-coordinate-waypoint" type="button" aria-label="${{getLang()==='fr'?'Fermer':'إغلاق'}">×</button>
+          <b id="coordinate-waypoint-title">${getLang()==='fr'?'Ajouter un point par coordonnées':'إضافة نقطة بالإحداثيات'}</b>
+          <button id="close-coordinate-waypoint" type="button" aria-label="${getLang()==='fr'?'Fermer':'إغلاق'}">×</button>
         </div>
-        <label>${{getLang()==='fr'?'Nom du point':'اسم النقطة'}
-          <input id="coordinate-point-name" required maxlength="80" autocomplete="off" placeholder="${{getLang()==='fr'?'Ex. Spot Sidi Bou Saïd':'مثال: نقطة صيد سيدي بوسعيد'}">
+        <label>${getLang()==='fr'?'Nom du point':'اسم النقطة'}
+          <input id="coordinate-point-name" required maxlength="80" autocomplete="off" placeholder="${getLang()==='fr'?'Ex. Spot Sidi Bou Saïd':'مثال: نقطة صيد سيدي بوسعيد'}">
         </label>
         <div class="coordinate-grid">
-          <label>${{getLang()==='fr'?'Latitude':'خط العرض'}
+          <label>${getLang()==='fr'?'Latitude':'خط العرض'}
             <input id="coordinate-point-lat" required inputmode="decimal" type="number" step="any" min="-90" max="90" placeholder="36.85">
           </label>
-          <label>${{getLang()==='fr'?'Longitude':'خط الطول'}
+          <label>${getLang()==='fr'?'Longitude':'خط الطول'}
             <input id="coordinate-point-lng" required inputmode="decimal" type="number" step="any" min="-180" max="180" placeholder="10.32">
           </label>
         </div>
-        <label>${{getLang()==='fr'?'Type':'النوع'}
+        <label>${getLang()==='fr'?'Type':'النوع'}
           <select id="coordinate-point-category">
-            <option value="fish">${{getLang()==='fr'?'Pêche':'صيد'}</option>
-            <option value="anchor">${{getLang()==='fr'?'Mouillage':'مرسى'}</option>
-            <option value="rock">${{getLang()==='fr'?'Rocher':'صخور'}</option>
-            <option value="danger">${{getLang()==='fr'?'Danger':'خطر'}</option>
-            <option value="nav">${{getLang()==='fr'?'Navigation':'ملاحة'}</option>
+            <option value="fish">${getLang()==='fr'?'Pêche':'صيد'}</option>
+            <option value="anchor">${getLang()==='fr'?'Mouillage':'مرسى'}</option>
+            <option value="rock">${getLang()==='fr'?'Rocher':'صخور'}</option>
+            <option value="danger">${getLang()==='fr'?'Danger':'خطر'}</option>
+            <option value="nav">${getLang()==='fr'?'Navigation':'ملاحة'}</option>
             <option value="kayak">Kayak</option>
-            <option value="personal">${{getLang()==='fr'?'Personnel':'شخصية'}</option>
+            <option value="personal">${getLang()==='fr'?'Personnel':'شخصية'}</option>
           </select>
         </label>
-        <label>${{getLang()==='fr'?'Notes':'ملاحظات'}
-          <textarea id="coordinate-point-notes" rows="2" maxlength="300" placeholder="${{getLang()==='fr'?'Notes facultatives':'ملاحظات اختيارية'}"></textarea>
+        <label>${getLang()==='fr'?'Notes':'ملاحظات'}
+          <textarea id="coordinate-point-notes" rows="2" maxlength="300" placeholder="${getLang()==='fr'?'Notes facultatives':'ملاحظات اختيارية'}"></textarea>
         </label>
         <div id="coordinate-point-error" class="coordinate-point-error" role="alert"></div>
-        <button id="save-coordinate-waypoint" class="trip-primary" type="submit">${{getLang()==='fr'?'Enregistrer le point':'حفظ النقطة'}</button>
+        <button id="save-coordinate-waypoint" class="trip-primary" type="submit">${getLang()==='fr'?'Enregistrer le point':'حفظ النقطة'}</button>
       </form>
     </div>
     <aside class="trip-panel hidden" id="trip-panel">
