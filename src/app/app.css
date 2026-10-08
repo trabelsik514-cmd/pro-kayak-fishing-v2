@@ -1982,3 +1982,7 @@
 .saved-waypoint-main small{font-size:10px;opacity:.68}
 .saved-waypoint-delete{border:0;background:transparent;color:#ff8d8d;padding:7px;font-size:16px;cursor:pointer}
 @media(max-width:700px){.saved-waypoints-panel{left:10px;right:10px;bottom:82px;max-height:58vh}}
+
+.saved-waypoints-panel.hidden{display:none!important;pointer-events:none!important}
+.saved-waypoints-panel:not(.hidden){pointer-events:auto!important}
+.saved-waypoints-head button{position:relative;z-index:101;pointer-events:auto!important;touch-action:manipulation}
