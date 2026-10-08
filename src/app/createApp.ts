@@ -537,7 +537,7 @@ export function createApp(root: HTMLElement) {
   const showWaypointPopup = async (wp:FishingWaypoint) => {
     const popup = new maplibregl.Popup({offset:18,maxWidth:'320px'})
       .setLngLat([wp.lng,wp.lat])
-      .setHTML(`<div class="pkf-wp-popup" dir="${getLang()==='fr'?'ltr':'rtl'}"><div class="pkf-wp-title">${waypointIcon(wp.category)} ${escapeHtml(wp.name)}</div><div class="pkf-wp-type">${escapeHtml(waypointLabel(wp.category))}</div><div class="pkf-wp-grid"><span>📍 ${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}</span>${wp.depth!=null ? `<span>〽️ ${wp.depth} m</span>` : ''}${wp.species ? `<span>🐟 ${escapeHtml(wp.species)}</span>` : ''}<span class="pkf-coast-loading">🏖️ ${getLang()==='fr'?'Distance au rivage: calcul...':'المسافة إلى الشاطئ: جارٍ الحساب...'}</span></div>${wp.notes ? `<div class="pkf-wp-notes">${escapeHtml(wp.notes)}</div>` : ''}<button class="pkf-wp-delete" data-wp-delete="${wp.id}" type="button">${getLang()==='fr'?'Supprimer':'حذف النقطة'}</button></div>`)
+      .setHTML(`<div class="pkf-wp-popup" dir="${getLang()==='fr'?'ltr':'rtl'}"><div class="pkf-wp-title">${waypointIcon(wp.category)} ${escapeHtml(wp.name)}</div><div class="pkf-wp-type">${escapeHtml(waypointLabel(wp.category))}</div><div class="pkf-wp-grid"><span>📍 ${formatGarminPair(wp.lat, wp.lng)}</span>${wp.depth!=null ? `<span>〽️ ${wp.depth} m</span>` : ''}${wp.species ? `<span>🐟 ${escapeHtml(wp.species)}</span>` : ''}<span class="pkf-coast-loading">🏖️ ${getLang()==='fr'?'Distance au rivage: calcul...':'المسافة إلى الشاطئ: جارٍ الحساب...'}</span></div>${wp.notes ? `<div class="pkf-wp-notes">${escapeHtml(wp.notes)}</div>` : ''}<button class="pkf-wp-delete" data-wp-delete="${wp.id}" type="button">${getLang()==='fr'?'Supprimer':'حذف النقطة'}</button></div>`)
       .addTo(map);
     const coast=await getCoastDistance(wp.lat,wp.lng);
     if(coast){
@@ -562,7 +562,7 @@ export function createApp(root: HTMLElement) {
           <div class="pkf-wp-title">${waypointIcon(wp.category)} ${wp.name}</div>
           <div class="pkf-wp-type">${waypointLabel(wp.category)}</div>
           <div class="pkf-wp-grid">
-            <span>📍 ${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}</span>
+            <span>📍 ${formatGarminPair(wp.lat, wp.lng)}</span>
             ${wp.depth!=null ? `<span>〽️ ${wp.depth} m</span>` : ''}
             ${wp.species ? `<span>🐟 ${wp.species}</span>` : ''}
           </div>
@@ -792,7 +792,7 @@ export function createApp(root: HTMLElement) {
         <div class="saved-waypoint-icon">${waypointIcon(wp.category)}</div>
         <div class="saved-waypoint-main">
           <b>${escapeHtml(wp.name)}</b>
-          <small>${waypointLabel(wp.category)} • ${wp.lat.toFixed(4)}, ${wp.lng.toFixed(4)}</small>
+          <small>${waypointLabel(wp.category)} • ${formatGarminPair(wp.lat, wp.lng)}</small>
           ${wp.depth!=null ? `<small>〽️ ${wp.depth} m${wp.species ? ' • 🐟 '+escapeHtml(wp.species) : ''}</small>` : (wp.species ? `<small>🐟 ${escapeHtml(wp.species)}</small>` : '')}
         </div>
         <button class="saved-waypoint-delete" type="button" data-delete-saved-wp="${wp.id}" aria-label="${getLang()==='fr'?'Supprimer':'حذف'}">🗑️</button>
@@ -981,7 +981,7 @@ export function createApp(root: HTMLElement) {
           <section class="ki-hero ${decisionClass}">
             <div class="ki-location-main">
               <span class="ki-pin">📍</span>
-              <div><b>${escapeHtml(label ?? tx('موقع الصيد المحدد','Spot sélectionné'))}</b><small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small></div>
+              <div><b>${escapeHtml(label ?? tx('موقع الصيد المحدد','Spot sélectionné'))}</b><small>${formatGarminPair(lat, lng)}</small></div>
             </div>
             <div class="ki-verdict">
               <div class="ki-verdict-copy">
@@ -1686,7 +1686,7 @@ export function createApp(root: HTMLElement) {
         <div class="report-head"><b>🌤️ ${t('حالة الطقس اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
         <section class="weather-location-banner">
           <b>📍 ${placeName || (getLang()==='fr' ? 'Point sélectionné' : 'النقطة المحددة')}</b>
-          <small dir="ltr">${lat.toFixed(5)}, ${lng.toFixed(5)}</small>
+          <small dir="ltr">${formatGarminPair(lat, lng)}</small>
         </section>
         <section class="sea-overview weather-overview">
           <div><span>🌡️ ${t('الحرارة')}</span><b>${value(d.temperatureMin,' °C')} – ${value(d.temperatureMax,' °C')}</b></div>
