@@ -216,6 +216,35 @@ const FR: Record<string,string> = {
   'تعذر بناء التحليل المتقدم حالياً':'Analyse avancée indisponible pour le moment',
   'إشارة بيئية':'Signal environnemental',
 
+  'مصادر الثقة':'Sources de confiance',
+  'التحليل المحلي':'Analyse locale',
+  'حرارة مناسبة':'Température favorable',
+  'الحرارة خارج النطاق المفضل':'Température hors plage préférée',
+  'العمق ضمن النطاق المفضل':'Profondeur dans la plage préférée',
+  'العمق بعيد عن النطاق المفضل':'Profondeur hors plage préférée',
+  'الموسم ملائم':'Saison favorable',
+  'خارج أفضل فترة موسمية عامة':'Hors période saisonnière générale optimale',
+  'يوجد انتقال حراري':'Gradient thermique présent',
+  'إشارة إنتاجية بحرية موجودة':'Signal de productivité marine présent',
+  'حالة البحر تساعد على الوصول':'État de mer favorable à l’accès',
+  'رياح هادئة':'Vent calme',
+  'رياح مقبولة':'Vent acceptable',
+  'رياح قوية':'Vent fort',
+  'هبات قوية':'Rafales fortes',
+  'موج مرتفع':'Vagues élevées',
+  'فترة موج طويلة':'Longue période de houle',
+  'تيار مرتفع':'Courant élevé',
+  'SST متوفر':'SST disponible',
+  'Chlorophyll متوفر':'Chlorophylle disponible',
+  'العمق متوفر':'Profondeur disponible',
+  'التيار متوفر':'Courant disponible',
+  'التوقعات الساعية متوفرة':'Prévisions horaires disponibles',
+  'غير متوفر: مقارنة النماذج متوفرة':'Comparaison des modèles indisponible',
+  'غير متوفر: SST متوفر':'SST indisponible',
+  'غير متوفر: Chlorophyll متوفر':'Chlorophylle indisponible',
+  'غير متوفر: العمق متوفر':'Profondeur indisponible',
+  'غير متوفر: التيار متوفر':'Courant indisponible',
+  'غير متوفر: التوقعات الساعية متوفرة':'Prévisions horaires indisponibles',
 };
 
 const FR_KI: Record<string,string> = {
@@ -1765,7 +1794,7 @@ export function createApp(root: HTMLElement) {
         }
       })();
 
-      // advisor-phase34: species ranking + depth/habitat.
+      // advisor-phases5-10: currents, best windows, confidence, local profile and full report.
       void (async () => {
         const slot=report.querySelector<HTMLElement>('.dashboard-advisor-slot');
         if(!slot) return;
@@ -1777,6 +1806,7 @@ export function createApp(root: HTMLElement) {
             waveHeight:data.sea.waveHeight,
             seaTemperature:data.sea.seaTemperature
           }).catch(()=>null);
+          if(!isCurrent()) return;
           const species=rankSpecies({
             seaTemperature:data.sea.seaTemperature,
             depth:depthResult?.depthMeters ?? null,
@@ -1785,10 +1815,37 @@ export function createApp(root: HTMLElement) {
             chlorophyll:intelligence?.chlorophyll ?? null,
             waveHeight:data.sea.waveHeight
           }).slice(0,4);
-          slot.innerHTML='<div class="advisor-head"><div><b>🎣 '+t('الأنواع المناسبة')+'</b><small>'+t(tunisianProfile(lat,lng))+'</small></div></div>'+
-            '<div class="advisor-grid"><div><span>🪸 '+t('العمق')+'</span><b>'+value(depthResult?.depthMeters ?? null,' m')+'</b></div>'+
-            '<div><span>🌡️ '+t('حرارة البحر')+'</span><b>'+value(data.sea.seaTemperature,' °C')+'</b></div></div>'+
-            '<div class="advisor-section">'+species.map(x=>'<div class="advisor-species"><span>'+t(x.ar)+'</span><strong>'+x.score+'/100</strong><small>'+t(x.reasons[0]||'إشارة بيئية')+'</small></div>').join('')+'</div>';
+          const windows=rankFishingWindows(hourlyForecast.slice(0,24).map(p=>({
+            time:p.time,windSpeed:p.windSpeed,windGusts:p.windGusts,waveHeight:p.waveHeight,
+            wavePeriod:p.wavePeriod,currentVelocity:p.currentVelocity
+          })));
+          const confidence=calculateConfidence({
+            sst:data.sea.seaTemperature!=null,
+            chlorophyll:intelligence?.chlorophyllAvailable===true,
+            depth:depthResult!=null,
+            current:data.sea.currentVelocity!=null,
+            hourly:hourlyForecast.length>=6,
+            weatherModels:false
+          });
+          const profile=tunisianProfile(lat,lng);
+          const fmt=(iso:string)=>new Date(iso).toLocaleTimeString(getLang()==='fr'?'fr-TN':'ar-TN',{hour:'2-digit',minute:'2-digit',hour12:false});
+          const cls=(n:number)=>n>=82?'excellent':n>=65?'good':n>=45?'caution':'danger';
+          const windowsHtml=windows.slice(0,4).map(w=>'<div class="advisor-window '+cls(w.score)+'"><b>'+fmt(w.start)+' → '+fmt(w.end)+'</b><strong>'+w.score+'/100</strong><small>'+t(w.reasons[0]||'إشارة بيئية')+'</small></div>').join('');
+          const speciesHtml=species.map(x=>'<div class="advisor-species"><span>'+t(x.ar)+'</span><strong>'+x.score+'/100</strong><small>'+t(x.reasons.slice(0,2).join(' · ')||'إشارة بيئية')+'</small></div>').join('');
+          slot.innerHTML=
+            '<div class="advisor-head"><div><b>🎯 '+t('تحليل الصيد المتقدم')+'</b><small>'+t(profile)+'</small></div><span class="advisor-confidence">'+t('ثقة التحليل')+' '+confidence.score+'%</span></div>'+
+            '<div class="advisor-grid">'+
+              '<div><span>🪸 '+t('العمق')+'</span><b>'+value(depthResult?.depthMeters ?? null,' m')+'</b></div>'+
+              '<div><span>🌊 '+t('التيار')+'</span><b>'+value(data.sea.currentVelocity,' m/s')+'</b></div>'+
+              '<div><span>🌡️ '+t('حرارة البحر')+'</span><b>'+value(data.sea.seaTemperature,' °C')+'</b></div>'+
+              '<div><span>💨 '+t('هبات الرياح')+'</span><b>'+value(data.weather.windGusts,' kn')+'</b></div>'+
+            '</div>'+
+            '<details open class="advisor-detail"><summary>🎣 '+t('الأنواع الأكثر ملاءمة')+'</summary><div class="advisor-section">'+speciesHtml+'</div></details>'+
+            '<details class="advisor-detail"><summary>⏱️ '+t('أفضل النوافذ')+'</summary><div class="advisor-windows">'+(windowsHtml||'<small>'+t('لا توجد نافذة موثوقة حالياً')+'</small>')+'</div></details>'+
+            '<details class="advisor-detail"><summary>📊 '+t('مصادر الثقة')+'</summary><div class="advisor-confidence-list">'+confidence.reasons.map(x=>'<span>'+t(x)+'</span>').join('')+'</div></details>'+
+            '<details class="advisor-detail"><summary>🇹🇳 '+t('التحليل المحلي')+'</summary><p class="advisor-note">'+t(profile)+'</p></details>'+
+            '<div class="advisor-note">ℹ️ '+t('الدرجات مؤشرات تحليلية وليست احتمالاً للصيد أو ضماناً للسلامة.')+'</div>'+
+            '<small class="advisor-source">'+t('المصادر:')+' Open-Meteo · Marine · Bathymetry · Fishing Intelligence</small>';
         } catch {
           if(isCurrent() && slot) slot.innerHTML='<div class="advisor-error">🎣 '+t('تعذر بناء التحليل المتقدم حالياً')+'</div>';
         }
