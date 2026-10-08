@@ -284,12 +284,19 @@ export function createApp(root: HTMLElement) {
         <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3.2-4.5 7.3-6.2 12.2-5 2.2.6 4.1 2 5.8 5-1.7 3-3.6 4.4-5.8 5C10.3 18.2 6.2 16.5 3 12Z"></path><path d="M21 12 24 9v6l-3-3Z"></path><circle cx="15" cy="10.2" r="1.05"></circle><path d="M8 16.2 5.8 19"></path></svg></span>
         <b>${getLang()==='fr'?'Pêche':'الصيد'}</b>
       </button>
-      <button id="pkf-nav-report" type="button">
-        <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6V3Z"></path><path d="M9 11h6M9 15h6M9 7h3"></path></svg></span>
-        <b>${getLang()==='fr'?'Rapport':'التقرير'}</b>
+      <button id="pkf-nav-waypoints" type="button">
+        <span class="pkf-nav-icon">📍</span>
+        <b>${getLang()==='fr'?'Mes points':'نقاطي'}</b>
       </button>
     </nav>
     <aside class="measure-panel hidden" id="measure-panel"></aside>
+    <aside class="saved-waypoints-panel hidden" id="saved-waypoints-panel">
+      <div class="saved-waypoints-head">
+        <b>${getLang()==='fr'?'Mes points enregistrés':'نقاطي المحفوظة'}</b>
+        <button id="close-saved-waypoints" type="button" aria-label="${getLang()==='fr'?'Fermer':'إغلاق'}">×</button>
+      </div>
+      <div id="saved-waypoints-list"></div>
+    </aside>
     <aside class="trip-panel hidden" id="trip-panel">
       <div class="trip-head"><b><span class="trip-head-icon">↗</span> ${t('سجل الرحلات')}</b><button id="close-trips" aria-label="${t('إغلاق')}">×</button></div>
       <div id="trip-status" class="trip-idle"><b>${t('لا توجد رحلة قيد التسجيل')}</b><span>${t('ابدأ التسجيل لتتبع مسار الكاياك عبر GPS.')}</span></div>
@@ -585,17 +592,53 @@ export function createApp(root: HTMLElement) {
     document.querySelector<HTMLButtonElement>('#pkf-nav-'+active)?.classList.add('active');
   };
   document.querySelector<HTMLButtonElement>('#pkf-nav-map')?.addEventListener('click', () => {
-    closeReport(); tripPanel.classList.add('hidden'); setBottomNav('map');
+    closeReport(); tripPanel.classList.add('hidden'); savedWaypointsPanel?.classList.add('hidden'); setBottomNav('map');
   });
   document.querySelector<HTMLButtonElement>('#pkf-nav-sea')?.addEventListener('click', () => {
-    document.querySelector<HTMLButtonElement>('#today-sea')?.click(); setBottomNav('sea');
+    savedWaypointsPanel?.classList.add('hidden'); document.querySelector<HTMLButtonElement>('#today-sea')?.click(); setBottomNav('sea');
   });
   document.querySelector<HTMLButtonElement>('#pkf-nav-fish')?.addEventListener('click', () => {
-    document.querySelector<HTMLButtonElement>('#kayak-intelligence-toggle')?.click(); setBottomNav('fish');
+    savedWaypointsPanel?.classList.add('hidden'); document.querySelector<HTMLButtonElement>('#kayak-intelligence-toggle')?.click(); setBottomNav('fish');
   });
-  document.querySelector<HTMLButtonElement>('#pkf-nav-report')?.addEventListener('click', () => {
-    if (selectedLocation) { report.classList.remove('hidden'); setReportOpen(true); setBottomNav('report'); }
-    else { document.querySelector<HTMLButtonElement>('#today-sea')?.click(); setBottomNav('sea'); }
+  const savedWaypointsPanel = document.querySelector<HTMLElement>('#saved-waypoints-panel')!;
+  const savedWaypointsList = document.querySelector<HTMLElement>('#saved-waypoints-list')!;
+  const renderSavedWaypoints = () => {
+    const points = loadWaypoints();
+    if (!points.length) {
+      savedWaypointsList.innerHTML = `<div class="saved-waypoint-empty">${getLang()==='fr'?'Aucun point enregistré.':'لا توجد نقاط محفوظة بعد.'}</div>`;
+      return;
+    }
+    savedWaypointsList.innerHTML = points.map(wp => `
+      <article class="saved-waypoint-card" data-saved-wp="${wp.id}">
+        <div class="saved-waypoint-icon">${waypointIcon(wp.category)}</div>
+        <div class="saved-waypoint-main">
+          <b>${escapeHtml(wp.name)}</b>
+          <small>${waypointLabel(wp.category)} • ${wp.lat.toFixed(4)}, ${wp.lng.toFixed(4)}</small>
+          ${wp.depth!=null ? `<small>〽️ ${wp.depth} m${wp.species ? ' • 🐟 '+escapeHtml(wp.species) : ''}</small>` : (wp.species ? `<small>🐟 ${escapeHtml(wp.species)}</small>` : '')}
+        </div>
+        <button class="saved-waypoint-delete" type="button" data-delete-saved-wp="${wp.id}" aria-label="${getLang()==='fr'?'Supprimer':'حذف'}">🗑️</button>
+      </article>`).join('');
+    savedWaypointsList.querySelectorAll<HTMLElement>('[data-saved-wp]').forEach(card => card.addEventListener('click', ev => {
+      if ((ev.target as HTMLElement).closest('[data-delete-saved-wp]')) return;
+      const wp=points.find(x=>x.id===card.dataset.savedWp);
+      if (!wp) return;
+      map.flyTo({center:[wp.lng,wp.lat],zoom:Math.max(map.getZoom(),12),essential:true});
+      void selectPoint(wp.lat,wp.lng,wp.name);
+      showWaypointPopup(wp);
+      savedWaypointsPanel.classList.add('hidden');
+    }));
+    savedWaypointsList.querySelectorAll<HTMLButtonElement>('[data-delete-saved-wp]').forEach(btn => btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const id=btn.dataset.deleteSavedWp; if (!id) return;
+      deleteWaypoint(id); waypointMarkers.get(id)?.remove(); waypointMarkers.delete(id); renderSavedWaypoints();
+    }));
+  };
+  document.querySelector<HTMLButtonElement>('#pkf-nav-waypoints')?.addEventListener('click', () => {
+    closeReport(); tripPanel.classList.add('hidden'); renderSavedWaypoints();
+    savedWaypointsPanel.classList.remove('hidden'); setBottomNav('waypoints');
+  });
+  document.querySelector<HTMLButtonElement>('#close-saved-waypoints')?.addEventListener('click', () => {
+    savedWaypointsPanel.classList.add('hidden'); setBottomNav('map');
   });
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
 
