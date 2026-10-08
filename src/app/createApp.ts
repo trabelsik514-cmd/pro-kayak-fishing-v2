@@ -507,7 +507,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
   const overallLevel=overall>=82?'ممتاز':overall>=65?'جيد':overall>=45?'حذر':'غير مناسب';
   const badge=(level:string)=>level==='ممتاز'||level==='جيد'?'good':level==='حذر'?'caution':'danger';
   return `<div class="report-dashboard">
-    <div class="dashboard-topline"><div class="dashboard-title"><b>🐟 ${t('لوحة حالة البحر والصيد')}</b><small>${new Date(data.fetchedAt).toLocaleDateString(locale(),{weekday:'long',day:'2-digit',month:'long'})}</small></div><button id="close-report" class="dashboard-close" aria-label="${t('إغلاق')}">×</button></div>
+    <div class="dashboard-topline"><div class="dashboard-title"><b>🐟 ${t('لوحة حالة البحر والصيد')}</b><small>${new Date(data.fetchedAt).toLocaleDateString((getLang()==='fr'?'fr-FR':'ar-TN'),{weekday:'long',day:'2-digit',month:'long'})}</small></div><button id="close-report" class="dashboard-close" aria-label="${t('إغلاق')}">×</button></div>
     <div class="dashboard-location"><b>📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</b><span>${ltr(formatGarminPair(data.latitude,data.longitude))}</span></div>
     <section class="dashboard-score"><div class="score-gauge" style="--score:${Math.max(0,Math.min(100,overall))*3.6}deg"><div><strong>${overall}</strong><small>/100</small></div></div><div class="score-copy"><b>${translateLevel(overallLevel)}</b><span>${t('ملاءمة عامة للتخطيط للصيد والكياك')}</span><small>${t('التقييم تخطيطي وليس شهادة سلامة. تحقق من التغيرات قبل الانطلاق.')}</small></div></section>
     <section class="dashboard-cards"><article class="dashboard-card"><span>🌤️ ${t('الطقس')}</span><strong>${weather.score}<small>/100</small></strong><em class="${badge(weather.level)}">${translateLevel(weather.level)}</em></article><article class="dashboard-card"><span>🌊 ${t('البحر')}</span><strong>${seaScore}<small>/100</small></strong><em class="${badge(seaLevel)}">${translateLevel(seaLevel)}</em></article><article class="dashboard-card"><span>🛶 ${t('الكياك')}</span><strong>${kayakScore}<small>/100</small></strong><em class="${badge(kayakAssessment?.level ?? overallLevel)}">${translateLevel(kayakAssessment?.level ?? overallLevel)}</em></article></section>
@@ -520,11 +520,11 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
     <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الأيام القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t('جاري حساب توقعات الأسبوع…')}</div></div></section>
     <section class="dashboard-bottom-cards">
       <article class="dashboard-mini-card dashboard-fishing-window"><b>🎣 ${t('أفضل ساعات الصيد')}</b><div class="mini-window"><span>${t('جاري الحساب…')}</span></div></article>
-      <article class="dashboard-mini-card dashboard-tide-card"><b>🌊 ${t('المد والجزر')}</b><div class="tide-placeholder" id="dashboard-tide-content"><strong>…</strong><small>${t('جاري جلب بيانات المد والجزر…')}</small><div class="moon-times"><span>🌙 ${t('شروق القمر')} <b>${moonInfo(new Date(),data.latitude,data.longitude).rise ? new Date(moonInfo(new Date(),data.latitude,data.longitude).rise!).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span><span>🌘 ${t('غروب القمر')} <b>${moonInfo(new Date(),data.latitude,data.longitude).set ? new Date(moonInfo(new Date(),data.latitude,data.longitude).set!).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span></div></div></article>
-      <article class="dashboard-mini-card dashboard-sun"><b>🌙 ${t('القمر')}</b><div class="moon-row"><span class="moon-symbol">${moonInfo(new Date(),data.latitude,data.longitude).symbol}</span><span><strong>${t(moonInfo(new Date(),data.latitude,data.longitude).phase)}</strong><small>${moonInfo(new Date(),data.latitude,data.longitude).illumination}% ${t('إضاءة')}</small></span></div><div class="sun-times"><span>🌅 ${t('الشروق')} <b>${data.weather.sunrise ? new Date(data.weather.sunrise).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span><span>🌇 ${t('الغروب')} <b>${data.weather.sunset ? new Date(data.weather.sunset).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span></div></article>
+      <article class="dashboard-mini-card dashboard-tide-card"><b>🌊 ${t('المد والجزر')}</b><div class="tide-placeholder" id="dashboard-tide-content"><strong>…</strong><small>${t('جاري جلب بيانات المد والجزر…')}</small><div class="moon-times"><span>🌙 ${t('شروق القمر')} <b>${moonInfo(new Date(),data.latitude,data.longitude).rise ? new Date(moonInfo(new Date(),data.latitude,data.longitude).rise!).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span><span>🌘 ${t('غروب القمر')} <b>${moonInfo(new Date(),data.latitude,data.longitude).set ? new Date(moonInfo(new Date(),data.latitude,data.longitude).set!).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span></div></div></article>
+      <article class="dashboard-mini-card dashboard-sun"><b>🌙 ${t('القمر')}</b><div class="moon-row"><span class="moon-symbol">${moonInfo(new Date(),data.latitude,data.longitude).symbol}</span><span><strong>${t(moonInfo(new Date(),data.latitude,data.longitude).phase)}</strong><small>${moonInfo(new Date(),data.latitude,data.longitude).illumination}% ${t('إضاءة')}</small></span></div><div class="sun-times"><span>🌅 ${t('الشروق')} <b>${data.weather.sunrise ? new Date(data.weather.sunrise).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span><span>🌇 ${t('الغروب')} <b>${data.weather.sunset ? new Date(data.weather.sunset).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span></div></article>
     </section>
     <div class="dashboard-actions"><button id="save-dashboard-point" type="button">📍 ${t('حفظ النقطة')}</button><button id="share-dashboard-coords" type="button">↗ ${t('مشاركة الإحداثيات')}</button><button id="dashboard-report-action" type="button">📄 ${t('تقرير تفصيلي')}</button><button id="dashboard-planner-action" type="button">🗓️ ${t('مخطط الصيد الذكي')}</button></div>
-    <div class="dashboard-footer"><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small></div>
+    <div class="dashboard-footer"><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'))}</small></div>
   </div>`;
 }
 export function createApp(root: HTMLElement) {
@@ -715,7 +715,7 @@ export function createApp(root: HTMLElement) {
     const speedText = speed == null ? '—' : speed.toFixed(1) + ' km/h';
     el.innerHTML = '<div class="pkf-wind-legend-head"><span>🌬️ '+t('مرور الرياح')+'</span><button type="button" id="pkf-wind-refresh" title="'+t('تحديث الرياح')+'">↻</button></div>' +
       '<div class="pkf-wind-legend-flow"><b>'+t('قادمة من')+'</b><strong>'+cardinal(from)+'</strong><span>→</span><b>'+t('متجهة إلى')+'</b><strong>'+cardinal(to)+'</strong></div>' +
-      '<small>💨 '+t('سرعة الرياح')+': '+speedText+' · '+new Date().toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false})+'</small>';
+      '<small>💨 '+t('سرعة الرياح')+': '+speedText+' · '+new Date().toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false})+'</small>';
     el.querySelector<HTMLButtonElement>('#pkf-wind-refresh')?.addEventListener('click', () => { void refreshWindFlow(); });
   };
 
@@ -1153,7 +1153,7 @@ export function createApp(root: HTMLElement) {
     const isFr = getLang() === 'fr';
     const tx = (ar:string, fr:string) => isFr ? fr : ar;
     const scoreLabel = (level:string) => translateLevel(level);
-    const formatTime = (iso:string) => new Date(iso).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false});
+    const formatTime = (iso:string) => new Date(iso).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false});
     const seaState = (h:number|null) => h==null ? tx('غير متوفر','Indisponible') : h<=0.4 ? tx('هادئ','Calme') : h<=0.8 ? tx('خفيف','Léger') : h<=1.2 ? tx('متوسط','Modéré') : tx('مرتفع','Élevé');
     const windState = (v:number|null) => v==null ? tx('غير متوفر','Indisponible') : v<=15 ? tx('مناسب','Favorable') : v<=20 ? tx('متوسط','Modéré') : tx('مرتفع','Élevé');
 
@@ -1258,7 +1258,7 @@ export function createApp(root: HTMLElement) {
         const decisionLevel = score >= 85 ? 'ممتاز' : score >= 70 ? 'جيد' : score >= 50 ? 'حذر' : 'غير مناسب';
         const decisionClass = decisionLevel === 'ممتاز' ? 'good' : decisionLevel === 'جيد' ? 'ok' : decisionLevel === 'حذر' ? 'warn' : 'bad';
         const endDate = new Date(new Date(startLocal).getTime()+durationHours*3600000);
-        const formatLocal = (d:Date) => d.toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false});
+        const formatLocal = (d:Date) => d.toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false});
         const best = bestKayakWindow(hourly.filter(p=>p.time.slice(0,10)===selectedDate),durationHours);
         const worstTime = formatTime(worst.point.time);
         const tripAdvice = score >= 85
@@ -1290,7 +1290,7 @@ export function createApp(root: HTMLElement) {
           <section class="ki-window-card">
             <div class="ki-section-head"><div><span>🗓️</span><b>${tx('خطة الرحلة','Plan de sortie')}</b></div><small>${tx('تحليل الفترة كاملة','Analyse de toute la période')}</small></div>
             <div class="ki-trip-summary">
-              <div><span>${tx('التاريخ','Date')}</span><b>${new Intl.DateTimeFormat(locale(),{weekday:'short',day:'numeric',month:'short'}).format(new Date(selectedDate+'T12:00:00'))}</b></div>
+              <div><span>${tx('التاريخ','Date')}</span><b>${new Intl.DateTimeFormat((getLang()==='fr'?'fr-FR':'ar-TN'),{weekday:'short',day:'numeric',month:'short'}).format(new Date(selectedDate+'T12:00:00'))}</b></div>
               <div><span>${tx('الانطلاق','Départ')}</span><b>${startTime}</b></div>
               <div><span>${tx('العودة المتوقعة','Retour prévu')}</span><b>${formatLocal(endDate)}</b></div>
               <div><span>${tx('المدة','Durée')}</span><b>${durationHours}h</b></div>
@@ -1504,7 +1504,7 @@ export function createApp(root: HTMLElement) {
       const duration = Math.round(trip.durationMin);
       return `<article class="trip-card">
         <b>${escapeHtml(tripName(trip))}</b>
-        <small>${new Date(trip.startedAt).toLocaleString(locale())}</small>
+        <small>${new Date(trip.startedAt).toLocaleString((getLang()==='fr'?'fr-FR':'ar-TN'))}</small>
         <div class="trip-stats"><span>📍 ${distance} ${getLang()==="fr" ? "km" : "كم"}</span><span>⏱️ ${duration} ${getLang()==="fr" ? "min" : "د"}</span><span>🧭 ${trip.points.length} ${getLang()==="fr" ? "points" : "نقطة"}</span></div>
         <div class="trip-actions">
           <button data-view-trip="${trip.id}">🗺️ ${t('عرض المسار')}</button>
@@ -1725,7 +1725,7 @@ export function createApp(root: HTMLElement) {
       const bestWindowHtml = bestPlanningWindow
         ? `<section class="dashboard-best-window">
             <div><b>🎣 ${t('أفضل نافذة متوقعة')}</b><small>${t('أفضل فترة متوقعة للصيد في هذا اليوم')}</small></div>
-            <strong>${new Date(bestPlanningWindow.start).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})} → ${new Date(bestPlanningWindow.end).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})}</strong>
+            <strong>${new Date(bestPlanningWindow.start).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit'})} → ${new Date(bestPlanningWindow.end).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit'})}</strong>
             <span class="${levelClass(bestPlanningWindow.score>=82?'ممتاز':bestPlanningWindow.score>=65?'جيد':bestPlanningWindow.score>=45?'حذر':'غير مناسب')}">${bestPlanningWindow.score}/100</span>
           </section>`
         : '';
@@ -1788,7 +1788,7 @@ export function createApp(root: HTMLElement) {
           if(!slot)return;
           const top=species.slice(0,4);
           const levelClass=(n:number)=>n>=82?'excellent':n>=65?'good':n>=45?'caution':'danger';
-          const windowHtml=windows.slice(0,3).map(w=>'<div class="advisor-window '+levelClass(w.score)+'"><b>'+new Date(w.start).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})+' → '+new Date(w.end).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})+'</b><strong>'+w.score+'/100</strong></div>').join('');
+          const windowHtml=windows.slice(0,3).map(w=>'<div class="advisor-window '+levelClass(w.score)+'"><b>'+new Date(w.start).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit'})+' → '+new Date(w.end).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit'})+'</b><strong>'+w.score+'/100</strong></div>').join('');
           slot.innerHTML='<div class="advisor-head"><div><b>🎯 '+t('تحليل الصيد المتقدم')+'</b><small>'+t(profile)+'</small></div><span class="advisor-confidence">'+t('ثقة التحليل')+' '+confidence.score+'%</span></div>'
 NaN
 NaN
@@ -1828,7 +1828,7 @@ NaN
         if (dailySlot) dailySlot.insertAdjacentHTML('afterend', bestWindowHtml);
         const mini = report.querySelector<HTMLElement>('.mini-window');
         if (mini && bestPlanningWindow) {
-          mini.innerHTML = `<b>${new Date(bestPlanningWindow.start).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})} → ${new Date(bestPlanningWindow.end).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})}</b><span class="mini-score">${bestPlanningWindow.score}/100</span><i style="width:${Math.max(0,Math.min(100,bestPlanningWindow.score))}%"></i>`;
+          mini.innerHTML = `<b>${new Date(bestPlanningWindow.start).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit'})} → ${new Date(bestPlanningWindow.end).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit'})}</b><span class="mini-score">${bestPlanningWindow.score}/100</span><i style="width:${Math.max(0,Math.min(100,bestPlanningWindow.score))}%"></i>`;
         }
       }
 
@@ -1841,7 +1841,7 @@ NaN
           if (!tideEl) return;
           const fmtTime = (iso:string) => {
             const d = new Date(iso);
-            return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false});
+            return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false});
           };
           const next = tides.filter(e => Date.parse(e.time) >= Date.now()).slice(0,4);
           tideEl.innerHTML = next.length
@@ -1876,7 +1876,7 @@ NaN
             if(index===0) return t('اليوم');
             if(index===1) return t('غداً');
             if(index===2) return t('بعد غد');
-            return new Intl.DateTimeFormat(locale(),{weekday:'short',day:'2-digit',month:'2-digit'}).format(new Date(date+'T12:00:00'));
+            return new Intl.DateTimeFormat((getLang()==='fr'?'fr-FR':'ar-TN'),{weekday:'short',day:'2-digit',month:'2-digit'}).format(new Date(date+'T12:00:00'));
           };
           const score=(d:WeeklySeaSummary)=>{
             let s=100;
@@ -2112,7 +2112,7 @@ NaN
           <p>🌅 ${t('الشروق')} ${time(d.sunrise)} &nbsp; · &nbsp; 🌇 ${t('الغروب')} ${time(d.sunset)}</p>
           <small>${t('توقعات اليوم حسب الموقع المحدد')}</small>
         </section>
-        <div class="sea-source"><span>${t('المصدر:')} Open-Meteo</span><span>${t('آخر تحديث:')} ${new Date().toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false})}</span></div>`;
+        <div class="sea-source"><span>${t('المصدر:')} Open-Meteo</span><span>${t('آخر تحديث:')} ${new Date().toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false})}</span></div>`;
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     } catch {
       report.innerHTML=`<div class="report-head"><b>${t('تعذر جلب طقس اليوم')}</b><button id="close-report">×</button></div><p>${t('حاول مرة أخرى بعد قليل.')}</p>`;
@@ -2215,7 +2215,7 @@ NaN
       const [days, modelDays] = await Promise.all([marine.getWeeklySeaSummary(lat,lng), marine.getWeatherModelComparison(lat,lng)]);
       const formatForecastDate=(date:string)=> {
         const d = new Date(date + 'T12:00:00');
-        return new Intl.DateTimeFormat(locale(), {
+        return new Intl.DateTimeFormat((getLang()==='fr'?'fr-FR':'ar-TN'), {
           weekday:'long', day:'numeric', month:'long'
         }).format(d);
       };
