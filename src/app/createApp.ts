@@ -366,8 +366,9 @@ export function createApp(root: HTMLElement) {
       const north = Math.min(38.5, bounds.getNorth());
       if (east <= west || north <= south) return;
 
-      const cols = 4;
-      const rows = 4;
+      const zoom = map.getZoom();
+      const cols = zoom >= 11 ? 5 : 4;
+      const rows = zoom >= 11 ? 5 : 4;
       const points:{lat:number;lng:number}[] = [];
       for (let r=0;r<rows;r++) {
         const lat = south + (north-south)*(r/(rows-1));
