@@ -274,7 +274,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
       <div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div>
     </section>
     <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الساعات القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-planning-slot"></div></section>
-    <div class="dashboard-footer"><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small></div>
+    <div class="dashboard-depth-slot"></div><div class="dashboard-warning-slot"></div><div class="dashboard-footer"><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small></div>
   </div>`;
 }
 
@@ -1530,14 +1530,11 @@ export function createApp(root: HTMLElement) {
       </section>`;
       const reportBase = reportHtml(data,placeName,assessment)
         .replace('<div class="dashboard-planning-slot"></div>', departurePlanning)
-        + (
-          data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
-            ? `<div class="sea-wave-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
-            : ''
-        );
-      const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`;
-      const initialHtml = reportBase.replace('</div><small>', `</div>${depthCard}<small>`);
-      report.innerHTML = initialHtml;
+        .replace('<div class="dashboard-depth-slot"></div>', `<div class="depth-card dashboard-depth">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`)
+        .replace('<div class="dashboard-warning-slot"></div>', data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
+          ? `<div class="sea-wave-warning dashboard-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
+          : '');
+      report.innerHTML = reportBase;
       bindClose();
 
       // Add the coastal name whenever reverse geocoding finishes, without rebuilding the report.
