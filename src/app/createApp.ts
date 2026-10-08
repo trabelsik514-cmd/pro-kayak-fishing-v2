@@ -691,9 +691,19 @@ export function createApp(root: HTMLElement) {
     closeReport(); tripPanel.classList.add('hidden'); renderSavedWaypoints();
     savedWaypointsPanel.classList.remove('hidden'); setBottomNav('waypoints');
   });
-  const closeSavedWaypoints = (ev?: Event) => { ev?.preventDefault(); ev?.stopPropagation(); savedWaypointsPanel.classList.add('hidden'); setBottomNav('map'); };
-  document.querySelector<HTMLButtonElement>('#close-saved-waypoints')?.addEventListener('click', closeSavedWaypoints);
-  document.querySelector<HTMLButtonElement>('#close-saved-waypoints')?.addEventListener('pointerup', closeSavedWaypoints);
+  const closeSavedWaypoints = (ev?: Event) => {
+    ev?.preventDefault(); ev?.stopPropagation();
+    savedWaypointsPanel.classList.add('hidden');
+    savedWaypointsPanel.style.display = 'none';
+    setBottomNav('map');
+    requestAnimationFrame(() => { savedWaypointsPanel.style.removeProperty('display'); });
+  };
+  const closeSavedButton = document.querySelector<HTMLButtonElement>('#close-saved-waypoints');
+  closeSavedButton?.addEventListener('click', closeSavedWaypoints, {capture:true});
+  closeSavedButton?.addEventListener('pointerdown', closeSavedWaypoints, {capture:true});
+  savedWaypointsPanel.addEventListener('click', ev => {
+    if ((ev.target as HTMLElement).closest('#close-saved-waypoints')) closeSavedWaypoints(ev);
+  }, {capture:true});
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
 
 
