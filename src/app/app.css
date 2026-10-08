@@ -2167,3 +2167,7 @@
 @media(max-width:390px){.dashboard-bottom-cards{grid-template-columns:1fr}.dashboard-sun{grid-column:auto}.dashboard-daily-scroll{max-height:155px}}
 
 .tide-events{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%}.tide-event{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:5px;padding:6px 7px;border-radius:9px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-size:9px}.tide-event b{font-size:9px;white-space:nowrap}.tide-event strong{font-size:13px;direction:ltr}.tide-event small{font-size:9px;opacity:.75;direction:ltr}.tide-event.high{border-color:rgba(45,212,191,.28)}.tide-event.low{border-color:rgba(96,165,250,.22)}
+
+/* Enhanced moon/tide details */
+.moon-times{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}.moon-times span{display:flex;flex-direction:column;gap:2px;font-size:9px;opacity:.78}.moon-times b{direction:ltr;font-size:11px}.tide-source-note{display:block;width:100%;margin-top:5px;font-size:8px;opacity:.45;line-height:1.3}
+@media(max-width:390px){.moon-times{grid-template-columns:1fr}}
