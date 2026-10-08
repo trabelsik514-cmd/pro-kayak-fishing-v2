@@ -10,6 +10,7 @@ import { initSeaNotifications, saveBackgroundLocation } from '../notifications/S
 import { getDeviceLocation, watchDeviceLocation, clearDeviceLocationWatch } from '../location/DeviceLocationService';
 import { loadWaypoints, saveWaypoint, deleteWaypoint, type FishingWaypoint, type WaypointCategory } from '../waypoints/WaypointStore';
 import { getCoastDistance } from '../coastline/CoastDistanceService';
+import { getFishingIntelligence } from '../fishing/FishingIntelligence';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -193,7 +194,9 @@ const FR: Record<string,string> = {
   'الظروف تبدو ملائمة للكياك وفق البيانات المتاحة. راقب تغير الرياح والموج قبل الانطلاق.':'Les conditions semblent adaptées au kayak selon les données disponibles. Surveillez l’évolution du vent et des vagues avant de partir.',
   'الظروف قد تكون مناسبة، لكن راقب الرياح والهبات والموج وأعد التحقق قبل الانطلاق.':'Les conditions peuvent être favorables, mais surveillez le vent, les rafales et les vagues avant le départ.',
   'ينصح بالحذر. افحص تغير الظروف واختَر مساراً قريباً من الشاطئ إذا قررت الخروج.':'La prudence est recommandée. Vérifiez l’évolution des conditions et restez près de la côte si vous sortez.',
-  'الظروف الحالية غير ملائمة للكياك وفق البيانات المتاحة. يفضّل تأجيل الرحلة وإعادة التحقق لاحقاً.':'Les conditions actuelles sont défavorables au kayak selon les données disponibles. Il est préférable de reporter la sortie et de vérifier plus tard.'
+  'الظروف الحالية غير ملائمة للكياك وفق البيانات المتاحة. يفضّل تأجيل الرحلة وإعادة التحقق لاحقاً.':'Les conditions actuelles sont défavorables au kayak selon les données disponibles. Il est préférable de reporter la sortie et de vérifier plus tard.'  'جاري تحليل نشاط الصيد…':'Analyse de l’activité de pêche…',
+  'تعذر تحليل نشاط الصيد حالياً':'Analyse de l’activité de pêche indisponible pour le moment',
+
 };
 
 const FR_KI: Record<string,string> = {
@@ -422,7 +425,22 @@ const FR_EXTRA: Record<string,string> = {
   "نقطة بحرية موثقة": "Point marin documenté",
   "وضع الملاحة البحرية: أعماق EMODnet وخطوط الأعماق. خرائط Navionics الرسمية تحتاج ترخيصاً ومفتاح API من Garmin.":"Mode navigation marine : profondeurs EMODnet et courbes bathymétriques. Les cartes officielles Navionics nécessitent une licence et une clé API Garmin.",
   " كم":" km"," م":" m","النوع: fish / anchor / rock / danger / nav / kayak / personal":"Type : fish / anchor / rock / danger / nav / kayak / personal","العمق بالمتر، اختياري":"Profondeur en mètres, facultatif","نوع السمك المستهدف، اختياري":"Espèce de poisson ciblée, facultatif","ملاحظات، اختيارية":"Notes, facultatives",
-  "<b>لم يتم حفظ الرحلة</b><span>نحتاج إلى نقطتين GPS على الأقل لتكوين مسار.</span>":"<b>Sortie non enregistrée</b><span>Au moins deux points GPS sont nécessaires pour créer une trace.</span>","<b>تعذر الوصول إلى GPS</b><span>فعّل الموقع الدقيق واسمح للتطبيق بالوصول إلى موقعك.</span>":"<b>Accès GPS impossible</b><span>Activez la localisation précise et autorisez l’application à accéder à votre position.</span>",
+  "<b>لم يتم حفظ الرحلة</b><span>نحتاج إلى نقطتين GPS على الأقل لتكوين مسار.</span>":"<b>Sortie non enregistrée</b><span>Au moins deux points GPS sont nécessaires pour créer une trace.</span>","<b>تعذر الوصول إلى GPS</b><span>فعّل الموقع الدقيق واسمح للتطبيق بالوصول إلى موقعك.</span>":"<b>Accès GPS impossible</b><span>Activez la localisation précise et autorisez l’application à accéder à votre position.</span>",  "ذكاء الصيد":"Intelligence pêche",
+  "نشاط الصيد":"Activité de pêche",
+  "مؤشر نشاط الصيد":"Indicateur d’activité de pêche",
+  "التدرج الحراري":"Gradient thermique",
+  "حرارة سطح البحر":"Température de surface de la mer",
+  "فرق الحرارة":"Écart de température",
+  "منخفض":"Faible",
+  "قوي":"Fort",
+  "متوسط":"Modéré",
+  "إشارة حرارية":"Signal thermique",
+  "هذه إشارة تحليلية وليست احتمالاً لصيد السمك":"Cet indicateur n’est pas une probabilité de capture",
+  "لا توجد نقاط SST كافية لبناء تدرج حراري موثوق.":"Pas assez de points SST pour établir un gradient thermique fiable.",
+  "يوجد فرق حراري ملحوظ حول النقطة؛ قد يكون مفيداً كإشارة للصيد، لكنه ليس دليلاً على وجود السمك.":"Un gradient thermique notable est présent ; il peut servir de signal de pêche, mais ne prouve pas la présence de poissons.",
+  "التدرج الحراري حول النقطة محدود؛ لا توجد إشارة حرارية قوية من هذه البيانات وحدها.":"Le gradient thermique est limité ; ces données seules ne montrent pas un signal thermique fort.",
+  "عينة":"échantillon",
+
 };
 const t = (ar: string) => getLang() === 'fr' ? (FR_KI[ar] ?? FR[ar] ?? FR_EXTRA[ar] ?? ar) : ar;
 const moonInfo = (date=new Date(), latitude=35.8, longitude=10.7) => {
@@ -490,6 +508,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
       <div><span>💨 ${t('الرياح')}</span><b>${value(data.weather.windSpeed,' km/h')}</b></div><div><span>🌬️ ${t('الهبات')}</span><b>${value(data.weather.windGusts,' km/h')}</b></div><div><span>🌊 ${t('ارتفاع الموج')}</span><b>${value(data.sea.waveHeight,' m')}</b></div><div><span>⏱️ ${t('فترة الموج')}</span><b>${value(data.sea.wavePeriod,' s')}</b></div><div><span>🧭 ${t('اتجاه الرياح')}</span><b>${directionValue(data.weather.windDirection,data.weather.windSpeed)}</b></div>
       <div><span>🧭 ${t('اتجاه الموج')}</span><b>${value(data.sea.waveDirection,'°')}</b></div><div><span>🌡️ ${t('الهواء')}</span><b>${value(data.weather.temperature,' °C')}</b></div><div><span>📈 ${t('الضغط')}</span><b>${value(data.weather.pressure,' hPa')}</b></div><div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div><div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div>
     </section>
+    <section class="dashboard-fishing-intelligence-slot"><div class="fishing-intelligence-loading">🎣 ${t('جاري تحليل نشاط الصيد…')}</div></section>
     <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الأيام القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t('جاري حساب توقعات الأسبوع…')}</div></div></section>
     <section class="dashboard-bottom-cards">
       <article class="dashboard-mini-card dashboard-fishing-window"><b>🎣 ${t('أفضل ساعات الصيد')}</b><div class="mini-window"><span>${t('جاري الحساب…')}</span></div></article>
@@ -1689,7 +1708,8 @@ export function createApp(root: HTMLElement) {
         swellHeight:data.sea.swellHeight,
         swellDirection:data.sea.swellDirection,
         swellPeriod:data.sea.swellPeriod,
-        currentVelocity:data.sea.currentVelocity
+        currentVelocity:data.sea.currentVelocity,
+        precipitation:data.weather.precipitation
       });
 
       const todayForecast = hourlyForecast.filter(p => p.time.slice(0,10) === (hourlyForecast[0]?.time.slice(0,10) ?? ''));
@@ -1712,6 +1732,36 @@ export function createApp(root: HTMLElement) {
       // Open every newly selected point at the top of the dashboard.
       report.scrollTop = 0;
       bindClose();
+
+      // Non-blocking fishing intelligence: SST gradient is independent from kayak safety.
+      void (async () => {
+        try {
+          const intelligence = await getFishingIntelligence(lat,lng,{
+            windSpeed:data.weather.windSpeed,
+            waveHeight:data.sea.waveHeight,
+            seaTemperature:data.sea.seaTemperature
+          });
+          if (!isCurrent()) return;
+          const slot = report.querySelector<HTMLElement>('.dashboard-fishing-intelligence-slot');
+          if (!slot) return;
+          const levelClass = (level:string) => level==='ممتاز'?'excellent':level==='جيد'?'good':level==='متوسط'?'caution':'danger';
+          const scoreText = intelligence.score == null ? '—' : intelligence.score + '/100';
+          slot.innerHTML = '<div class="fishing-intelligence-head">' +
+            '<div><b>🎣 '+t('مؤشر نشاط الصيد')+'</b><small>'+t('هذه إشارة تحليلية وليست احتمالاً لصيد السمك')+'</small></div>' +
+            '<strong class="'+(intelligence.score == null ? 'neutral' : levelClass(intelligence.level))+'">'+scoreText+'</strong></div>' +
+            '<div class="fishing-intelligence-grid">' +
+            '<div><span>🌡️ '+t('حرارة سطح البحر')+'</span><b>'+value(intelligence.centerSst,' °C')+'</b></div>' +
+            '<div><span>🌡️ '+t('فرق الحرارة')+'</span><b>'+value(intelligence.gradient,' °C')+'</b></div>' +
+            '<div><span>📡 '+t('التدرج الحراري')+'</span><b>'+t(intelligence.gradientLabel)+'</b></div>' +
+            '<div><span>🧭 '+t('عينة')+'</span><b>'+intelligence.sampleCount+'/5</b></div></div>' +
+            '<p class="fishing-intelligence-note">'+t(intelligence.note)+'</p>' +
+            '<small class="fishing-intelligence-source">'+t('المصدر:')+' Open-Meteo Marine</small>';
+        } catch {
+          if (!isCurrent()) return;
+          const slot = report.querySelector<HTMLElement>('.dashboard-fishing-intelligence-slot');
+          if (slot) slot.innerHTML = '<div class="fishing-intelligence-error">🎣 '+t('تعذر تحليل نشاط الصيد حالياً')+'</div>';
+        }
+      })();
 
       report.querySelector<HTMLButtonElement>('#save-dashboard-point')?.addEventListener('click', () => {
         try {
