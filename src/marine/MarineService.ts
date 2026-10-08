@@ -140,26 +140,51 @@ export type HourlyKayakPoint = {
 };
 
 export class MarineService {
-  async getTideExtremes(latitude:number, longitude:number):Promise<{time:string;type:'high'|'low';height:number|null}[]> {
-    const u = new URL('https://api.openwaters.io/tides/extremes');
+  async getTideExtremes(latitude:number, longitude:number):Promise<{time:string;type:'high'|'low';height:number|null;source:'Open Waters'|'Open-Meteo'}[]> {
+    const now = new Date();
+    const end = new Date(now.getTime() + 48*60*60*1000);
+
+    // Primary source: harmonic predictions from the nearest reference station.
+    try {
+      const u = new URL('https://api.openwaters.io/tides/extremes');
+      u.searchParams.set('latitude',String(latitude));
+      u.searchParams.set('longitude',String(longitude));
+      u.searchParams.set('units','meters');
+      u.searchParams.set('start',now.toISOString());
+      u.searchParams.set('end',end.toISOString());
+      const p = await getJson(u,15000);
+      const raw = Array.isArray(p) ? p : (Array.isArray(p?.extremes) ? p.extremes : Array.isArray(p?.predictions) ? p.predictions : []);
+      const primary = raw.map((x:any) => {
+        const time = String(x?.time ?? x?.datetime ?? x?.timestamp ?? '');
+        const kind = String(x?.type ?? x?.event ?? x?.label ?? '').toLowerCase();
+        const type = kind.includes('high') || kind.includes('max') || x?.high === true ? 'high' : 'low';
+        const n = Number(x?.height ?? x?.height_m ?? x?.level ?? x?.value);
+        return {time,type,height:Number.isFinite(n)?n:null,source:'Open Waters' as const};
+      }).filter((x:any)=>x.time && (x.type==='high'||x.type==='low'))
+        .sort((a:any,b:any)=>Date.parse(a.time)-Date.parse(b.time));
+      if(primary.length) return primary;
+    } catch {}
+
+    // Fallback: modeled sea level. It is explicitly an estimate, not a local chart datum.
+    const u = new URL('https://marine-api.open-meteo.com/v1/marine');
     u.searchParams.set('latitude',String(latitude));
     u.searchParams.set('longitude',String(longitude));
-    u.searchParams.set('units','meters');
-    const now = new Date();
-    const end = new Date(now.getTime() + 36*60*60*1000);
-    u.searchParams.set('start',now.toISOString());
-    u.searchParams.set('end',end.toISOString());
+    u.searchParams.set('hourly','sea_level_height_msl');
+    u.searchParams.set('forecast_hours','49');
+    u.searchParams.set('timezone','auto');
+    u.searchParams.set('cell_selection','sea');
     const p = await getJson(u,15000);
-    const raw = Array.isArray(p) ? p : (Array.isArray(p?.extremes) ? p.extremes : Array.isArray(p?.predictions) ? p.predictions : []);
-    return raw.map((e:any) => {
-      const time = String(e?.time ?? e?.datetime ?? e?.timestamp ?? '');
-      const typeRaw = String(e?.type ?? e?.event ?? '').toLowerCase();
-      const type = typeRaw.includes('high') || typeRaw.includes('max') ? 'high' : 'low';
-      const n = Number(e?.height ?? e?.height_m ?? e?.value);
-      return {time,type,height:Number.isFinite(n)?n:null};
-    }).filter((e:any) => e.time && (e.type==='high'||e.type==='low')).sort((a:any,b:any)=>Date.parse(a.time)-Date.parse(b.time));
+    const times = Array.isArray(p?.hourly?.time) ? p.hourly.time.filter((v:any):v is string=>typeof v==='string') : [];
+    const levels = Array.isArray(p?.hourly?.sea_level_height_msl) ? p.hourly.sea_level_height_msl : [];
+    const points = times.map((time:string,i:number)=>({time,value:Number(levels[i])})).filter((x:any)=>Number.isFinite(x.value));
+    const out:{time:string;type:'high'|'low';height:number|null;source:'Open Waters'|'Open-Meteo'}[]=[];
+    for(let i=1;i<points.length-1;i++){
+      const a=points[i-1].value,b=points[i].value,d=points[i+1].value;
+      if(b>=a && b>d) out.push({time:points[i].time,type:'high',height:b,source:'Open-Meteo'});
+      else if(b<=a && b<d) out.push({time:points[i].time,type:'low',height:b,source:'Open-Meteo'});
+    }
+    return out;
   }
-
   async getTodayWeatherSummary(latitude:number, longitude:number):Promise<DailyWeatherSummary> {
     const u = new URL('https://api.open-meteo.com/v1/forecast');
     u.searchParams.set('latitude',String(latitude));
