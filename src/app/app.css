@@ -2006,3 +2006,77 @@
 .coordinate-waypoint-modal{position:fixed!important;z-index:10060!important}
 .coordinate-waypoint-modal.hidden{display:none!important}
 .coordinate-waypoint-modal input,.coordinate-waypoint-modal select,.coordinate-waypoint-modal textarea{font-size:16px}
+
+/* Professional marine dashboard */
+.report-dashboard{direction:rtl}
+.report-dashboard .report-head{padding-bottom:8px;border-bottom:1px solid #ffffff12}
+.report-dashboard .report-head>div{display:flex;flex-direction:column;gap:2px}
+.dashboard-date{font-size:11px;opacity:.55;font-weight:500}
+.report-place{font-weight:700;margin:9px 0 2px!important}
+.dashboard-score{display:flex;align-items:center;gap:14px;margin:12px 0;padding:12px;border:1px solid #ffffff18;border-radius:16px;background:linear-gradient(135deg,rgba(11,37,55,.96),rgba(5,18,29,.96));box-shadow:inset 0 1px #ffffff0a}
+.score-gauge{--score:0deg;width:112px;height:112px;flex:0 0 112px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#16c784 var(--score),#203544 var(--score));position:relative}
+.score-gauge:after{content:"";position:absolute;inset:9px;border-radius:50%;background:#081722;border:1px solid #ffffff10}
+.score-gauge>div{position:relative;z-index:1;text-align:center;direction:ltr}
+.score-gauge strong{font-size:32px;line-height:1}
+.score-gauge small{font-size:11px;opacity:.55}
+.score-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+.score-copy b{font-size:20px}
+.score-copy span{font-size:13px;opacity:.9;line-height:1.4}
+.score-copy small{font-size:10px;line-height:1.45;opacity:.55}
+.dashboard-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0}
+.dashboard-card{padding:10px 7px;border:1px solid #ffffff16;border-radius:12px;background:#ffffff07;text-align:center;min-width:0}
+.dashboard-card span{display:block;font-size:12px;opacity:.82}
+.dashboard-card strong{display:block;font-size:25px;line-height:1.1;margin:5px 0;direction:ltr}
+.dashboard-card strong small{font-size:10px;opacity:.5}
+.dashboard-card em{display:inline-block;padding:3px 9px;border-radius:99px;font-style:normal;font-size:10px;font-weight:800}
+.dashboard-card em.good{background:#16a34a;color:#fff}
+.dashboard-card em.caution{background:#eab308;color:#171717}
+.dashboard-card em.danger{background:#dc2626;color:#fff}
+.dashboard-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:9px 0}
+.dashboard-metrics>div{padding:8px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff05;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dashboard-metrics span{font-size:11px;opacity:.68}
+.dashboard-metrics b{font-size:13px;direction:ltr;white-space:nowrap}
+.dashboard-forecast{margin-top:10px;padding:10px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff04}
+.dashboard-section-title{display:flex;justify-content:space-between;align-items:end;gap:8px;margin-bottom:8px}
+.dashboard-section-title b{font-size:14px}
+.dashboard-section-title small{font-size:9px;opacity:.48}
+.dashboard-forecast .departure-planning{margin:0;padding:0;border:0;background:transparent}
+.dashboard-forecast .departure-planning-head{padding:0 0 8px;border-bottom:1px solid #ffffff10}
+.dashboard-forecast .departure-planning-head small{font-size:9px}
+.dashboard-forecast .departure-hours{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
+.dashboard-forecast .departure-hour{padding:7px 4px;border-radius:9px;text-align:center;border:1px solid #ffffff12;background:#ffffff05}
+.dashboard-forecast .departure-hour b,.dashboard-forecast .departure-hour strong,.dashboard-forecast .departure-hour span,.dashboard-forecast .departure-hour small{display:block}
+.dashboard-forecast .departure-hour b{font-size:10px;opacity:.65}
+.dashboard-forecast .departure-hour strong{font-size:17px;margin:2px 0}
+.dashboard-forecast .departure-hour strong small{display:inline;font-size:8px;opacity:.5}
+.dashboard-forecast .departure-hour span{font-size:9px}
+.dashboard-forecast .departure-hour>small{font-size:8px;opacity:.58;margin-top:3px;direction:ltr}
+.dashboard-forecast .departure-hour.excellent,.dashboard-forecast .departure-hour.good{background:rgba(22,163,74,.16);border-color:rgba(34,197,94,.25)}
+.dashboard-forecast .departure-hour.caution{background:rgba(234,179,8,.13);border-color:rgba(234,179,8,.25)}
+.dashboard-forecast .departure-hour.danger{background:rgba(220,38,38,.13);border-color:rgba(220,38,38,.25)}
+.dashboard-forecast .departure-best{margin-top:8px;padding:9px;border-radius:10px;background:linear-gradient(90deg,rgba(14,116,144,.22),rgba(22,163,74,.16));display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dashboard-forecast .departure-best span{font-size:10px;opacity:.75}
+.dashboard-forecast .departure-best strong{font-size:14px;direction:ltr}
+.dashboard-forecast .departure-best small{display:none}
+.dashboard-forecast .departure-reasons{margin:7px 0 0;padding:0 16px;font-size:10px;opacity:.65}
+.dashboard-forecast .departure-note{display:block;margin-top:7px;font-size:9px;line-height:1.4;opacity:.45}
+.dashboard-footer{padding-top:7px;text-align:left}
+.dashboard-footer small{font-size:9px;opacity:.45}
+@media(max-width:700px){
+ .report{right:7px;bottom:7px;width:calc(100% - 14px);max-height:90vh;padding:10px;border-radius:16px}
+ .dashboard-score{gap:10px;padding:10px}
+ .score-gauge{width:92px;height:92px;flex-basis:92px}
+ .score-gauge strong{font-size:28px}
+ .score-copy b{font-size:17px}
+ .dashboard-cards{gap:5px}
+ .dashboard-card{padding:8px 4px}
+ .dashboard-card strong{font-size:22px}
+ .dashboard-metrics{gap:5px}
+ .dashboard-metrics>div{padding:7px}
+ .dashboard-forecast .departure-hours{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:390px){
+ .dashboard-metrics{grid-template-columns:1fr}
+ .dashboard-forecast .departure-hours{grid-template-columns:repeat(2,1fr)}
+ .score-gauge{width:82px;height:82px;flex-basis:82px}
+}
