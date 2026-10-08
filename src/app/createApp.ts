@@ -11,7 +11,6 @@ import { getDeviceLocation, watchDeviceLocation, clearDeviceLocationWatch } from
 import { loadWaypoints, saveWaypoint, deleteWaypoint, type FishingWaypoint, type WaypointCategory } from '../waypoints/WaypointStore';
 import { getCoastDistance } from '../coastline/CoastDistanceService';
 import { getFishingIntelligence } from '../fishing/FishingIntelligence';
-import { rankSpecies, rankFishingWindows, calculateConfidence, tunisianProfile } from '../fishing/FishingAdvisor';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -516,7 +515,6 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
       <div><span>🧭 ${t('اتجاه الموج')}</span><b>${value(data.sea.waveDirection,'°')}</b></div><div><span>🌡️ ${t('الهواء')}</span><b>${value(data.weather.temperature,' °C')}</b></div><div><span>📈 ${t('الضغط')}</span><b>${value(data.weather.pressure,' hPa')}</b></div><div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div><div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div>
     </section>
     <section class="dashboard-fishing-intelligence-slot"><div class="fishing-intelligence-loading">🎣 ${t('جاري تحليل الإشارة البيئية…')}</div></section>
-    <section class="dashboard-advisor-slot"><div class="advisor-loading">🎣 ${t('جاري بناء تحليل الصيد المتقدم…')}</div></section>
     <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الأيام القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t('جاري حساب توقعات الأسبوع…')}</div></div></section>
     <section class="dashboard-bottom-cards">
       <article class="dashboard-mini-card dashboard-fishing-window"><b>🎣 ${t('أفضل ساعات الصيد')}</b><div class="mini-window"><span>${t('جاري الحساب…')}</span></div></article>
@@ -1766,38 +1764,6 @@ export function createApp(root: HTMLElement) {
           if (!isCurrent()) return;
           const slot=report.querySelector<HTMLElement>('.dashboard-fishing-intelligence-slot');
           if (slot) slot.innerHTML='<div class="fishing-intelligence-error">🎣 '+t('تعذر تحليل الإشارة البيئية حالياً')+'</div>';
-        }
-      })();
-
-      // Phases 3-10: species, habitat, windows, confidence and Tunisia profile.
-      void (async () => {
-        try {
-          const [depthResult, modelDays] = await Promise.all([
-            getBathymetryDepth(map, lng, lat),
-            marine.getWeatherModelComparison(lat,lng).catch(()=>[])
-          ]);
-          if (!isCurrent()) return;
-          const intelligence = await getFishingIntelligence(lat,lng,{windSpeed:data.weather.windSpeed,waveHeight:data.sea.waveHeight,seaTemperature:data.sea.seaTemperature}).catch(()=>null);
-          if (!isCurrent()) return;
-          const month=new Date().getMonth()+1;
-          const species=rankSpecies({seaTemperature:data.sea.seaTemperature,depth:depthResult?.depthMeters ?? null,month,gradient:intelligence?.gradient ?? null,chlorophyll:intelligence?.chlorophyll ?? null,waveHeight:data.sea.waveHeight});
-          const windows=rankFishingWindows(hourlyForecast.slice(0,24));
-          const confidence=calculateConfidence({sst:data.sea.seaTemperature!=null,chlorophyll:intelligence?.chlorophyllAvailable===true,depth:depthResult!=null,current:data.sea.currentVelocity!=null,hourly:hourlyForecast.length>=6,weatherModels:modelDays.length>=3});
-          const profile=tunisianProfile(lat,lng);
-          const slot=report.querySelector<HTMLElement>('.dashboard-advisor-slot');
-          if(!slot)return;
-          const top=species.slice(0,4);
-          const levelClass=(n:number)=>n>=82?'excellent':n>=65?'good':n>=45?'caution':'danger';
-          const windowHtml=windows.slice(0,3).map(w=>'<div class="advisor-window '+levelClass(w.score)+'"><b>'+new Date(w.start).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit'})+' → '+new Date(w.end).toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit'})+'</b><strong>'+w.score+'/100</strong></div>').join('');
-          slot.innerHTML='<div class="advisor-head"><div><b>🎯 '+t('تحليل الصيد المتقدم')+'</b><small>'+t(profile)+'</small></div><span class="advisor-confidence">'+t('ثقة التحليل')+' '+confidence.score+'%</span></div>'
-NaN
-NaN
-NaN
-NaN
-        } catch {
-          if (!isCurrent()) return;
-          const slot=report.querySelector<HTMLElement>('.dashboard-advisor-slot');
-          if(slot)slot.innerHTML='<div class="advisor-error">🎣 '+t('تعذر بناء التحليل المتقدم حالياً')+'</div>';
         }
       })();
 
