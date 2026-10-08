@@ -684,8 +684,8 @@ export function createApp(root: HTMLElement) {
   };
   const parseCoordinatePair = (raw:string): {lat:number;lng:number} | null => {
     const s = raw.trim().replace(/[−–—]/g, '-');
-    const latMatch = s.match(/([NS])\\s*[-+]?\\d+(?:[°º]\\s*\\d+(?:[.,]\\d+)?(?:[′']\\s*\\d+(?:[.,]\\d+)?)?|[.,]\\d+)?)/i);
-    const lngMatch = s.match(/([EW])\\s*[-+]?\\d+(?:[°º]\\s*\\d+(?:[.,]\\d+)?(?:[′']\\s*\\d+(?:[.,]\\d+)?)?|[.,]\\d+)?)/i);
+    const latMatch = s.match(/([NS])\\s*[-+]?\\d+(?:[.,]\\d+)?(?:[°º]\\s*\\d+(?:[.,]\\d+)?)?/i);
+    const lngMatch = s.match(/([EW])\\s*[-+]?\\d+(?:[.,]\\d+)?(?:[°º]\\s*\\d+(?:[.,]\\d+)?)?/i);
     if (latMatch && lngMatch) {
       const lat = parseCoordinate(latMatch[0], 'lat');
       const lng = parseCoordinate(lngMatch[0], 'lng');
@@ -730,8 +730,8 @@ export function createApp(root: HTMLElement) {
     const category = document.querySelector<HTMLSelectElement>('#coordinate-point-category')?.value as WaypointCategory;
     const notes = document.querySelector<HTMLTextAreaElement>('#coordinate-point-notes')?.value.trim() || '';
     if (!name) { coordinateError.textContent = getLang()==='fr' ? 'Entrez un nom.' : 'أدخل اسم النقطة.'; return; }
-    if (!Number.isFinite(lat) || lat < 30 || lat > 38.6 || !Number.isFinite(lng) || lng < 7 || lng > 12.2) {
-      coordinateError.textContent = getLang()==='fr' ? 'Coordonnées hors de la zone tunisienne. Vérifiez latitude et longitude.' : 'الإحداثيات خارج نطاق تونس. تحقق من خط العرض والطول.';
+    if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < 30 || lat > 38.6 || lng < 7 || lng > 12.2) {
+      coordinateError.textContent = getLang()==='fr' ? 'Coordonnées invalides ou hors de la zone tunisienne.' : 'الإحداثيات غير صحيحة أو خارج نطاق تونس.';
       return;
     }
     const safeCategory:WaypointCategory = ['fish','anchor','rock','danger','nav','kayak','personal'].includes(category) ? category : 'personal';
