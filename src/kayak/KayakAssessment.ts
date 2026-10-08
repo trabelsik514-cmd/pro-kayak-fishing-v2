@@ -19,7 +19,8 @@ if(data.swellPeriod!=null&&data.swellHeight!=null){
   else if(data.swellPeriod>=9&&data.swellHeight>0.6){risks.push(5);reasons.push('فترة الـSwell طويلة نسبياً');}
 }
  if(data.swellHeight==null)missing.push('Swell'); else { const p=penalty(data.swellHeight,[[0.4,0],[0.7,7],[1.0,18],[1.4,35],[1.8,55],[Infinity,75]]); if(p)risks.push(p); if(data.swellHeight>1.0)reasons.push('الـSwell مرتفع'); }
- if(data.precipitation!=null){ const p=penalty(data.precipitation,[[0.2,0],[1,5],[3,12],[7,22],[Infinity,35]]); if(p)risks.push(p); if(data.precipitation>3)reasons.push('الأمطار قد تقلل الرؤية وراحة الرحلة'); }\n if(data.currentVelocity!=null){ const p=weightedPenalty(data.currentVelocity,[[0.5,0],[1.0,4],[1.5,10],[2.0,20],[Infinity,32]],0.65); if(p)risks.push(p); if(data.currentVelocity>1.5)reasons.push('التيار مرتفع نسبياً'); }
+ if(data.precipitation!=null){ const p=penalty(data.precipitation,[[0.2,0],[1,5],[3,12],[7,22],[Infinity,35]]); if(p)risks.push(p); if(data.precipitation>3)reasons.push('الأمطار قد تقلل الرؤية وراحة الرحلة'); }
+ if(data.currentVelocity!=null){ const p=weightedPenalty(data.currentVelocity,[[0.5,0],[1.0,4],[1.5,10],[2.0,20],[Infinity,32]],0.65); if(p)risks.push(p); if(data.currentVelocity>1.5)reasons.push('التيار مرتفع نسبياً'); }
  const combined=Math.min(92,risks.reduce((sum,p)=>sum+p,0)*0.72);
  const strongest=risks.length?Math.max(...risks):0;
  // A suitability score is not a safety probability. Cap the score when any single
