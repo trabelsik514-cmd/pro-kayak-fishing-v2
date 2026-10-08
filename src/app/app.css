@@ -1956,3 +1956,7 @@
 
 .weather-location-banner{display:flex;flex-direction:column;gap:4px;margin:8px 0 10px;padding:10px 12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(5,28,40,.72)}
 .weather-location-banner b{font-size:13px}.weather-location-banner small{opacity:.72;font-size:11px}
+
+.pkf-waypoint-marker{border:0;background:transparent;padding:0;font-size:24px;line-height:1;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,.55));transform:translateY(-2px)}
+.pkf-waypoint-marker:active{transform:translateY(-1px) scale(.92)}
+.pkf-waypoint-notice{margin:8px 12px;padding:9px 11px;border:1px solid rgba(80,220,170,.35);border-radius:10px;background:rgba(15,80,65,.35);font-size:12px}
