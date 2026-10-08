@@ -1476,6 +1476,29 @@ export function createApp(root: HTMLElement) {
           : '');
       report.innerHTML = reportBase;
       bindClose();
+
+      report.querySelector<HTMLButtonElement>('#save-dashboard-point')?.addEventListener('click', () => {
+        try {
+          const wp = saveWaypoint({lat, lng, name: placeName || 'نقطة صيد', category:'fish'});
+          renderWaypointMarker(wp);
+          window.alert(getLang()==='fr' ? 'Point enregistré.' : 'تم حفظ النقطة.');
+        } catch { window.alert(getLang()==='fr' ? 'Impossible d’enregistrer ce point.' : 'تعذر حفظ النقطة.'); }
+      });
+      report.querySelector<HTMLButtonElement>('#share-dashboard-coords')?.addEventListener('click', async () => {
+        const coords = formatGarminPair(lat,lng);
+        const text = `PRO KAYAK FISHING\n${placeName || 'نقطة بحرية'}\n${coords}`;
+        try {
+          if (navigator.share) await navigator.share({title:'PRO KAYAK FISHING',text});
+          else await navigator.clipboard?.writeText(text);
+        } catch {}
+      });
+      report.querySelector<HTMLButtonElement>('#dashboard-report-action')?.addEventListener('click', () => {
+        const target = report.querySelector('.dashboard-metrics');
+        target?.scrollIntoView({behavior:'smooth',block:'center'});
+      });
+      report.querySelector<HTMLButtonElement>('#dashboard-planner-action')?.addEventListener('click', () => {
+        document.querySelector<HTMLButtonElement>('#kayak-intelligence-toggle')?.click();
+      });
       if (bestWindowHtml) {
         const dailySlot = report.querySelector('.dashboard-daily-slot');
         if (dailySlot) dailySlot.insertAdjacentHTML('afterend', bestWindowHtml);
