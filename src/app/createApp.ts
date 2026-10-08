@@ -11,6 +11,7 @@ import { getDeviceLocation, watchDeviceLocation, clearDeviceLocationWatch } from
 import { loadWaypoints, saveWaypoint, deleteWaypoint, type FishingWaypoint, type WaypointCategory } from '../waypoints/WaypointStore';
 import { getCoastDistance } from '../coastline/CoastDistanceService';
 import { getFishingIntelligence } from '../fishing/FishingIntelligence';
+import { rankSpecies, tunisianProfile } from '../fishing/FishingAdvisor';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -1761,6 +1762,35 @@ export function createApp(root: HTMLElement) {
           if (!isCurrent()) return;
           const slot=report.querySelector<HTMLElement>('.dashboard-fishing-intelligence-slot');
           if (slot) slot.innerHTML='<div class="fishing-intelligence-error">🎣 '+t('تعذر تحليل الإشارة البيئية حالياً')+'</div>';
+        }
+      })();
+
+      // advisor-phase34: species ranking + depth/habitat.
+      void (async () => {
+        const slot=report.querySelector<HTMLElement>('.dashboard-advisor-slot');
+        if(!slot) return;
+        try {
+          const depthResult=await getBathymetryDepth(map,lng,lat);
+          if(!isCurrent()) return;
+          const intelligence=await getFishingIntelligence(lat,lng,{
+            windSpeed:data.weather.windSpeed,
+            waveHeight:data.sea.waveHeight,
+            seaTemperature:data.sea.seaTemperature
+          }).catch(()=>null);
+          const species=rankSpecies({
+            seaTemperature:data.sea.seaTemperature,
+            depth:depthResult?.depthMeters ?? null,
+            month:new Date().getMonth()+1,
+            gradient:intelligence?.gradient ?? null,
+            chlorophyll:intelligence?.chlorophyll ?? null,
+            waveHeight:data.sea.waveHeight
+          }).slice(0,4);
+          slot.innerHTML='<div class="advisor-head"><div><b>🎣 '+t('الأنواع المناسبة')+'</b><small>'+t(tunisianProfile(lat,lng))+'</small></div></div>'+
+            '<div class="advisor-grid"><div><span>🪸 '+t('العمق')+'</span><b>'+value(depthResult?.depthMeters ?? null,' m')+'</b></div>'+
+            '<div><span>🌡️ '+t('حرارة البحر')+'</span><b>'+value(data.sea.seaTemperature,' °C')+'</b></div></div>'+
+            '<div class="advisor-section">'+species.map(x=>'<div class="advisor-species"><span>'+t(x.ar)+'</span><strong>'+x.score+'/100</strong><small>'+t(x.reasons[0]||'إشارة بيئية')+'</small></div>').join('')+'</div>';
+        } catch {
+          if(isCurrent() && slot) slot.innerHTML='<div class="advisor-error">🎣 '+t('تعذر بناء التحليل المتقدم حالياً')+'</div>';
         }
       })();
 
