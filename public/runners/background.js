@@ -3,9 +3,6 @@
 // It refreshes data every 15 minutes, but sends a user notification at most every 6 hours.
 
 const NOTIFY_EVERY_MS = 6 * 60 * 60 * 1000;
-const DEFAULT_LAT = 35.8;
-const DEFAULT_LNG = 10.7;
-
 async function readLocation() {
   try {
     const raw = await CapacitorKV.get('pkf_selected_location');
