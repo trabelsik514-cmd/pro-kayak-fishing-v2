@@ -2165,3 +2165,5 @@
   .dashboard-actions{grid-template-columns:1fr 1fr}.dashboard-actions button{min-height:40px!important;font-size:10px!important}
 }
 @media(max-width:390px){.dashboard-bottom-cards{grid-template-columns:1fr}.dashboard-sun{grid-column:auto}.dashboard-daily-scroll{max-height:155px}}
+
+.tide-events{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%}.tide-event{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:5px;padding:6px 7px;border-radius:9px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-size:9px}.tide-event b{font-size:9px;white-space:nowrap}.tide-event strong{font-size:13px;direction:ltr}.tide-event small{font-size:9px;opacity:.75;direction:ltr}.tide-event.high{border-color:rgba(45,212,191,.28)}.tide-event.low{border-color:rgba(96,165,250,.22)}
