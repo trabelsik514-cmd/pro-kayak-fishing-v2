@@ -14,6 +14,22 @@ const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
 const escapeHtml = (v: string) => v.replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch] ?? ch));
 const ltr = (v: string) => `<span dir="ltr">${v}</span>`;
+const formatGarminCoordinate = (value:number, axis:'lat'|'lng'): string => {
+  const safe = Number(value);
+  if (!Number.isFinite(safe)) return '—';
+  const hemisphere = axis === 'lat'
+    ? (safe < 0 ? 'S' : 'N')
+    : (safe < 0 ? 'W' : 'E');
+  let degrees = Math.floor(Math.abs(safe));
+  let minutes = Number(((Math.abs(safe) - degrees) * 60).toFixed(3));
+  if (minutes >= 60) { degrees += 1; minutes = 0; }
+  const degreeText = axis === 'lat'
+    ? String(degrees).padStart(2, '0')
+    : String(degrees).padStart(3, '0');
+  return `${hemisphere} ${degreeText}°${minutes.toFixed(3).padStart(6, '0')}′`;
+};
+const formatGarminPair = (lat:number, lng:number): string =>
+  `${formatGarminCoordinate(lat,'lat')} ${formatGarminCoordinate(lng,'lng')}`;
 
 type UiLang = 'ar' | 'fr';
 const getLang = (): UiLang => localStorage.getItem('pkf-lang') === 'fr' ? 'fr' : 'ar';
@@ -207,7 +223,7 @@ function setDocumentLanguage() {
 
 function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']>>, placeName: string|null) {
   return `<div class="report-head"><b>${t('حالة البحر عند النقطة')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
-    <p class="report-place">📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</p><p class="coords">${ltr(`${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}`)}</p>
+    <p class="report-place">📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</p><p class="coords">${ltr(formatGarminPair(data.latitude, data.longitude))}</p>
     <div class="report-grid">
       <span>🌊 ${t('ارتفاع الموج الآن')} <b>${value(data.sea.waveHeight,' m')}</b></span><span>🧭 ${t('اتجاه الموج')} <b>${value(data.sea.waveDirection,'°')}</b></span>
       <span>📈 ${t('أقصى ارتفاع للموج اليوم')} <b>${value(data.sea.maxWaveHeightToday,' m')}</b></span>
@@ -714,8 +730,8 @@ export function createApp(root: HTMLElement) {
     const pair = parseCoordinatePair(pasted);
     if (pair) {
       ev.preventDefault();
-      coordinateLatInput.value = pair.lat.toFixed(7);
-      coordinateLngInput.value = pair.lng.toFixed(7);
+      coordinateLatInput.value = formatGarminCoordinate(pair.lat, 'lat');
+      coordinateLngInput.value = formatGarminCoordinate(pair.lng, 'lng');
     }
   };
   coordinateLatInput.addEventListener('paste', handleCoordinatePaste);
@@ -1376,7 +1392,7 @@ export function createApp(root: HTMLElement) {
       }
     };
 
-    renderLoading(t('جاري جلب آخر البيانات…'), `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+    renderLoading(t('جاري جلب آخر البيانات…'), formatGarminPair(lat, lng));
 
     const placeNamePromise: Promise<string|null> = label
       ? Promise.resolve(label)
@@ -1740,7 +1756,7 @@ export function createApp(root: HTMLElement) {
       const reasonHtml = reasons.length ? `<ul class="sea-reasons">${reasons.map(r=>`<li>• ${translateReason(r)}</li>`).join('')}</ul>` : '';
       report.innerHTML = `
         <div class="report-head"><b>🌊 ${t('حالة البحر اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
-        <div class="sea-location">📍 ${ltr(lat.toFixed(4)+', '+lng.toFixed(4))}</div>
+        <div class="sea-location">📍 ${ltr(formatGarminPair(lat, lng))}</div>
         <section class="sea-overview">
           <div><span>${t('تقييم اليوم')}</span><strong>${overall ?? '—'}<small>/100</small></strong><b>${overallLevel==='—'?'—':levelLabel(overallLevel)}</b></div>
           <div><span>🌊 ${t('نطاق الموج')}</span><b>${value(d.waveMin,' m')} – ${value(d.waveMax,' m')}</b></div>
@@ -1836,7 +1852,7 @@ export function createApp(root: HTMLElement) {
           '</div></article>';
       }).join('');
       report.innerHTML = '<div class="report-head"><b>'+t('حالة البحر 7 أيام')+'</b><button id="close-report">×</button></div>' +
-        '<p>📍 '+ltr(lat.toFixed(4)+', '+lng.toFixed(4))+'</p>' +
+        '<p>📍 '+ltr(formatGarminPair(lat, lng))+'</p>' +
         '<div class="weekly-sea-list">'+(cards || '<p>'+t('لا توجد بيانات أسبوعية متاحة')+'</p>')+'</div>' +
         '<section class="model-comparison">' +
           '<div class="model-comparison-title"><b>📊 '+t('مقارنة النماذج')+'</b><small>'+t('توافق النماذج')+'</small></div>' +
