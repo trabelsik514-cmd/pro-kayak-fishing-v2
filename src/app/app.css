@@ -1953,3 +1953,6 @@
   .pkf-wind-arrow{width:30px;height:30px}
   .pkf-wind-arrow svg{width:30px;height:30px}
 }
+
+.weather-location-banner{display:flex;flex-direction:column;gap:4px;margin:8px 0 10px;padding:10px 12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(5,28,40,.72)}
+.weather-location-banner b{font-size:13px}.weather-location-banner small{opacity:.72;font-size:11px}
