@@ -414,6 +414,9 @@ const FR_EXTRA: Record<string,string> = {
   "البيانات البحرية تظهر داخل تقرير النقطة المختارة، بدلاً من عرض طبقات غير موجودة فعلياً.": "Les données marines sont affichées dans le rapport du point sélectionné plutôt que via des couches qui ne correspondent pas à des données réelles.",
   "التنقل": "Navigation",
   "نقطة بحرية موثقة": "Point marin documenté"
+  "وضع الملاحة البحرية: أعماق EMODnet وخطوط الأعماق. خرائط Navionics الرسمية تحتاج ترخيصاً ومفتاح API من Garmin.":"Mode navigation marine : profondeurs EMODnet et courbes bathymétriques. Les cartes officielles Navionics nécessitent une licence et une clé API Garmin.",
+  " كم":" km"," م":" m","النوع: fish / anchor / rock / danger / nav / kayak / personal":"Type : fish / anchor / rock / danger / nav / kayak / personal","العمق بالمتر، اختياري":"Profondeur en mètres, facultatif","نوع السمك المستهدف، اختياري":"Espèce de poisson ciblée, facultatif","ملاحظات، اختيارية":"Notes, facultatives",
+  "<b>لم يتم حفظ الرحلة</b><span>نحتاج إلى نقطتين GPS على الأقل لتكوين مسار.</span>":"<b>Sortie non enregistrée</b><span>Au moins deux points GPS sont nécessaires pour créer une trace.</span>","<b>تعذر الوصول إلى GPS</b><span>فعّل الموقع الدقيق واسمح للتطبيق بالوصول إلى موقعك.</span>":"<b>Accès GPS impossible</b><span>Activez la localisation précise et autorisez l’application à accéder à votre position.</span>",
 };
 const t = (ar: string) => getLang() === 'fr' ? (FR_KI[ar] ?? FR[ar] ?? FR_EXTRA[ar] ?? ar) : ar;
 const moonInfo = (date=new Date()) => {
