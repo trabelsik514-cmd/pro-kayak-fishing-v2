@@ -7,6 +7,7 @@ import { loadTrips, saveTrip, deleteTrip, makeTrip, type KayakTrip, type TrackPo
 import { getBathymetryDepth } from '../bathymetry/BathymetryService';
 import { initSeaNotifications, saveBackgroundLocation } from '../notifications/SeaNotificationService';
 import { getDeviceLocation, watchDeviceLocation, clearDeviceLocationWatch } from '../location/DeviceLocationService';
+import { loadWaypoints, saveWaypoint, type FishingWaypoint } from '../waypoints/WaypointStore';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -84,6 +85,9 @@ const FR: Record<string,string> = {
   '📏 قياس المسافة':'📏 Mesurer la distance',
   '✖️ إيقاف القياس':'✖️ Arrêter la mesure',
   '🛶 رحلاتي':'🛶 Mes voyages',
+  '📍 نقاطي':'📍 Mes points',
+  'حفظ كنقطة صيد':'Enregistrer comme spot',
+  'اسم نقطة الصيد':'Nom du spot',
   '🛶 سجل الرحلات':'🛶 Journal des sorties',
   'سجل الرحلات':'Journal des sorties',
   'لا توجد رحلة قيد التسجيل':'Aucune sortie en cours',
@@ -249,6 +253,10 @@ export function createApp(root: HTMLElement) {
       <button id="pkf-measure" class="pkf-tool" type="button" title="${t('قياس المسافة')}" aria-label="${t('قياس المسافة')}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16 16 4l4 4L8 20H4v-4Z"></path><path d="m8 16 2 2M11 13l2 2M14 10l2 2"></path></svg>
         <span class="pkf-tool-label">${getLang()==='fr'?'Mesurer':'قياس'}</span>
+      </button>
+      <button id="pkf-waypoint" class="pkf-tool" type="button" title="${getLang()==='fr'?'Points de pêche':'نقاطي'}" aria-label="${getLang()==='fr'?'Points de pêche':'نقاطي'}">
+        <span aria-hidden="true">📍</span>
+        <span class="pkf-tool-label">${getLang()==='fr'?'Points':'نقاطي'}</span>
       </button>
       <button id="pkf-trip" class="pkf-tool pkf-tool-route" type="button" title="${t('رحلاتي')}" aria-label="${t('رحلاتي')}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c5-1 7-8 12-8h4"></path><path d="m16 7 4 4-4 4"></path><circle cx="5" cy="19" r="1.5"></circle></svg>
@@ -451,6 +459,28 @@ export function createApp(root: HTMLElement) {
       if (button) button.disabled = false;
     }
   });
+  const waypointMarkers = new Map<string, maplibregl.Marker>();
+  const renderWaypointMarker = (wp:FishingWaypoint) => {
+    if (waypointMarkers.has(wp.id)) return;
+    const el=document.createElement('button');
+    el.className='pkf-waypoint-marker'; el.type='button'; el.textContent='📍';
+    el.title=wp.name; el.setAttribute('aria-label',wp.name);
+    el.addEventListener('click', ev => { ev.stopPropagation(); void selectPoint(wp.lat,wp.lng,wp.name); });
+    const marker=new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([wp.lng,wp.lat]).addTo(map);
+    waypointMarkers.set(wp.id,marker);
+  };
+  loadWaypoints().forEach(renderWaypointMarker);
+  document.querySelector<HTMLButtonElement>('#pkf-waypoint')?.addEventListener('click', () => {
+    if (!selectedLocation) { window.alert(getLang()==='fr' ? 'Sélectionnez d’abord un point sur la carte.' : 'حدد نقطة على الخريطة أولاً.'); return; }
+    const name=window.prompt(getLang()==='fr' ? 'Nom du spot' : 'اسم نقطة الصيد', getLang()==='fr' ? 'Spot de pêche' : 'نقطة صيد')?.trim();
+    if (!name) return;
+    const wp=saveWaypoint({lat:selectedLocation.lat,lng:selectedLocation.lng,name});
+    renderWaypointMarker(wp);
+    const notice=document.createElement('div'); notice.className='pkf-waypoint-notice';
+    notice.textContent='📍 '+(getLang()==='fr' ? 'Spot enregistré sur votre carte privée.' : 'تم حفظ نقطة الصيد على خريطتك الخاصة.');
+    report.prepend(notice); window.setTimeout(()=>notice.remove(),3000);
+  });
+
   document.querySelector<HTMLButtonElement>('#pkf-layers')?.addEventListener('click', () => layerPanel.classList.toggle('hidden'));
   document.querySelector<HTMLButtonElement>('#pkf-layer-close')?.addEventListener('click', () => layerPanel.classList.add('hidden'));
   document.querySelector<HTMLInputElement>('#pkf-satellite-toggle')?.addEventListener('change', e => {
