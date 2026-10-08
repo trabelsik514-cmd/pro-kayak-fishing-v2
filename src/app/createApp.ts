@@ -1272,6 +1272,10 @@ export function createApp(root: HTMLElement) {
     if(points.length<2){ window.alert(getLang()==='fr'?'Enregistrez au moins deux points.':'احفظ نقطتين على الأقل أولاً.'); return; }
     routePlanner.innerHTML=`<div class="route-planner-head"><b>${getLang()==='fr'?'Choisir les points':'اختر نقاط المسار'}</b><small>${getLang()==='fr'?'Sélectionnez les points dans l’ordre.':'حدد النقاط حسب ترتيب الملاحة.'}</small></div><div class="route-planner-list">${points.map(p=>`<label><input type="checkbox" value="${p.id}" data-route-point><span>${waypointIcon(p.category)} ${escapeHtml(p.name)}</span></label>`).join('')}</div><button id="route-build" class="trip-primary">${getLang()==='fr'?'Tracer la route':'رسم المسار'}</button>`;
     routePlanner.classList.remove('hidden');
+    let routeOrder=0;
+    routePlanner.querySelectorAll<HTMLInputElement>('[data-route-point]').forEach(input=>input.addEventListener('change',()=>{
+      if(input.checked){routeOrder+=1;input.dataset.order=String(routeOrder);} else {delete input.dataset.order;}
+    }));
     routePlanner.querySelector('#route-build')?.addEventListener('click',()=>{const selected=Array.from(routePlanner.querySelectorAll<HTMLInputElement>('[data-route-point]:checked')).sort((a,b)=>Number(a.dataset.order||9999)-Number(b.dataset.order||9999)).map(x=>points.find(p=>p.id===x.value)).filter(Boolean) as FishingWaypoint[];if(selected.length<2){window.alert(getLang()==='fr'?'Choisissez au moins deux points.':'اختر نقطتين على الأقل.');return;}drawWaypointRoute(selected);routePlanner.classList.add('hidden');tripPanel.classList.add('hidden');});
   };
   routePlannerOpen.addEventListener('click',openRoutePlanner);
