@@ -1,4 +1,5 @@
 import maplibregl from 'maplibre-gl';
+import * as SunCalc from 'suncalc';
 import { MarineService, type HourlyKayakPoint, type WeeklySeaSummary, type WeatherModelComparisonDay } from '../marine/MarineService';
 import { GeocodingService, reverseCoastalName } from '../location/GeocodingService';
 import { createMap } from '../map/createMap';
@@ -202,6 +203,11 @@ const FR_KI: Record<string,string> = {
   'القرار':'Décision',
 };
 const FR_EXTRA: Record<string,string> = {
+  "شروق القمر":"Lever de lune",
+  "غروب القمر":"Coucher de lune",
+  "توقع مد وجزر من محطة مرجعية":"Prévision des marées depuis une station de référence",
+  "تقدير نموذج مستوى البحر":"Estimation du modèle du niveau de la mer",
+
   "ارتفاع الـSwell": "Hauteur du swell",
   "فترة الـSwell": "Période du swell",
   "التفسير": "Analyse",
@@ -419,16 +425,15 @@ const FR_EXTRA: Record<string,string> = {
   "<b>لم يتم حفظ الرحلة</b><span>نحتاج إلى نقطتين GPS على الأقل لتكوين مسار.</span>":"<b>Sortie non enregistrée</b><span>Au moins deux points GPS sont nécessaires pour créer une trace.</span>","<b>تعذر الوصول إلى GPS</b><span>فعّل الموقع الدقيق واسمح للتطبيق بالوصول إلى موقعك.</span>":"<b>Accès GPS impossible</b><span>Activez la localisation précise et autorisez l’application à accéder à votre position.</span>",
 };
 const t = (ar: string) => getLang() === 'fr' ? (FR_KI[ar] ?? FR[ar] ?? FR_EXTRA[ar] ?? ar) : ar;
-const moonInfo = (date=new Date()) => {
-  const synodic = 29.530588853;
-  const knownNewMoon = Date.UTC(2000,0,6,18,14);
-  let age = ((date.getTime()-knownNewMoon)/86400000)%synodic;
-  if (age < 0) age += synodic;
-  const illumination = Math.round((1-Math.cos(2*Math.PI*age/synodic))/2*100);
-  const phase = age < 1.85 ? 'قمر جديد' : age < 7.38 ? 'هلال متزايد' : age < 11.07 ? 'التربيع الأول' : age < 14.77 ? 'أحدب متزايد' : age < 16.61 ? 'بدر' : age < 22.15 ? 'أحدب متناقص' : age < 25.84 ? 'التربيع الأخير' : age < 29.53 ? 'هلال متناقص' : 'قمر جديد';
+const moonInfo = (date=new Date(), latitude=35.8, longitude=10.7) => {
+  const illumination = SunCalc.getMoonIllumination(date);
+  const names = ['قمر جديد','هلال متزايد','التربيع الأول','أحدب متزايد','بدر','أحدب متناقص','التربيع الأخير','هلال متناقص'];
   const symbols = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
-  const symbol = symbols[Math.round(age/synodic*8)%8];
-  return {age,illumination,phase,symbol};
+  const index = Math.round(illumination.phase * 8) % 8;
+  const offsetMinutes = -date.getTimezoneOffset();
+  const times = SunCalc.getMoonTimes(date, latitude, longitude, offsetMinutes);
+  const iso = (d: Date|undefined) => d instanceof Date && Number.isFinite(d.getTime()) ? d.toISOString() : null;
+  return {phase:names[index],symbol:symbols[index],illumination:Math.round(illumination.fraction*100),waxing:illumination.waxing,rise:iso(times.rise),set:iso(times.set),transit:iso(times.transit)};
 };
 
 const translateReason = (reason: string) => {
@@ -488,8 +493,8 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
     <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الأيام القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t('جاري حساب توقعات الأسبوع…')}</div></div></section>
     <section class="dashboard-bottom-cards">
       <article class="dashboard-mini-card dashboard-fishing-window"><b>🎣 ${t('أفضل ساعات الصيد')}</b><div class="mini-window"><span>${t('جاري الحساب…')}</span></div></article>
-      <article class="dashboard-mini-card dashboard-tide-card"><b>🌊 ${t('المد والجزر')}</b><div class="tide-placeholder" id="dashboard-tide-content"><strong>…</strong><small>${t('جاري جلب بيانات المد والجزر…')}</small></div></article>
-      <article class="dashboard-mini-card dashboard-sun"><b>🌙 ${t('القمر')}</b><div class="moon-row"><span class="moon-symbol">${moonInfo().symbol}</span><span><strong>${t(moonInfo().phase)}</strong><small>${moonInfo().illumination}% ${t('إضاءة')}</small></span></div><div class="sun-times"><span>🌅 ${t('الشروق')} <b>${data.weather.sunrise ? new Date(data.weather.sunrise).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span><span>🌇 ${t('الغروب')} <b>${data.weather.sunset ? new Date(data.weather.sunset).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span></div></article>
+      <article class="dashboard-mini-card dashboard-tide-card"><b>🌊 ${t('المد والجزر')}</b><div class="tide-placeholder" id="dashboard-tide-content"><strong>…</strong><small>${t('جاري جلب بيانات المد والجزر…')}</small><div class="moon-times"><span>🌙 ${t('شروق القمر')} <b>${moonInfo(new Date(),data.latitude,data.longitude).rise ? new Date(moonInfo(new Date(),data.latitude,data.longitude).rise!).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span><span>🌘 ${t('غروب القمر')} <b>${moonInfo(new Date(),data.latitude,data.longitude).set ? new Date(moonInfo(new Date(),data.latitude,data.longitude).set!).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span></div></div></article>
+      <article class="dashboard-mini-card dashboard-sun"><b>🌙 ${t('القمر')}</b><div class="moon-row"><span class="moon-symbol">${moonInfo(new Date(),data.latitude,data.longitude).symbol}</span><span><strong>${t(moonInfo(new Date(),data.latitude,data.longitude).phase)}</strong><small>${moonInfo(new Date(),data.latitude,data.longitude).illumination}% ${t('إضاءة')}</small></span></div><div class="sun-times"><span>🌅 ${t('الشروق')} <b>${data.weather.sunrise ? new Date(data.weather.sunrise).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span><span>🌇 ${t('الغروب')} <b>${data.weather.sunset ? new Date(data.weather.sunset).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}</b></span></div></article>
     </section>
     <div class="dashboard-actions"><button id="save-dashboard-point" type="button">📍 ${t('حفظ النقطة')}</button><button id="share-dashboard-coords" type="button">↗ ${t('مشاركة الإحداثيات')}</button><button id="dashboard-report-action" type="button">📄 ${t('تقرير تفصيلي')}</button><button id="dashboard-planner-action" type="button">🗓️ ${t('مخطط الصيد الذكي')}</button></div>
     <div class="dashboard-footer"><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small></div>
