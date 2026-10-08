@@ -254,7 +254,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
     <p class="coords">${ltr(formatGarminPair(data.latitude, data.longitude))}</p>
     <section class="dashboard-score">
       <div class="score-gauge" style="--score:${gauge * 3.6}deg"><div><strong>${overall}</strong><small>/100</small></div></div>
-      <div class="score-copy"><b>${translateLevel(overall)}</b><span>${t('ملاءمة عامة للتخطيط للصيد والكياك')}</span><small>${t('التقييم تخطيطي وليس شهادة سلامة. تحقق من التغيرات قبل الانطلاق.')}</small></div>
+      <div class="score-copy"><b>${translateLevel(overallLevel)}</b><span>${t('ملاءمة عامة للتخطيط للصيد والكياك')}</span><small>${t('التقييم تخطيطي وليس شهادة سلامة. تحقق من التغيرات قبل الانطلاق.')}</small></div>
     </section>
     <section class="dashboard-cards">
       <article class="dashboard-card"><span>🌤️ ${t('الطقس')}</span><strong>${weather.score}<small>/100</small></strong><em class="${badge(weather.level)}">${translateLevel(weather.level)}</em></article>
