@@ -1531,7 +1531,7 @@ export function createApp(root: HTMLElement) {
         });
       });
       const gps = {lat: position.coords.latitude, lng: position.coords.longitude};
-      selectedLocation = gps;
+      selectedLocation = {lat:gps.lat, lng:gps.lng, label:null};
       showTodayWeather(gps.lat, gps.lng);
     } catch {
       report.innerHTML = `<div class="report-head"><b>📍 ${getLang()==='fr'?'Position requise':'يلزم تحديد موقع'}</b><button id="close-report">×</button></div><p>${getLang()==='fr'?'Sélectionnez un point sur la carte ou activez le GPS.':'حدد نقطة على الخريطة أو فعّل GPS لعرض الطقس بدقة.'}</p>`;
