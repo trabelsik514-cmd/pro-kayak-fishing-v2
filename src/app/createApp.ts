@@ -221,18 +221,61 @@ function setDocumentLanguage() {
 }
 
 
-function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']>>, placeName: string|null) {
-  return `<div class="report-head"><b>${t('حالة البحر عند النقطة')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
-    <p class="report-place">📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</p><p class="coords">${ltr(formatGarminPair(data.latitude, data.longitude))}</p>
-    <div class="report-grid">
-      <span>🌊 ${t('ارتفاع الموج الآن')} <b>${value(data.sea.waveHeight,' m')}</b></span><span>🧭 ${t('اتجاه الموج')} <b>${value(data.sea.waveDirection,'°')}</b></span>
-      <span>📈 ${t('أقصى ارتفاع للموج اليوم')} <b>${value(data.sea.maxWaveHeightToday,' m')}</b></span>
-      <span>〰️ ${t('Swell')} <b>${value(data.sea.swellHeight,' m')}</b></span><span>📈 ${t('أقصى Swell اليوم')} <b>${value(data.sea.maxSwellHeightToday,' m')}</b></span><span>⏱️ ${t('فترة الموج')} <b>${value(data.sea.wavePeriod,' s')}</b></span>
-      <span>💨 ${t('الرياح')} <b>${value(data.weather.windSpeed,' km/h')}</b></span><span>💨 ${t('الهبات')} <b>${value(data.weather.windGusts,' km/h')}</b></span>
-      <span>🧭 ${t('اتجاه الرياح')} <b>${value(data.weather.windDirection,'°')}</b></span><span>🌡️ ${t('الهواء')} <b>${value(data.weather.temperature,' °C')}</b></span>
-      <span>🌊 ${t('حرارة البحر')} <b>${value(data.sea.seaTemperature,' °C')}</b></span><span>📈 ${t('الضغط')} <b>${value(data.weather.pressure,' hPa')}</b></span>
-      <span>🌊 ${t('التيار')} <b>${value(data.sea.currentVelocity,' km/h')}</b></span><span>🧭 ${t('اتجاه التيار')} <b>${directionValue(data.sea.currentDirection,data.sea.currentVelocity)}</b></span>
-    </div><small class="report-updated">${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small>`;
+function weatherDashboardScore(data: Awaited<ReturnType<MarineService['getPointConditions']>>) {
+  const penalty=(v:number|null,bands:Array<[number,number]>)=>{ if(v==null)return 0; for(const [limit,p] of bands) if(v>limit)return p; return 0; };
+  let p=0;
+  p+=penalty(data.weather.windSpeed,[[10,0],[15,8],[20,18],[25,35],[30,55],[Infinity,75]]);
+  p+=penalty(data.weather.windGusts,[[20,0],[25,6],[30,16],[35,28],[40,45],[Infinity,65]]);
+  if(data.weather.temperature!=null){
+    const temp=data.weather.temperature;
+    if(temp<8)p+=12; else if(temp<12)p+=5; else if(temp>36)p+=15; else if(temp>32)p+=7;
+  }
+  const score=Math.max(0,Math.min(100,Math.round(100-p)));
+  const level=score>=82?'ممتاز':score>=65?'جيد':score>=45?'حذر':'غير مناسب';
+  return {score,level};
+}
+
+function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']>>, placeName: string|null, kayakAssessment?: ReturnType<typeof assessKayakConditions>) {
+  const weather = weatherDashboardScore(data);
+  const seaPenalty =
+    (data.sea.waveHeight!=null ? (data.sea.waveHeight>1.2?45:data.sea.waveHeight>0.9?24:data.sea.waveHeight>0.6?10:0) : 0) +
+    (data.sea.wavePeriod!=null && data.sea.wavePeriod>=9 ? 8 : 0) +
+    (data.sea.swellHeight!=null ? (data.sea.swellHeight>1.0?28:data.sea.swellHeight>0.7?12:data.sea.swellHeight>0.4?5:0) : 0);
+  const seaScore=Math.max(0,Math.min(100,Math.round(100-seaPenalty)));
+  const seaLevel=seaScore>=82?'ممتاز':seaScore>=65?'جيد':seaScore>=45?'حذر':'غير مناسب';
+  const kayakScore=kayakAssessment?.score ?? Math.min(weather.score,seaScore);
+  const overall=Math.round((weather.score+seaScore+kayakScore)/3);
+  const overallLevel=overall>=82?'ممتاز':overall>=65?'جيد':overall>=45?'حذر':'غير مناسب';
+  const gauge=Math.max(0,Math.min(100,overall));
+  const badge=(level:string)=>level==='ممتاز'||level==='جيد'?'good':level==='حذر'?'caution':'danger';
+  return `<div class="report-dashboard">
+    <div class="report-head"><div><b>🐟 ${t('لوحة حالة البحر والصيد')}</b><small class="dashboard-date">${new Date(data.fetchedAt).toLocaleDateString(locale(),{weekday:'long',day:'2-digit',month:'long'})}</small></div><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
+    <p class="report-place">📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</p>
+    <p class="coords">${ltr(formatGarminPair(data.latitude, data.longitude))}</p>
+    <section class="dashboard-score">
+      <div class="score-gauge" style="--score:${gauge * 3.6}deg"><div><strong>${overall}</strong><small>/100</small></div></div>
+      <div class="score-copy"><b>${translateLevel(overall)}</b><span>${t('ملاءمة عامة للتخطيط للصيد والكياك')}</span><small>${t('التقييم تخطيطي وليس شهادة سلامة. تحقق من التغيرات قبل الانطلاق.')}</small></div>
+    </section>
+    <section class="dashboard-cards">
+      <article class="dashboard-card"><span>🌤️ ${t('الطقس')}</span><strong>${weather.score}<small>/100</small></strong><em class="${badge(weather.level)}">${translateLevel(weather.level)}</em></article>
+      <article class="dashboard-card"><span>🌊 ${t('البحر')}</span><strong>${seaScore}<small>/100</small></strong><em class="${badge(seaLevel)}">${translateLevel(seaLevel)}</em></article>
+      <article class="dashboard-card"><span>🛶 ${t('الكياك')}</span><strong>${kayakScore}<small>/100</small></strong><em class="${badge(kayakAssessment?.level ?? overallLevel)}">${translateLevel(kayakAssessment?.level ?? overallLevel)}</em></article>
+    </section>
+    <section class="dashboard-metrics">
+      <div><span>💨 ${t('الرياح')}</span><b>${value(data.weather.windSpeed,' km/h')}</b></div>
+      <div><span>💨 ${t('الهبات')}</span><b>${value(data.weather.windGusts,' km/h')}</b></div>
+      <div><span>🌊 ${t('ارتفاع الموج')}</span><b>${value(data.sea.waveHeight,' m')}</b></div>
+      <div><span>⏱️ ${t('فترة الموج')}</span><b>${value(data.sea.wavePeriod,' s')}</b></div>
+      <div><span>🧭 ${t('اتجاه الرياح')}</span><b>${directionValue(data.weather.windDirection,data.weather.windSpeed)}</b></div>
+      <div><span>🧭 ${t('اتجاه الموج')}</span><b>${value(data.sea.waveDirection,'°')}</b></div>
+      <div><span>🌡️ ${t('الهواء')}</span><b>${value(data.weather.temperature,' °C')}</b></div>
+      <div><span>📈 ${t('الضغط')}</span><b>${value(data.weather.pressure,' hPa')}</b></div>
+      <div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div>
+      <div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div>
+    </section>
+    <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الساعات القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-planning-slot"></div></section>
+    <div class="dashboard-footer"><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small></div>
+  </div>`;
 }
 
 export function createApp(root: HTMLElement) {
@@ -1485,16 +1528,15 @@ export function createApp(root: HTMLElement) {
         ${planningReasonsHtml}
         <small class="departure-note">${t('هذا تقييم تخطيطي للظروف البحرية والرياح، وليس شهادة سلامة. أعد التحقق من التوقعات قبل الانطلاق.')}</small>
       </section>`;
-      const reportBase = reportHtml(data,placeName)
-        .replace('<div class="report-grid">', departurePlanning + '<div class="report-grid">')
+      const reportBase = reportHtml(data,placeName,assessment)
+        .replace('<div class="dashboard-planning-slot"></div>', departurePlanning)
         + (
           data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
             ? `<div class="sea-wave-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
             : ''
         );
       const depthCard = `<div class="depth-card">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`;
-      const initialHtml = reportBase.replace('</div><small>', `</div>${depthCard}<small>`) +
-        `<hr><div class="kayak-assessment ${assessment.level}"><div class="kayak-assessment-head"><b>${t('ملاءمة ظروف الكياك')}</b><strong>${translateLevel(assessment.level)}</strong></div><div class="kayak-score"><span>${assessment.score}</span><small>/100</small></div><p>${escapeHtml(assessment.recommendation)}</p><ul>${assessment.reasons.map(reason=>`<li>${translateReason(reason)}</li>`).join('')}</ul><small>${t('تقييم تخطيطي مبني على بيانات الطقس والبحر المتاحة، وليس ضماناً لسلامة الرحلة.')}</small></div>`;
+      const initialHtml = reportBase.replace('</div><small>', `</div>${depthCard}<small>`);
       report.innerHTML = initialHtml;
       bindClose();
 
