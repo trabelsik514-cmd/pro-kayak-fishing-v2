@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "check": "tsc -b --noEmit",
-    "android:build": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug"
+    "android:build": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "audit": "npm audit --audit-level=high"
   },
   "dependencies": {
     "maplibre-gl": "^5.0.0",
