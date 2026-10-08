@@ -1502,6 +1502,10 @@ export function createApp(root: HTMLElement) {
       if (bestWindowHtml) {
         const dailySlot = report.querySelector('.dashboard-daily-slot');
         if (dailySlot) dailySlot.insertAdjacentHTML('afterend', bestWindowHtml);
+        const mini = report.querySelector<HTMLElement>('.mini-window');
+        if (mini && bestPlanningWindow) {
+          mini.innerHTML = `<b>${new Date(bestPlanningWindow.start).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})} → ${new Date(bestPlanningWindow.end).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})}</b><span class="mini-score">${bestPlanningWindow.score}/100</span><i style="width:${Math.max(0,Math.min(100,bestPlanningWindow.score))}%"></i>`;
+        }
       }
 
       // Daily forecast table: this replaces the old hourly strip in the dashboard.
