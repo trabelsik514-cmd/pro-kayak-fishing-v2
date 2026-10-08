@@ -10,6 +10,7 @@ import { initSeaNotifications, saveBackgroundLocation } from '../notifications/S
 import { getDeviceLocation, watchDeviceLocation, clearDeviceLocationWatch } from '../location/DeviceLocationService';
 import { loadWaypoints, saveWaypoint, deleteWaypoint, type FishingWaypoint, type WaypointCategory } from '../waypoints/WaypointStore';
 import { getCoastDistance } from '../coastline/CoastDistanceService';
+import { getFishingIntelligence } from '../fishing/FishingIntelligence';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -193,7 +194,16 @@ const FR: Record<string,string> = {
   'الظروف تبدو ملائمة للكياك وفق البيانات المتاحة. راقب تغير الرياح والموج قبل الانطلاق.':'Les conditions semblent adaptées au kayak selon les données disponibles. Surveillez l’évolution du vent et des vagues avant de partir.',
   'الظروف قد تكون مناسبة، لكن راقب الرياح والهبات والموج وأعد التحقق قبل الانطلاق.':'Les conditions peuvent être favorables, mais surveillez le vent, les rafales et les vagues avant le départ.',
   'ينصح بالحذر. افحص تغير الظروف واختَر مساراً قريباً من الشاطئ إذا قررت الخروج.':'La prudence est recommandée. Vérifiez l’évolution des conditions et restez près de la côte si vous sortez.',
-  'الظروف الحالية غير ملائمة للكياك وفق البيانات المتاحة. يفضّل تأجيل الرحلة وإعادة التحقق لاحقاً.':'Les conditions actuelles sont défavorables au kayak selon les données disponibles. Il est préférable de reporter la sortie et de vérifier plus tard.'
+  'الظروف الحالية غير ملائمة للكياك وفق البيانات المتاحة. يفضّل تأجيل الرحلة وإعادة التحقق لاحقاً.':'Les conditions actuelles sont défavorables au kayak selon les données disponibles. Il est préférable de reporter la sortie et de vérifier plus tard.'  'جاري تحليل الإشارة البيئية…':'Analyse du signal environnemental…',
+  'تعذر تحليل الإشارة البيئية حالياً':'Analyse du signal environnemental indisponible',
+  'ذكاء البيئة البحرية':'Intelligence environnementale marine',
+  'Chlorophyll + Thermal Front + حالة البحر':'Chlorophylle + front thermique + état de la mer',
+  'الكلوروفيل-a':'Chlorophylle-a',
+  'قوة الجبهة الحرارية':'Force du front thermique',
+  'اتجاه الجبهة':'Direction du front',
+  'مستوى الكلوروفيل':'Niveau de chlorophylle',
+  'مرتفع':'Élevé',
+
 };
 
 const FR_KI: Record<string,string> = {
@@ -490,6 +500,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
       <div><span>💨 ${t('الرياح')}</span><b>${value(data.weather.windSpeed,' km/h')}</b></div><div><span>🌬️ ${t('الهبات')}</span><b>${value(data.weather.windGusts,' km/h')}</b></div><div><span>🌊 ${t('ارتفاع الموج')}</span><b>${value(data.sea.waveHeight,' m')}</b></div><div><span>⏱️ ${t('فترة الموج')}</span><b>${value(data.sea.wavePeriod,' s')}</b></div><div><span>🧭 ${t('اتجاه الرياح')}</span><b>${directionValue(data.weather.windDirection,data.weather.windSpeed)}</b></div>
       <div><span>🧭 ${t('اتجاه الموج')}</span><b>${value(data.sea.waveDirection,'°')}</b></div><div><span>🌡️ ${t('الهواء')}</span><b>${value(data.weather.temperature,' °C')}</b></div><div><span>📈 ${t('الضغط')}</span><b>${value(data.weather.pressure,' hPa')}</b></div><div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div><div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div>
     </section>
+    <section class="dashboard-fishing-intelligence-slot"><div class="fishing-intelligence-loading">🎣 ${t('جاري تحليل الإشارة البيئية…')}</div></section>
     <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الأيام القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t('جاري حساب توقعات الأسبوع…')}</div></div></section>
     <section class="dashboard-bottom-cards">
       <article class="dashboard-mini-card dashboard-fishing-window"><b>🎣 ${t('أفضل ساعات الصيد')}</b><div class="mini-window"><span>${t('جاري الحساب…')}</span></div></article>
@@ -1712,6 +1723,35 @@ export function createApp(root: HTMLElement) {
       // Open every newly selected point at the top of the dashboard.
       report.scrollTop = 0;
       bindClose();
+
+      // Phase 2: environmental fishing intelligence. Optional and non-blocking.
+      void (async () => {
+        try {
+          const intelligence = await getFishingIntelligence(lat,lng,{
+            windSpeed:data.weather.windSpeed,
+            waveHeight:data.sea.waveHeight,
+            seaTemperature:data.sea.seaTemperature
+          });
+          if (!isCurrent()) return;
+          const slot = report.querySelector<HTMLElement>('.dashboard-fishing-intelligence-slot');
+          if (!slot) return;
+          const cls=(level:string)=>level==='ممتاز'?'excellent':level==='جيد'?'good':level==='متوسط'?'caution':'danger';
+          const score=intelligence.score==null?'—':String(intelligence.score);
+          const frontDir=intelligence.frontDirection==null?'—':String(intelligence.frontDirection.toFixed(0))+'°';
+          slot.innerHTML='<div class="fishing-intelligence-head"><div><b>🧬 '+t('ذكاء البيئة البحرية')+'</b><small>'+t('Chlorophyll + Thermal Front + حالة البحر')+'</small></div><strong class="'+(intelligence.score==null?'neutral':cls(intelligence.level))+'">'+score+'<small>/100</small></strong></div>'
+            +'<div class="fishing-intelligence-grid">'
+            +'<div><span>🟢 '+t('الكلوروفيل-a')+'</span><b>'+value(intelligence.chlorophyll,' mg/m³')+'</b></div>'
+            +'<div><span>🌡️ '+t('قوة الجبهة الحرارية')+'</span><b>'+value(intelligence.frontStrength,' °C')+'</b></div>'
+            +'<div><span>🧭 '+t('اتجاه الجبهة')+'</span><b>'+frontDir+'</b></div>'
+            +'<div><span>📡 '+t('مستوى الكلوروفيل')+'</span><b>'+t(intelligence.chlorophyllLevel)+'</b></div>'
+            +'</div><p class="fishing-intelligence-note">'+t(intelligence.note)+'</p>'
+            +'<small class="fishing-intelligence-source">'+t('المصدر:')+' Open-Meteo Marine + NOAA CoastWatch</small>';
+        } catch {
+          if (!isCurrent()) return;
+          const slot=report.querySelector<HTMLElement>('.dashboard-fishing-intelligence-slot');
+          if (slot) slot.innerHTML='<div class="fishing-intelligence-error">🎣 '+t('تعذر تحليل الإشارة البيئية حالياً')+'</div>';
+        }
+      })();
 
       report.querySelector<HTMLButtonElement>('#save-dashboard-point')?.addEventListener('click', () => {
         try {
