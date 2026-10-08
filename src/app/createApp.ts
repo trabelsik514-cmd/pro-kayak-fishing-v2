@@ -1800,13 +1800,15 @@ export function createApp(root: HTMLElement) {
         const slot=report.querySelector<HTMLElement>('.dashboard-advisor-slot');
         if(!slot) return;
         try {
-          const depthResult=await getBathymetryDepth(map,lng,lat);
-          if(!isCurrent()) return;
-          const intelligence=await getFishingIntelligence(lat,lng,{
-            windSpeed:data.weather.windSpeed,
-            waveHeight:data.sea.waveHeight,
-            seaTemperature:data.sea.seaTemperature
-          }).catch(()=>null);
+          const [depthResult, intelligence, hourlyAdvisor] = await Promise.all([
+            getBathymetryDepth(map,lng,lat).catch(()=>null),
+            getFishingIntelligence(lat,lng,{
+              windSpeed:data.weather.windSpeed,
+              waveHeight:data.sea.waveHeight,
+              seaTemperature:data.sea.seaTemperature
+            }).catch(()=>null),
+            marine.getHourlyKayakForecast(lat,lng).catch(()=>[])
+          ]);
           if(!isCurrent()) return;
           const species=rankSpecies({
             seaTemperature:data.sea.seaTemperature,
@@ -1816,7 +1818,7 @@ export function createApp(root: HTMLElement) {
             chlorophyll:intelligence?.chlorophyll ?? null,
             waveHeight:data.sea.waveHeight
           }).slice(0,4);
-          const windows=rankFishingWindows(hourlyForecast.slice(0,24).map(p=>({
+          const windows=rankFishingWindows(hourlyAdvisor.slice(0,24).map(p=>({
             time:p.time,windSpeed:p.windSpeed,windGusts:p.windGusts,waveHeight:p.waveHeight,
             wavePeriod:p.wavePeriod,currentVelocity:p.currentVelocity
           })));
@@ -1825,7 +1827,7 @@ export function createApp(root: HTMLElement) {
             chlorophyll:intelligence?.chlorophyllAvailable===true,
             depth:depthResult!=null,
             current:data.sea.currentVelocity!=null,
-            hourly:hourlyForecast.length>=6,
+            hourly:hourlyAdvisor.length>=6,
             weatherModels:false
           });
           const profile=tunisianProfile(lat,lng);
