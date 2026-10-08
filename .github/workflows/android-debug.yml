@@ -62,3 +62,5 @@ jobs:
           if-no-files-found: error
 
 # APK artifact upload is required for every Android build.
+
+# APK build trigger: 2026-10-08T21:30Z
