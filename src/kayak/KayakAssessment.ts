@@ -5,7 +5,7 @@ const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const penalty=(v:number|null,bands:Array<[number,number]>):number=>{ if(v==null)return 0; for(const [limit,p] of bands)if(v>limit)return p; return 0; };
 const weightedPenalty=(v:number|null,bands:Array<[number,number]>,weight=1)=>penalty(v,bands)*weight;
 /** Conservative suitability model for fishing kayaks. Planning aid, not a safety certification. */
-export function assessKayakConditions(data:{windSpeed:number|null;windGusts:number|null;windDirection?:number|null;waveHeight:number|null;waveDirection?:number|null;wavePeriod:number|null;swellHeight?:number|null;swellDirection?:number|null;swellPeriod?:number|null;currentVelocity?:number|null;precipitation?:number|null;}):KayakAssessment{
+export function assessKayakConditions(data:{windSpeed:number|null;windGusts:number|null;windDirection?:number|null;waveHeight:number|null;waveDirection?:number|null;wavePeriod:number|null;swellHeight?:number|null;swellDirection?:number|null;swellPeriod?:number|null;currentVelocity?:number|null;}):KayakAssessment{
  const reasons:string[]=[]; const missing:string[]=[]; const risks:number[]=[];
  if(data.windSpeed==null)missing.push('الرياح'); else { const p=penalty(data.windSpeed,[[10,0],[15,8],[20,20],[25,38],[30,60],[Infinity,80]]); if(p)risks.push(p); if(data.windSpeed>25)reasons.push('الرياح قوية للكياك'); else if(data.windSpeed>20)reasons.push('الرياح مرتفعة وتحتاج حذراً'); else if(data.windSpeed>15)reasons.push('الرياح متوسطة إلى مرتفعة'); }
  if(data.windGusts==null)missing.push('الهبات'); else { const p=penalty(data.windGusts,[[20,0],[25,8],[30,20],[35,38],[40,60],[Infinity,82]]); if(p)risks.push(p); if(data.windGusts>35)reasons.push('الهبات قوية وقد تؤثر على التحكم بالكياك'); else if(data.windGusts>30)reasons.push('الهبات مرتفعة'); }
@@ -19,7 +19,6 @@ if(data.swellPeriod!=null&&data.swellHeight!=null){
   else if(data.swellPeriod>=9&&data.swellHeight>0.6){risks.push(5);reasons.push('فترة الـSwell طويلة نسبياً');}
 }
  if(data.swellHeight==null)missing.push('Swell'); else { const p=penalty(data.swellHeight,[[0.4,0],[0.7,7],[1.0,18],[1.4,35],[1.8,55],[Infinity,75]]); if(p)risks.push(p); if(data.swellHeight>1.0)reasons.push('الـSwell مرتفع'); }
- if(data.precipitation!=null){ const p=penalty(data.precipitation,[[0.2,0],[1,5],[3,12],[7,22],[Infinity,35]]); if(p)risks.push(p); if(data.precipitation>3)reasons.push('الأمطار قد تقلل الرؤية وراحة الرحلة'); }
  if(data.currentVelocity!=null){ const p=weightedPenalty(data.currentVelocity,[[0.5,0],[1.0,4],[1.5,10],[2.0,20],[Infinity,32]],0.65); if(p)risks.push(p); if(data.currentVelocity>1.5)reasons.push('التيار مرتفع نسبياً'); }
  const combined=Math.min(92,risks.reduce((sum,p)=>sum+p,0)*0.72);
  const strongest=risks.length?Math.max(...risks):0;
