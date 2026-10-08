@@ -1,4 +1,5 @@
 import maplibregl from 'maplibre-gl';
+import { fetchApi } from '../services/ApiClient';
 
 export type BathymetryResult = {
   depthMeters: number;
@@ -11,7 +12,7 @@ export type BathymetryResult = {
 // Calling /api/bathymetry there makes Vite treat api/bathymetry.ts as a client
 // module and can produce an esbuild loader error. Production on Vercel keeps
 // using the real serverless endpoint.
-const CLIENT_API = import.meta.env.PROD ? '/api/bathymetry' : null;
+const CLIENT_API = '/api/bathymetry';
 
 type BathymetryApiResponse = {
   depthMeters?: number | null;
@@ -34,11 +35,7 @@ export async function getBathymetryDepth(
 
   try {
     const params = new URLSearchParams({ lat: lat.toFixed(6), lng: lng.toFixed(6) });
-    const res = await fetch(`${CLIENT_API}?${params.toString()}`, {
-      signal: controller.signal,
-      headers: { Accept: 'application/json' },
-      cache: 'no-store'
-    });
+    const res = await fetchApi(`${CLIENT_API}?${params.toString()}`, { cache: 'no-store' }, 13000);
 
     if (!res.ok) return null;
     const data = await res.json() as BathymetryApiResponse;
