@@ -213,9 +213,6 @@ const FR: Record<string,string> = {
   'الدرجات مؤشرات تحليلية وليست احتمالاً للصيد أو ضماناً للسلامة.':'Les scores sont des indicateurs analytiques, pas une probabilité de capture ni une garantie de sécurité.',
   'المصادر:':'Sources :',
   'تعذر بناء التحليل المتقدم حالياً':'Analyse avancée indisponible pour le moment',
-  'العمق':'Profondeur',
-  'التيار':'Courant',
-  'مقارنة النماذج':'Comparaison des modèles',
   'إشارة بيئية':'Signal environnemental',
 
 };
