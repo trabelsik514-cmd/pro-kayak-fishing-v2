@@ -2171,3 +2171,29 @@
 /* Enhanced moon/tide details */
 .moon-times{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}.moon-times span{display:flex;flex-direction:column;gap:2px;font-size:9px;opacity:.78}.moon-times b{direction:ltr;font-size:11px}.tide-source-note{display:block;width:100%;margin-top:5px;font-size:8px;opacity:.45;line-height:1.3}
 @media(max-width:390px){.moon-times{grid-template-columns:1fr}}
+
+/* Phase 2 — environmental fishing intelligence */
+.dashboard-fishing-intelligence-slot{
+  margin-top:9px;
+  padding:10px;
+  border:1px solid rgba(90,210,255,.14);
+  border-radius:14px;
+  background:linear-gradient(135deg,rgba(7,31,46,.92),rgba(4,19,29,.94));
+}
+.fishing-intelligence-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fishing-intelligence-head>div{display:grid;gap:3px}
+.fishing-intelligence-head b{font-size:14px}
+.fishing-intelligence-head small{font-size:9px;opacity:.5}
+.fishing-intelligence-head>strong{min-width:62px;padding:7px 9px;border-radius:11px;text-align:center;font-size:19px;background:rgba(255,255,255,.06);direction:ltr}
+.fishing-intelligence-head>strong small{display:inline;font-size:9px;margin-left:2px}
+.fishing-intelligence-head>strong.excellent,.fishing-intelligence-head>strong.good{background:rgba(22,197,94,.13)}
+.fishing-intelligence-head>strong.caution{background:rgba(234,179,8,.13)}
+.fishing-intelligence-head>strong.danger{background:rgba(220,38,38,.13)}
+.fishing-intelligence-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:9px}
+.fishing-intelligence-grid>div{display:flex;justify-content:space-between;gap:7px;padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);font-size:10px}
+.fishing-intelligence-grid span{opacity:.62}
+.fishing-intelligence-grid b{direction:ltr;white-space:nowrap}
+.fishing-intelligence-note{margin:8px 1px 3px;font-size:10px;line-height:1.5;opacity:.72}
+.fishing-intelligence-source{font-size:8px;opacity:.42}
+.fishing-intelligence-loading,.fishing-intelligence-error{font-size:10px;opacity:.6}
+@media(max-width:390px){.fishing-intelligence-grid{grid-template-columns:1fr}}
