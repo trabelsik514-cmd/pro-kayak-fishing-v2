@@ -1508,12 +1508,30 @@ export function createApp(root: HTMLElement) {
     showWeeklySea(target.lat,target.lng);
   });
 
-  document.querySelector('#today-sea')?.addEventListener('click', () => {
+  document.querySelector('#today-sea')?.addEventListener('click', async () => {
+    // Weather must always follow the explicitly selected point. If there is no
+    // selected point, use GPS rather than silently falling back to map center.
     const markerPoint = marker?.getLngLat();
     const target = selectedLocation
-      ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null)
-      ?? (() => { const center = map.getCenter(); return {lat:center.lat, lng:center.lng}; })();
-    showTodayWeather(target.lat, target.lng);
+      ?? (markerPoint ? {lat: markerPoint.lat, lng: markerPoint.lng} : null);
+    if (target) {
+      showTodayWeather(target.lat, target.lng);
+      return;
+    }
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error('Geolocation unavailable'));
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true, timeout: 10000, maximumAge: 300000
+        });
+      });
+      const gps = {lat: position.coords.latitude, lng: position.coords.longitude};
+      selectedLocation = gps;
+      showTodayWeather(gps.lat, gps.lng);
+    } catch {
+      report.innerHTML = `<div class="report-head"><b>📍 ${getLang()==='fr'?'Position requise':'يلزم تحديد موقع'}</b><button id="close-report">×</button></div><p>${getLang()==='fr'?'Sélectionnez un point sur la carte ou activez le GPS.':'حدد نقطة على الخريطة أو فعّل GPS لعرض الطقس بدقة.'}</p>`;
+      document.querySelector('#close-report')?.addEventListener('click', closeReport);
+    }
   });
 
   map.on('click',event=>{
