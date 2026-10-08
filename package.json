@@ -19,7 +19,8 @@
     "@capacitor/core": "^7.4.3",
     "@capacitor/local-notifications": "^7.0.7",
     "@capacitor/background-runner": "^2.1.0",
-    "@capacitor/geolocation": "^7.1.0"
+    "@capacitor/geolocation": "^7.1.0",
+    "suncalc": "^2.0.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
