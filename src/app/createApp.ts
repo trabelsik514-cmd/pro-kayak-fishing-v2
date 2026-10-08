@@ -312,10 +312,10 @@ export function createApp(root: HTMLElement) {
         </label>
         <div class="coordinate-grid">
           <label>${getLang()==='fr'?'Latitude':'خط العرض'}
-            <input id="coordinate-point-lat" required inputmode="decimal" type="number" step="any" min="-90" max="90" placeholder="36.85">
+            <input id="coordinate-point-lat" required inputmode="decimal" type="text" autocomplete="off" placeholder="N 36°55.510 أو 36.9251667">
           </label>
           <label>${getLang()==='fr'?'Longitude':'خط الطول'}
-            <input id="coordinate-point-lng" required inputmode="decimal" type="number" step="any" min="-180" max="180" placeholder="10.32">
+            <input id="coordinate-point-lng" required inputmode="decimal" type="text" autocomplete="off" placeholder="E 010°42.65 أو 10.7108333">
           </label>
         </div>
         <label>${getLang()==='fr'?'Type':'النوع'}
@@ -661,6 +661,53 @@ export function createApp(root: HTMLElement) {
   document.querySelector<HTMLButtonElement>('#pkf-nav-fish')?.addEventListener('click', () => {
     savedWaypointsPanel?.classList.add('hidden'); document.querySelector<HTMLButtonElement>('#kayak-intelligence-toggle')?.click(); setBottomNav('fish');
   });
+  // Coordinate parser: accepts decimal, DDM (N 36°55.510), DMS, and pasted lat/lng pairs.
+  const parseCoordinate = (raw:string, axis:'lat'|'lng'): number | null => {
+    let s = raw.trim().replace(/[，,;]/g, ' ').replace(/[−–—]/g, '-');
+    if (!s) return null;
+    const hemi = (s.match(/[NSEW]/i)?.[0] || '').toUpperCase();
+    const nums = (s.match(/-?\\d+(?:[.,]\\d+)?/g) || []).map(v => Number(v.replace(',', '.')));
+    if (!nums.length) return null;
+    const sign = hemi === 'S' || hemi === 'W' ? -1 : 1;
+    let value:number;
+    if (nums.length >= 3) {
+      value = Math.abs(nums[0]) + nums[1] / 60 + nums[2] / 3600;
+    } else if (nums.length >= 2 && /[°'′]/.test(s)) {
+      value = Math.abs(nums[0]) + nums[1] / 60;
+    } else {
+      value = nums[0];
+    }
+    if (nums[0] < 0 && !hemi) value = -Math.abs(value);
+    else value *= sign;
+    const max = axis === 'lat' ? 90 : 180;
+    return Number.isFinite(value) && Math.abs(value) <= max ? value : null;
+  };
+  const parseCoordinatePair = (raw:string): {lat:number;lng:number} | null => {
+    const s = raw.trim().replace(/[−–—]/g, '-');
+    const latMatch = s.match(/([NS])\\s*[-+]?\\d+(?:[°º]\\s*\\d+(?:[.,]\\d+)?(?:[′']\\s*\\d+(?:[.,]\\d+)?)?|[.,]\\d+)?)/i);
+    const lngMatch = s.match(/([EW])\\s*[-+]?\\d+(?:[°º]\\s*\\d+(?:[.,]\\d+)?(?:[′']\\s*\\d+(?:[.,]\\d+)?)?|[.,]\\d+)?)/i);
+    if (latMatch && lngMatch) {
+      const lat = parseCoordinate(latMatch[0], 'lat');
+      const lng = parseCoordinate(lngMatch[0], 'lng');
+      if (lat != null && lng != null) return {lat,lng};
+    }
+    const nums = s.match(/-?\\d+(?:[.,]\\d+)?/g)?.map(v=>Number(v.replace(',','.'))) || [];
+    if (nums.length === 2 && nums[0] >= 30 && nums[0] <= 38.6 && nums[1] >= 7 && nums[1] <= 12.2) {
+      return {lat:nums[0],lng:nums[1]};
+    }
+    return null;
+  };
+  const coordinateLatInput = document.querySelector<HTMLInputElement>('#coordinate-point-lat')!;
+  const coordinateLngInput = document.querySelector<HTMLInputElement>('#coordinate-point-lng')!;
+  coordinateLatInput.addEventListener('paste', ev => {
+    const pasted = ev.clipboardData?.getData('text') || '';
+    const pair = parseCoordinatePair(pasted);
+    if (pair) {
+      ev.preventDefault();
+      coordinateLatInput.value = pair.lat.toFixed(7);
+      coordinateLngInput.value = pair.lng.toFixed(7);
+    }
+  });
   const coordinateWaypointModal = document.querySelector<HTMLElement>('#coordinate-waypoint-modal')!;
   const coordinateError = document.querySelector<HTMLElement>('#coordinate-point-error')!;
   const openCoordinateWaypoint = () => {
@@ -675,8 +722,11 @@ export function createApp(root: HTMLElement) {
   document.querySelector<HTMLFormElement>('#coordinate-waypoint-form')?.addEventListener('submit', ev => {
     ev.preventDefault();
     const name = document.querySelector<HTMLInputElement>('#coordinate-point-name')?.value.trim() || '';
-    const lat = Number(document.querySelector<HTMLInputElement>('#coordinate-point-lat')?.value);
-    const lng = Number(document.querySelector<HTMLInputElement>('#coordinate-point-lng')?.value);
+    const latRaw = document.querySelector<HTMLInputElement>('#coordinate-point-lat')?.value || '';
+    const lngRaw = document.querySelector<HTMLInputElement>('#coordinate-point-lng')?.value || '';
+    const pair = parseCoordinatePair(latRaw);
+    const lat = pair?.lat ?? parseCoordinate(latRaw, 'lat');
+    const lng = pair?.lng ?? parseCoordinate(lngRaw, 'lng');
     const category = document.querySelector<HTMLSelectElement>('#coordinate-point-category')?.value as WaypointCategory;
     const notes = document.querySelector<HTMLTextAreaElement>('#coordinate-point-notes')?.value.trim() || '';
     if (!name) { coordinateError.textContent = getLang()==='fr' ? 'Entrez un nom.' : 'أدخل اسم النقطة.'; return; }
