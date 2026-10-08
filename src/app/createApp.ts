@@ -666,32 +666,36 @@ export function createApp(root: HTMLElement) {
   const openCoordinateWaypoint = () => {
     coordinateError.textContent = '';
     coordinateWaypointModal.classList.remove('hidden');
-    document.querySelector<HTMLInputElement>('#coordinate-point-name')?.focus();
+    requestAnimationFrame(() => document.querySelector<HTMLInputElement>('#coordinate-point-name')?.focus());
   };
   const closeCoordinateWaypoint = () => coordinateWaypointModal.classList.add('hidden');
   document.querySelector<HTMLButtonElement>('#add-coordinate-waypoint')?.addEventListener('click', openCoordinateWaypoint);
   document.querySelector<HTMLButtonElement>('#close-coordinate-waypoint')?.addEventListener('click', closeCoordinateWaypoint);
-  coordinateWaypointModal.addEventListener('click', ev => { if (ev.target === coordinateWaypointModal) closeCoordinateWaypoint(); });
-  document.querySelector<HTMLButtonElement>('#save-coordinate-waypoint')?.addEventListener('click', () => {
+  coordinateWaypointModal.addEventListener('pointerdown', ev => { if (ev.target === coordinateWaypointModal) closeCoordinateWaypoint(); });
+  document.querySelector<HTMLFormElement>('#coordinate-waypoint-form')?.addEventListener('submit', ev => {
+    ev.preventDefault();
     const name = document.querySelector<HTMLInputElement>('#coordinate-point-name')?.value.trim() || '';
     const lat = Number(document.querySelector<HTMLInputElement>('#coordinate-point-lat')?.value);
     const lng = Number(document.querySelector<HTMLInputElement>('#coordinate-point-lng')?.value);
     const category = document.querySelector<HTMLSelectElement>('#coordinate-point-category')?.value as WaypointCategory;
     const notes = document.querySelector<HTMLTextAreaElement>('#coordinate-point-notes')?.value.trim() || '';
     if (!name) { coordinateError.textContent = getLang()==='fr' ? 'Entrez un nom.' : 'أدخل اسم النقطة.'; return; }
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
-      coordinateError.textContent = getLang()==='fr' ? 'Coordonnées invalides. Latitude: -90 à 90, Longitude: -180 à 180.' : 'الإحداثيات غير صحيحة. خط العرض من -90 إلى 90 وخط الطول من -180 إلى 180.';
+    if (!Number.isFinite(lat) || lat < 30 || lat > 38.6 || !Number.isFinite(lng) || lng < 7 || lng > 12.2) {
+      coordinateError.textContent = getLang()==='fr' ? 'Coordonnées hors de la zone tunisienne. Vérifiez latitude et longitude.' : 'الإحداثيات خارج نطاق تونس. تحقق من خط العرض والطول.';
       return;
     }
-    const wp = saveWaypoint({lat, lng, name, category: ['fish','anchor','rock','danger','nav','kayak','personal'].includes(category) ? category : 'personal', notes});
+    const safeCategory:WaypointCategory = ['fish','anchor','rock','danger','nav','kayak','personal'].includes(category) ? category : 'personal';
+    const wp = saveWaypoint({lat, lng, name, category:safeCategory, notes});
     renderWaypointMarker(wp);
     renderSavedWaypoints();
-    void selectPoint(lat, lng, name);
     closeCoordinateWaypoint();
     savedWaypointsPanel.classList.add('hidden');
     setBottomNav('map');
+    map.flyTo({center:[lng,lat],zoom:Math.max(map.getZoom(),13),essential:true});
+    void selectPoint(lat, lng, name);
     showWaypointPopup(wp);
   });
+
   const savedWaypointsPanel = document.querySelector<HTMLElement>('#saved-waypoints-panel')!;
   const savedWaypointsList = document.querySelector<HTMLElement>('#saved-waypoints-list')!;
   const renderSavedWaypoints = () => {
