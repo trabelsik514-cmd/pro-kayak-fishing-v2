@@ -19,6 +19,10 @@ async function fetchJson(url:string,signal:AbortSignal){
   try{return await r.json()}catch{return null}
 }
 export default async function handler(req:any,res:any){
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Accept, Content-Type');
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({error:'Method not allowed'});}
   const lat=finite(req.query?.lat),lng=finite(req.query?.lng);
   if(lat===null||lng===null||lat<15||lat>90||lng<-36||lng>43)return res.status(400).json({error:'Invalid coordinates'});
