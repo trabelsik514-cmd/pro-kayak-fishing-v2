@@ -1321,8 +1321,13 @@ export function createApp(root: HTMLElement) {
         return dirs[Math.round(deg/45)%8];
       };
       const time = (v:string|null) => v ? v.slice(11,16) : '—';
+      const placeName = await reverseCoastalName(lat,lng,getLang()).catch(() => null);
       report.innerHTML = `
         <div class="report-head"><b>🌤️ ${t('حالة الطقس اليوم')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
+        <section class="weather-location-banner">
+          <b>📍 ${placeName || (getLang()==='fr' ? 'Point sélectionné' : 'النقطة المحددة')}</b>
+          <small dir="ltr">${lat.toFixed(5)}, ${lng.toFixed(5)}</small>
+        </section>
         <section class="sea-overview weather-overview">
           <div><span>🌡️ ${t('الحرارة')}</span><b>${value(d.temperatureMin,' °C')} – ${value(d.temperatureMax,' °C')}</b></div>
           <div><span>🌧️ ${t('احتمال الأمطار')}</span><b>${value(d.precipitationProbabilityMax,' %')}</b></div>
