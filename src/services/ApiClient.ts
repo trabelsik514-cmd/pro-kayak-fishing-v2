@@ -21,7 +21,7 @@ export async function fetchApi(path:string, init:RequestInit = {}, timeoutMs=120
     const timer=window.setTimeout(()=>controller.abort(),timeoutMs);
     try{
       const response=await fetch(url,{...init,signal:controller.signal,headers:{Accept:'application/json',...(init.headers ?? {})}});
-      if(response.ok || response.status===400 || response.status===404 || response.status===405) return response;
+      if(response.ok || response.status===400 || response.status===405) return response;
       lastError=new Error(`HTTP ${response.status}`);
     }catch(error){lastError=error}
     finally{window.clearTimeout(timer)}
