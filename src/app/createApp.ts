@@ -8,6 +8,7 @@ import { getBathymetryDepth } from '../bathymetry/BathymetryService';
 import { initSeaNotifications, saveBackgroundLocation } from '../notifications/SeaNotificationService';
 import { getDeviceLocation, watchDeviceLocation, clearDeviceLocationWatch } from '../location/DeviceLocationService';
 import { loadWaypoints, saveWaypoint, deleteWaypoint, type FishingWaypoint, type WaypointCategory } from '../waypoints/WaypointStore';
+import { getCoastDistance } from '../coastline/CoastDistanceService';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
