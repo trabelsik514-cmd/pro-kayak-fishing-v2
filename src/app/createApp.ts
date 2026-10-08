@@ -521,11 +521,11 @@ export function createApp(root: HTMLElement) {
   const showWaypointPopup = async (wp:FishingWaypoint) => {
     const popup = new maplibregl.Popup({offset:18,maxWidth:'320px'})
       .setLngLat([wp.lng,wp.lat])
-      .setHTML(`<div class="pkf-wp-popup" dir="${getLang()==='fr'?'ltr':'rtl'}"><div class="pkf-wp-title">${waypointIcon(wp.category)} ${wp.name}</div><div class="pkf-wp-type">${waypointLabel(wp.category)}</div><div class="pkf-wp-grid"><span>📍 ${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}</span>${wp.depth!=null ? `<span>〽️ ${wp.depth} m</span>` : ''}${wp.species ? `<span>🐟 ${wp.species}</span>` : ''}<span class="pkf-coast-loading">🏖️ ${getLang()==='fr'?'Distance au rivage: calcul...':'المسافة إلى الشاطئ: جارٍ الحساب...'}</span></div>${wp.notes ? `<div class="pkf-wp-notes">${wp.notes}</div>` : ''}<button class="pkf-wp-delete" data-wp-delete="${wp.id}" type="button">${getLang()==='fr'?'Supprimer':'حذف النقطة'}</button></div>`)
+      .setHTML(`<div class="pkf-wp-popup" dir="${getLang()==='fr'?'ltr':'rtl'}"><div class="pkf-wp-title">${waypointIcon(wp.category)} ${escapeHtml(wp.name)}</div><div class="pkf-wp-type">${escapeHtml(waypointLabel(wp.category))}</div><div class="pkf-wp-grid"><span>📍 ${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}</span>${wp.depth!=null ? `<span>〽️ ${wp.depth} m</span>` : ''}${wp.species ? `<span>🐟 ${escapeHtml(wp.species)}</span>` : ''}<span class="pkf-coast-loading">🏖️ ${getLang()==='fr'?'Distance au rivage: calcul...':'المسافة إلى الشاطئ: جارٍ الحساب...'}</span></div>${wp.notes ? `<div class="pkf-wp-notes">${escapeHtml(wp.notes)}</div>` : ''}<button class="pkf-wp-delete" data-wp-delete="${wp.id}" type="button">${getLang()==='fr'?'Supprimer':'حذف النقطة'}</button></div>`)
       .addTo(map);
     const coast=await getCoastDistance(wp.lat,wp.lng);
     if(coast){
-      const root=document.querySelector<HTMLElement>(`.pkf-wp-popup`);
+      const root=popup.getElement()?.querySelector<HTMLElement>('.pkf-wp-popup');
       if(root){
         const loading=root.querySelector('.pkf-coast-loading');
         if(loading) loading.textContent=getLang()==='fr'
