@@ -1960,3 +1960,12 @@
 .pkf-waypoint-marker{border:0;background:transparent;padding:0;font-size:24px;line-height:1;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,.55));transform:translateY(-2px)}
 .pkf-waypoint-marker:active{transform:translateY(-1px) scale(.92)}
 .pkf-waypoint-notice{margin:8px 12px;padding:9px 11px;border:1px solid rgba(80,220,170,.35);border-radius:10px;background:rgba(15,80,65,.35);font-size:12px}
+
+.pkf-waypoint-marker{border:0;background:transparent;padding:0;font-size:25px;line-height:1;cursor:pointer;filter:drop-shadow(0 2px 5px rgba(0,0,0,.65));transform:translateY(-2px)}
+.pkf-waypoint-marker:hover{transform:translateY(-3px) scale(1.08)}
+.pkf-wp-popup{min-width:220px;color:#10202b;font-family:inherit}
+.pkf-wp-title{font-size:16px;font-weight:900;margin-bottom:3px}
+.pkf-wp-type{font-size:11px;opacity:.65;margin-bottom:8px}
+.pkf-wp-grid{display:grid;gap:5px;font-size:11px}
+.pkf-wp-notes{margin-top:8px;padding:7px 8px;border-radius:8px;background:#eef5f8;font-size:11px}
+.pkf-wp-delete{margin-top:10px;width:100%;border:0;border-radius:8px;padding:7px;background:#b42318;color:#fff;font-weight:800;cursor:pointer}
