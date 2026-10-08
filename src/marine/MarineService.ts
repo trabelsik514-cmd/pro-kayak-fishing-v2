@@ -101,6 +101,13 @@ export type WeeklySeaSummary = {
   windMin: number|null;
   windMax: number|null;
   gustMax: number|null;
+  windDirectionDominant: number|null;
+  temperatureMin: number|null;
+  temperatureMax: number|null;
+  precipitationProbabilityMax: number|null;
+  precipitationSum: number|null;
+  humidityMean: number|null;
+  weatherCode: number|null;
   currentAvg: number|null;
   currentMax: number|null;
   currentDirection: number|null;
@@ -232,6 +239,7 @@ export class MarineService {
     weatherUrl.searchParams.set('latitude', String(latitude));
     weatherUrl.searchParams.set('longitude', String(longitude));
     weatherUrl.searchParams.set('hourly', 'wind_speed_10m,wind_gusts_10m');
+    weatherUrl.searchParams.set('daily', 'temperature_2m_min,temperature_2m_max,precipitation_probability_max,precipitation_sum,relative_humidity_2m_mean,wind_direction_10m_dominant,weather_code');
     weatherUrl.searchParams.set('timezone', 'auto');
     weatherUrl.searchParams.set('forecast_days', '7');
     weatherUrl.searchParams.set('cell_selection', 'nearest');
@@ -244,6 +252,7 @@ export class MarineService {
     const seaPayload = seaResult.status === 'fulfilled' ? seaResult.value : {};
     const weatherPayload = weatherResult.status === 'fulfilled' ? weatherResult.value : {};
     const daily = seaPayload.daily ?? {};
+    const weatherDaily = weatherPayload.daily ?? {};
     const dailyDates = Array.isArray(daily.time) ? daily.time.filter((v:unknown):v is string=>typeof v==='string') : [];
     const seaHourly = seaPayload.hourly ?? {};
     const weatherHourly = weatherPayload.hourly ?? {};
@@ -300,6 +309,13 @@ export class MarineService {
         windMin,
         windMax,
         gustMax,
+        windDirectionDominant: numberAt(weatherDaily.wind_direction_10m_dominant,i),
+        temperatureMin: numberAt(weatherDaily.temperature_2m_min,i),
+        temperatureMax: numberAt(weatherDaily.temperature_2m_max,i),
+        precipitationProbabilityMax: numberAt(weatherDaily.precipitation_probability_max,i),
+        precipitationSum: numberAt(weatherDaily.precipitation_sum,i),
+        humidityMean: numberAt(weatherDaily.relative_humidity_2m_mean,i),
+        weatherCode: numberAt(weatherDaily.weather_code,i),
         currentAvg,
         currentMax,
         currentDirection
