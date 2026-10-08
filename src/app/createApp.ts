@@ -660,9 +660,9 @@ export function createApp(root: HTMLElement) {
     closeReport(); tripPanel.classList.add('hidden'); renderSavedWaypoints();
     savedWaypointsPanel.classList.remove('hidden'); setBottomNav('waypoints');
   });
-  document.querySelector<HTMLButtonElement>('#close-saved-waypoints')?.addEventListener('click', () => {
-    savedWaypointsPanel.classList.add('hidden'); setBottomNav('map');
-  });
+  const closeSavedWaypoints = (ev?: Event) => { ev?.preventDefault(); ev?.stopPropagation(); savedWaypointsPanel.classList.add('hidden'); setBottomNav('map'); };
+  document.querySelector<HTMLButtonElement>('#close-saved-waypoints')?.addEventListener('click', closeSavedWaypoints);
+  document.querySelector<HTMLButtonElement>('#close-saved-waypoints')?.addEventListener('pointerup', closeSavedWaypoints);
   document.querySelector('#close-report')?.addEventListener('click', closeReport);
 
 
