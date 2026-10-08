@@ -1,9 +1,11 @@
+import { fetchApi } from '../services/ApiClient';
+
 export type CoastDistance = { distanceMeters:number; shoreLat:number; shoreLng:number; bearing:number };
 export async function getCoastDistance(lat:number,lng:number):Promise<CoastDistance|null>{
-  if(!import.meta.env.PROD || !Number.isFinite(lat)||!Number.isFinite(lng)) return null;
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)) return null;
   const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),11000);
   try{
-    const r=await fetch(`/api/coast-distance?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`,{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});
+    const r=await fetchApi(`/api/coast-distance?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`,{cache:'no-store'},11000);
     if(!r.ok)return null;
     const d=await r.json();
     if(!Number.isFinite(Number(d.distanceMeters)))return null;
