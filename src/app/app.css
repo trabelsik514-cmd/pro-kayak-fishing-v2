@@ -1970,7 +1970,7 @@
 .pkf-wp-notes{margin-top:8px;padding:7px 8px;border-radius:8px;background:#eef5f8;font-size:11px}
 .pkf-wp-delete{margin-top:10px;width:100%;border:0;border-radius:8px;padding:7px;background:#b42318;color:#fff;font-weight:800;cursor:pointer}
 
-.saved-waypoints-panel{position:absolute;z-index:30;left:16px;right:16px;bottom:88px;max-height:min(62vh,560px);overflow:auto;padding:14px;border:1px solid rgba(90,210,255,.18);border-radius:18px;background:rgba(4,17,27,.96);box-shadow:0 18px 45px rgba(0,0,0,.45);backdrop-filter:blur(18px)}
+.saved-waypoints-panel{position:absolute;z-index:200;left:16px;right:16px;bottom:88px;max-height:min(62vh,560px);overflow:auto;padding:14px;border:1px solid rgba(90,210,255,.18);border-radius:18px;background:rgba(4,17,27,.96);box-shadow:0 18px 45px rgba(0,0,0,.45);backdrop-filter:blur(18px)}
 .saved-waypoints-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:16px}
 .saved-waypoints-head button{width:34px;height:34px;border:0;border-radius:10px;background:rgba(255,255,255,.07);color:#fff;font-size:24px;cursor:pointer}
 .saved-waypoint-empty{text-align:center;padding:32px 12px;opacity:.65;font-size:13px}
@@ -1999,3 +1999,10 @@
 .coordinate-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .coordinate-point-error{min-height:18px;margin:5px 0;color:#fda4af;font-size:12px;line-height:1.4}
 @media(max-width:520px){.saved-waypoints-title{gap:5px}.saved-waypoints-add{padding:0 7px!important}.coordinate-grid{grid-template-columns:1fr}}
+
+.saved-waypoints-actions{display:flex;align-items:center;gap:6px}
+.saved-waypoints-actions button{flex:0 0 auto}
+.route-order-hint{margin:8px 0;padding:8px 10px;border:1px solid rgba(90,210,255,.14);border-radius:9px;background:rgba(255,255,255,.04);font-size:12px;line-height:1.5;white-space:nowrap;overflow:auto}
+.coordinate-waypoint-modal{position:fixed!important;z-index:10060!important}
+.coordinate-waypoint-modal.hidden{display:none!important}
+.coordinate-waypoint-modal input,.coordinate-waypoint-modal select,.coordinate-waypoint-modal textarea{font-size:16px}
