@@ -273,7 +273,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
       <div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div>
       <div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div>
     </section>
-    <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الساعات القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-planning-slot"></div></section>
+    <section class="dashboard-forecast"><div class="dashboard-section-title"><b>📊 ${t('توقعات الأيام القادمة')}</b><small>${t('تتغير حسب النقطة المحددة')}</small></div><div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t('جاري حساب توقعات الأسبوع…')}</div></div></section>
     <div class="dashboard-depth-slot"></div><div class="dashboard-warning-slot"></div><div class="dashboard-footer"><small>${t('آخر جلب:')} ${new Date(data.fetchedAt).toLocaleTimeString(locale())}</small></div>
   </div>`;
 }
@@ -1470,72 +1470,102 @@ export function createApp(root: HTMLElement) {
         currentVelocity:data.sea.currentVelocity
       });
 
-      const forecastDate = hourlyForecast[0]?.time.slice(0,10) ?? '';
-      const todayForecast = hourlyForecast.filter(p => p.time.slice(0,10) === forecastDate);
-      const futureHours = todayForecast.slice(0,12);
-      const forecastRows = futureHours.map(p => ({
-        p,
-        a: assessKayakConditions({
-          windSpeed:p.windSpeed,
-          windGusts:p.windGusts,
-          windDirection:p.windDirection,
-          waveHeight:p.waveHeight,
-          waveDirection:p.waveDirection,
-          wavePeriod:p.wavePeriod,
-          swellHeight:p.swellHeight,
-          swellDirection:p.swellDirection,
-          swellPeriod:p.swellPeriod,
-          currentVelocity:p.currentVelocity
-        })
-      }));
-      const planningScore = futureHours.length
-        ? Math.round(forecastRows.reduce((sum,row)=>sum+row.a.score,0)/forecastRows.length)
-        : assessment.score;
-      const planningLevel = planningScore>=82?'ممتاز':planningScore>=65?'جيد':planningScore>=45?'حذر':'غير مناسب';
+      const todayForecast = hourlyForecast.filter(p => p.time.slice(0,10) === (hourlyForecast[0]?.time.slice(0,10) ?? ''));
       const bestPlanningWindow = bestKayakWindow(todayForecast,3);
-      const planningTime = (iso:string) => iso.slice(11,16);
       const levelClass = (level:string) => level==='ممتاز'?'excellent':level==='جيد'?'good':level==='حذر'?'caution':'danger';
-      const planningReasons = forecastRows
-        .flatMap(row=>row.a.reasons)
-        .filter((reason,index,array)=>array.indexOf(reason)===index)
-        .slice(0,3);
-      const planningHoursHtml = forecastRows.slice(0,8).map(({p,a}) =>
-        `<article class="departure-hour ${levelClass(a.level)}">
-          <b>${planningTime(p.time)}</b>
-          <strong>${a.score}<small>/100</small></strong>
-          <span>${translateLevel(a.level)}</span>
-          <small>🌊 ${value(p.waveHeight,' m')} · 💨 ${value(p.windSpeed,' km/h')}</small>
-        </article>`
-      ).join('');
-      const planningWindowHtml = bestPlanningWindow
-        ? `<div class="departure-best">
-            <span>🎣 ${t('أفضل نافذة متوقعة')}</span>
-            <strong>${planningTime(bestPlanningWindow.start)} → ${planningTime(bestPlanningWindow.end)}</strong>
-            <small>${t('نافذة تخطيطية لمدة 3 ساعات، وليست ضماناً لسلامة الرحلة.')}</small>
-          </div>`
+      const bestWindowHtml = bestPlanningWindow
+        ? `<section class="dashboard-best-window">
+            <div><b>🎣 ${t('أفضل نافذة متوقعة')}</b><small>${t('أفضل فترة متوقعة للصيد في هذا اليوم')}</small></div>
+            <strong>${new Date(bestPlanningWindow.start).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})} → ${new Date(bestPlanningWindow.end).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})}</strong>
+            <span class="${levelClass(bestPlanningWindow.score>=82?'ممتاز':bestPlanningWindow.score>=65?'جيد':bestPlanningWindow.score>=45?'حذر':'غير مناسب')}">${bestPlanningWindow.score}/100</span>
+          </section>`
         : '';
-      const planningReasonsHtml = planningReasons.length
-        ? `<ul class="departure-reasons">${planningReasons.map(reason=>`<li>• ${translateReason(reason)}</li>`).join('')}</ul>`
-        : '';
-      const departurePlanning = `<section class="departure-planning">
-        <div class="departure-planning-head">
-          <div><b>🎣 ${t('تخطيط الخروج')}</b><small>${t('مبني على الساعات القادمة عند هذه النقطة')}</small></div>
-          <strong class="${levelClass(planningLevel)}">${planningScore}/100</strong>
-        </div>
-        <div class="departure-status ${levelClass(planningLevel)}">${translateLevel(planningLevel)}</div>
-        ${planningWindowHtml}
-        <div class="departure-hours">${planningHoursHtml || `<small>${t('لا توجد بيانات ساعية كافية للتخطيط.')}</small>`}</div>
-        ${planningReasonsHtml}
-        <small class="departure-note">${t('هذا تقييم تخطيطي للظروف البحرية والرياح، وليس شهادة سلامة. أعد التحقق من التوقعات قبل الانطلاق.')}</small>
-      </section>`;
       const reportBase = reportHtml(data,placeName,assessment)
-        .replace('<div class="dashboard-planning-slot"></div>', departurePlanning)
+        .replace('<div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t(\'جاري حساب توقعات الأسبوع…\')}</div></div>', `<div class="dashboard-daily-slot"><div class="dashboard-daily-loading">${t('جاري حساب توقعات الأسبوع…')}</div></div>`)
         .replace('<div class="dashboard-depth-slot"></div>', `<div class="depth-card dashboard-depth">🪸 ${t('العمق التقريبي')} <b>${t('جاري جلب آخر البيانات…')}</b><small>${t('المصدر:')} —</small></div>`)
         .replace('<div class="dashboard-warning-slot"></div>', data.sea.maxWaveHeightToday != null && data.sea.waveHeight != null && data.sea.maxWaveHeightToday > data.sea.waveHeight + 0.3
           ? `<div class="sea-wave-warning dashboard-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
           : '');
       report.innerHTML = reportBase;
       bindClose();
+      if (bestWindowHtml) {
+        const dailySlot = report.querySelector('.dashboard-daily-slot');
+        if (dailySlot) dailySlot.insertAdjacentHTML('afterend', bestWindowHtml);
+      }
+
+      // Daily forecast table: this replaces the old hourly strip in the dashboard.
+      void (async () => {
+        try {
+          const days = await marine.getWeeklySeaSummary(lat,lng);
+          if (!isCurrent()) return;
+          const slot = report.querySelector<HTMLElement>('.dashboard-daily-slot');
+          if (!slot) return;
+          const weatherIcon = (code:number|null) => {
+            if (code==null) return '🌤️';
+            if (code===0) return '☀️';
+            if ([1,2].includes(code)) return '🌤️';
+            if (code===3) return '☁️';
+            if ([45,48].includes(code)) return '🌫️';
+            if ([51,53,55,56,57].includes(code)) return '🌦️';
+            if ([61,63,65,66,67,80,81,82].includes(code)) return '🌧️';
+            if ([95,96,99].includes(code)) return '⛈️';
+            return '🌤️';
+          };
+          const dayLabel=(date:string,index:number)=>{
+            if(index===0) return t('اليوم');
+            if(index===1) return t('غداً');
+            if(index===2) return t('بعد غد');
+            return new Intl.DateTimeFormat(locale(),{weekday:'short',day:'2-digit',month:'2-digit'}).format(new Date(date+'T12:00:00'));
+          };
+          const score=(d:WeeklySeaSummary)=>{
+            let s=100;
+            if(d.windMax!=null) s-=d.windMax<=15?0:d.windMax<=25?10:d.windMax<=35?25:40;
+            if(d.gustMax!=null) s-=d.gustMax<=25?0:d.gustMax<=40?10:25;
+            if(d.waveMax!=null) s-=d.waveMax<=0.5?0:d.waveMax<=0.8?10:d.waveMax<=1.2?25:45;
+            if(d.temperatureMax!=null){
+              if(d.temperatureMax>36) s-=15;
+              else if(d.temperatureMax>32) s-=7;
+            }
+            return Math.max(0,Math.min(100,Math.round(s)));
+          };
+          const level=(s:number)=>s>=82?'ممتاز':s>=65?'جيد':s>=45?'حذر':'غير مناسب';
+          const windKn=(v:number|null)=>v==null?'—':(v*0.539957).toFixed(0);
+          const cell=(v:string,s:number)=>`<td class="forecast-cell ${levelClass(level(s))}">${v}</td>`;
+          const rows = days.map((d,i)=>{
+            const s=score(d);
+            return {
+              day:`<th scope="col"><b>${weatherIcon(d.weatherCode)}</b><span>${dayLabel(d.date,i)}</span></th>`,
+              wind:cell(d.windMax==null?'—':windKn(d.windMax)+' kn',s),
+              gust:cell(d.gustMax==null?'—':windKn(d.gustMax)+' kn',s),
+              wave:cell(d.waveMax==null?'—':d.waveMax.toFixed(1)+' m',s),
+              period:cell(d.wavePeriodMax==null?'—':d.wavePeriodMax.toFixed(1)+' s',s),
+              temp:cell(d.temperatureMin==null&&d.temperatureMax==null?'—':`${d.temperatureMin?.toFixed(0) ?? '—'}° / ${d.temperatureMax?.toFixed(0) ?? '—'}°`,s),
+              eval:cell(`${s}/100`,s)
+            };
+          });
+          const headers=rows.map(r=>r.day).join('');
+          const buildRow=(icon:string,label:string,key:keyof typeof rows[number])=>`<tr><th class="forecast-row-label">${icon} <span>${label}</span></th>${rows.map(r=>r[key]).join('')}</tr>`;
+          slot.innerHTML=`
+            <div class="dashboard-daily-scroll" dir="ltr">
+              <table class="dashboard-daily-table">
+                <thead><tr><th class="forecast-row-label">${t('اليوم')}</th>${headers}</tr></thead>
+                <tbody>
+                  ${buildRow('💨',t('الرياح'),'wind')}
+                  ${buildRow('🌬️',t('الهبات'),'gust')}
+                  ${buildRow('🌊',t('ارتفاع الموج'),'wave')}
+                  ${buildRow('⏱️',t('فترة الموج'),'period')}
+                  ${buildRow('🌡️',t('الحرارة'),'temp')}
+                  ${buildRow('🎯',t('التقييم'),'eval')}
+                </tbody>
+              </table>
+            </div>
+            <small class="dashboard-daily-note">${t('التوقعات اليومية للتخطيط المسبق؛ أعد التحقق من أحدث تحديث قبل الانطلاق.')}</small>`;
+        } catch {
+          if (!isCurrent()) return;
+          const slot = report.querySelector<HTMLElement>('.dashboard-daily-slot');
+          if (slot) slot.innerHTML = `<div class="dashboard-daily-error">${t('تعذر جلب توقعات الأسبوع')}</div>`;
+        }
+      })();
 
       // Add the coastal name whenever reverse geocoding finishes, without rebuilding the report.
       void placeNamePromise.then(resolvedName => {
