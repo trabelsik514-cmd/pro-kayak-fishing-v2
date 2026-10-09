@@ -20,10 +20,16 @@ type SstSample={latitude:number;longitude:number;sst:number|null};
 
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 
-async function getJson(url:string):Promise<any>{
-  const response=await fetch(url,{cache:'no-store'});
-  if(!response.ok) throw new Error('HTTP '+response.status);
-  return response.json();
+async function getJson(url:string,timeoutMs=12000):Promise<any>{
+  const controller=new AbortController();
+  const timer=globalThis.setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{cache:'no-store',signal:controller.signal});
+    if(!response.ok) throw new Error('HTTP '+response.status);
+    return await response.json();
+  }finally{
+    globalThis.clearTimeout(timer);
+  }
 }
 
 async function getChlorophyll(latitude:number,longitude:number):Promise<number|null>{
@@ -34,7 +40,9 @@ async function getChlorophyll(latitude:number,longitude:number):Promise<number|n
   const url='https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNchlaDaily.json'
     +'?chlor_a[(last)][(0)]['+lat.toFixed(4)+']['+lon.toFixed(4)+']';
   try{
-    const payload=await getJson(url);
+    // NOAA is optional and can be slow or temporarily unavailable on mobile networks.
+    // Bound the request so it can never keep the environmental card loading forever.
+    const payload=await getJson(url,8000);
     const rows=payload?.table?.rows;
     const value=Array.isArray(rows)&&rows.length ? Number(rows[0]?.[rows[0].length-1]) : NaN;
     return Number.isFinite(value)&&value>=0 ? value : null;
@@ -73,12 +81,16 @@ export async function getFishingIntelligence(
   u.searchParams.set('timezone','auto');
   u.searchParams.set('cell_selection','sea');
 
-  const [payload,chlorophyll]=await Promise.all([
-    getJson(u.toString()),
+  // Fetch SST and chlorophyll independently. A slow NOAA endpoint must not block
+  // SST results, and a failed SST request must not discard a valid chlorophyll reading.
+  const [sstResult,chlorophyllResult]=await Promise.allSettled([
+    getJson(u.toString(),12000),
     getChlorophyll(latitude,longitude)
   ]);
+  const payload=sstResult.status==='fulfilled'?sstResult.value:null;
+  const chlorophyll=chlorophyllResult.status==='fulfilled'?chlorophyllResult.value:null;
 
-  const raw:Array<any>=Array.isArray(payload)?payload:[payload];
+  const raw:Array<any>=payload==null?[]:(Array.isArray(payload)?payload:[payload]);
   const samples:SstSample[]=raw.map((p:any,i:number)=>({
     latitude:lats[i],
     longitude:lngs[i],
