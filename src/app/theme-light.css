@@ -255,3 +255,33 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+
+/* Mobile bottom navigation contrast fix:
+   Keep inactive destinations readable; only the active destination gets a tint. */
+.pkf-bottom-nav button {
+  color: #31566f !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-text-fill-color: currentColor;
+}
+.pkf-bottom-nav button span,
+.pkf-bottom-nav button small,
+.pkf-bottom-nav button .pkf-nav-icon,
+.pkf-bottom-nav button svg {
+  color: inherit !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.pkf-bottom-nav button .pkf-nav-icon {
+  stroke: currentColor;
+  fill: none;
+}
+.pkf-bottom-nav button.active {
+  color: #075f8d !important;
+  background: #e2f3fb !important;
+}
+.pkf-bottom-nav button:disabled {
+  color: #637e92 !important;
+  opacity: 1 !important;
+}
