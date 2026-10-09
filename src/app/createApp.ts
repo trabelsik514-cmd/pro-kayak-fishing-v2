@@ -1799,6 +1799,17 @@ export function createApp(root: HTMLElement) {
       void (async () => {
         const slot=report.querySelector<HTMLElement>('.dashboard-advisor-slot');
         if(!slot) return;
+        // Render species immediately with available point data; missing depth/current must not block this section.
+        const initialSpecies=rankSpecies({
+          seaTemperature:data.sea.seaTemperature,
+          depth:null,
+          month:new Date().getMonth()+1,
+          gradient:null,
+          chlorophyll:null,
+          waveHeight:data.sea.waveHeight
+        }).slice(0,4);
+        const initialSpeciesHtml=initialSpecies.map(x=>'<div class="advisor-species"><span>'+t(x.ar)+'</span><strong>'+x.score+'/100</strong><small>'+t(x.reasons.slice(0,2).join(' · ')||'إشارة بيئية')+'</small></div>').join('');
+        slot.innerHTML='<div class="advisor-head"><div><b>🎯 '+t('تحليل الصيد المتقدم')+'</b><small>'+t('الأنواع الأكثر ملاءمة')+'</small></div></div><details open class="advisor-detail"><summary>🎣 '+t('الأنواع الأكثر ملاءمة')+'</summary><div class="advisor-section">'+initialSpeciesHtml+'</div></details><div class="advisor-loading">'+t('جاري استكمال بيانات العمق والتيار والنوافذ…')+'</div>';
         try {
           const [depthResult, intelligence, hourlyAdvisor] = await Promise.all([
             getBathymetryDepth(map,lng,lat).catch(()=>null),
@@ -1850,7 +1861,13 @@ export function createApp(root: HTMLElement) {
             '<div class="advisor-note">ℹ️ '+t('الدرجات مؤشرات تحليلية وليست احتمالاً للصيد أو ضماناً للسلامة.')+'</div>'+
             '<small class="advisor-source">'+t('المصادر:')+' Open-Meteo · Marine · Bathymetry · Fishing Intelligence</small>';
         } catch {
-          if(isCurrent() && slot) slot.innerHTML='<div class="advisor-error">🎣 '+t('تعذر بناء التحليل المتقدم حالياً')+'</div>';
+          // Keep the species results visible even if optional enrichment services fail.
+          if(isCurrent() && slot) {
+            const note=document.createElement('div');
+            note.className='advisor-note';
+            note.textContent=t('تعذر تحميل بعض البيانات الإضافية؛ الأنواع المعروضة تقدير أولي.');
+            slot.appendChild(note);
+          }
         }
       })();
 
