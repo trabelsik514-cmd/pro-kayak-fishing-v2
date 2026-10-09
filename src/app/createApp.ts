@@ -1811,14 +1811,15 @@ export function createApp(root: HTMLElement) {
         const initialSpeciesHtml=initialSpecies.map(x=>'<div class="advisor-species"><span>'+t(x.ar)+'</span><strong>'+x.score+'/100</strong><small>'+t(x.reasons.slice(0,2).join(' · ')||'إشارة بيئية')+'</small></div>').join('');
         slot.innerHTML='<div class="advisor-head"><div><b>🎯 '+t('تحليل الصيد المتقدم')+'</b><small>'+t('الأنواع الأكثر ملاءمة')+'</small></div></div><details open class="advisor-detail"><summary>🎣 '+t('الأنواع الأكثر ملاءمة')+'</summary><div class="advisor-section">'+initialSpeciesHtml+'</div></details><div class="advisor-loading">'+t('جاري استكمال بيانات العمق والتيار والنوافذ…')+'</div>';
         try {
-          const [depthResult, intelligence, hourlyAdvisor] = await Promise.all([
+          const [depthResult, intelligence, hourlyAdvisor, modelComparison] = await Promise.all([
             getBathymetryDepth(map,lng,lat).catch(()=>null),
             getFishingIntelligence(lat,lng,{
               windSpeed:data.weather.windSpeed,
               waveHeight:data.sea.waveHeight,
               seaTemperature:data.sea.seaTemperature
             }).catch(()=>null),
-            marine.getHourlyKayakForecast(lat,lng).catch(()=>[])
+            marine.getHourlyKayakForecast(lat,lng).catch(()=>[]),
+            marine.getWeatherModelComparison(lat,lng).catch(()=>[])
           ]);
           if(!isCurrent()) return;
           const species=rankSpecies({
@@ -1838,8 +1839,8 @@ export function createApp(root: HTMLElement) {
             chlorophyll:intelligence?.chlorophyllAvailable===true,
             depth:depthResult!=null,
             current:data.sea.currentVelocity!=null,
-            hourly:hourlyAdvisor.length>=6,
-            weatherModels:false
+            hourly:hourlyAdvisor.filter(p=>p.windSpeed!=null||p.windGusts!=null||p.waveHeight!=null).length>=6,
+            weatherModels:modelComparison.some(day=>day.agreement!=null)
           });
           const profile=tunisianProfile(lat,lng);
           const fmt=(iso:string)=>new Date(iso).toLocaleTimeString(getLang()==='fr'?'fr-TN':'ar-TN',{hour:'2-digit',minute:'2-digit',hour12:false});
