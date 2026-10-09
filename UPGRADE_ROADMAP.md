@@ -6,12 +6,12 @@ Use the **actual Pelorus Nav application source/UI as the navigation and chartin
 ## Protected project state
 - Original application snapshot: `backup/pre-upgrade-2026-10-09`.
 - Existing app development branch: `feature/marine-platform-upgrade`.
-- Never overwrite `main) or remove the backup.
+- Never overwrite `main` or remove the backup.
 - Preserve PRO KAYAK FISHING branding, the user's icon/splash assets, Tunisia-first defaults and bounds, Arabic RTL/French localization, weather/marine services, fishing intelligence, kayak suitability assessment, fishing forecast, trip planner, trip/waypoint storage, and existing bathymetry/coast-distance endpoints.
 
 ## Upstream foundation
 - Upstream: https://github.com/garyo/pelorus-nav
-- Review the current upstream source tree and pin the exact upstream commit before importing code.
+- Pinned source tree inspected: `333bf05174683b566bf68f66246a3bed12222827` (Pelorus Nav `main`, observed 2026-10-09). See `PELORUS_MIGRATION_AUDIT.md`.
 - Upstream uses TypeScript + Vite + MapLibre + Capacitor and is MIT licensed. Keep the applicable MIT copyright/license and NOTICE attribution, and review third-party dependency and chart-data licenses separately.
 - Prefer a tested migration of the actual upstream app foundation over re-creating its UI from scratch.
 - Do not import upstream brand identity as the product brand: the resulting product remains PRO KAYAK FISHING.
@@ -46,4 +46,4 @@ Use the **actual Pelorus Nav application source/UI as the navigation and chartin
 ## Current status
 - A pre-upgrade backup branch exists.
 - A dedicated development branch exists.
-- This roadmap records the requested upstream-based migration. The actual Pelorus source has not yet been merged into the app branch, and no migrated APK has been built or validated yet.
+- This roadmap records the requested upstream-based migration. The pinned upstream source and Tunisia chart-coverage audit are documented in `PELORUS_MIGRATION_AUDIT.md`. The actual Pelorus application source has not yet been imported into the app branch, and no migrated APK has been built or validated yet.
