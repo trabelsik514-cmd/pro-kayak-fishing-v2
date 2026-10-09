@@ -30,6 +30,26 @@ jobs:
           if [ ! -d android ]; then
             npx cap add android
           fi
+      - name: Configure background runner Android AAR repository
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          
+          gradle_file = Path("android/app/build.gradle")
+          content = gradle_file.read_text()
+          required = "dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'"
+          if required not in content:
+              pattern = r"(dirs\s+['\"]\.\./capacitor-cordova-android-plugins/src/main/libs['\"],\s*['\"]libs['\"])"
+              updated, count = re.subn(pattern, r"\1\n            " + required, content, count=1)
+              if count != 1:
+                  raise SystemExit("Could not find the expected flatDir repository in android/app/build.gradle")
+              gradle_file.write_text(updated)
+          aar = Path("node_modules/@capacitor/background-runner/android/src/main/libs/android-js-engine-release.aar")
+          if not aar.is_file():
+              raise SystemExit(f"Required background-runner AAR is missing: {aar}")
+          print(f"Found background-runner AAR: {aar}")
+          PY
       - name: Build Android debug APK
         run: npm run android:build
       - name: Verify APK exists
