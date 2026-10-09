@@ -1243,11 +1243,20 @@ export function createApp(root: HTMLElement) {
       const timeInput = panel.querySelector<HTMLInputElement>('#ki-time')!;
       const durationInput = panel.querySelector<HTMLSelectElement>('#ki-duration')!;
       const selectedDate = dateInput.value;
-      const startTime = timeInput.value || '07:00';
-      const durationHours = Number(durationInput.value) || 4;
+      const startTime = timeInput.value;
+      const durationHours = Number(durationInput.value);
+      if (!selectedDate || !startTime || !Number.isFinite(durationHours) || durationHours < 1) {
+        status.innerHTML = `<div class="ki-loading"><b>${tx('أكمل التاريخ ووقت الانطلاق ومدة الرحلة.','Renseignez la date, l’heure de départ et la durée.')}</b></div>`;
+        return;
+      }
       const startLocal = `${selectedDate}T${startTime}`;
-      const startTs = Date.parse(startLocal);
+      const startTs = new Date(startLocal).getTime();
       const endTs = startTs + durationHours*3600000;
+      const todayKey = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+      if (!Number.isFinite(startTs) || selectedDate < todayKey || startTs < Date.now() - 60_000) {
+        status.innerHTML = `<div class="ki-loading"><b>${tx('اختر وقتاً مستقبلياً ضمن تاريخ اليوم أو الأيام الستة القادمة.','Choisissez un horaire futur aujourd’hui ou dans les six prochains jours.')}</b></div>`;
+        return;
+      }
 
       status.innerHTML = `
         <div class="ki-loading">
@@ -1362,16 +1371,22 @@ export function createApp(root: HTMLElement) {
     };
 
     const dateEl = panel.querySelector<HTMLInputElement>('#ki-date')!;
+    const timeEl = panel.querySelector<HTMLInputElement>('#ki-time')!;
     const localDateKey = (d:Date) => {
       const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
       return `${y}-${m}-${day}`;
     };
     const now = new Date();
-    const tomorrow = new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+    const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
     const lastDay = new Date(now.getFullYear(),now.getMonth(),now.getDate()+6);
-    dateEl.value = localDateKey(tomorrow);
-    dateEl.min = localDateKey(now);
+    dateEl.value = localDateKey(today);
+    dateEl.min = localDateKey(today);
     dateEl.max = localDateKey(lastDay);
+    // Choose the next full local hour so the default plan is not already in the past.
+    const nextDeparture = new Date(now);
+    nextDeparture.setMinutes(0,0,0);
+    nextDeparture.setHours(nextDeparture.getHours()+1);
+    timeEl.value = `${String(nextDeparture.getHours()).padStart(2,'0')}:${String(nextDeparture.getMinutes()).padStart(2,'0')}`;
     let currentLat = initialLat ?? map.getCenter().lat;
     let currentLng = initialLng ?? map.getCenter().lng;
     let currentLabel = initialLabel;
@@ -1834,13 +1849,19 @@ export function createApp(root: HTMLElement) {
             time:p.time,windSpeed:p.windSpeed,windGusts:p.windGusts,waveHeight:p.waveHeight,
             wavePeriod:p.wavePeriod,currentVelocity:p.currentVelocity
           })));
+          const comparableDays = modelComparison
+            .filter(day => day.agreement != null && Number.isFinite(day.agreement))
+            .slice(0, 3);
+          const modelAgreement = comparableDays.length
+            ? Math.round(comparableDays.reduce((sum, day) => sum + (day.agreement ?? 0), 0) / comparableDays.length)
+            : null;
           const confidence=calculateConfidence({
             sst:data.sea.seaTemperature!=null,
             chlorophyll:intelligence?.chlorophyllAvailable===true,
             depth:depthResult!=null,
             current:data.sea.currentVelocity!=null,
             hourly:hourlyAdvisor.filter(p=>p.windSpeed!=null||p.windGusts!=null||p.waveHeight!=null).length>=6,
-            weatherModels:modelComparison.some(day=>day.agreement!=null)
+            weatherModelsAgreement:modelAgreement
           });
           const profile=tunisianProfile(lat,lng);
           const fmt=(iso:string)=>new Date(iso).toLocaleTimeString(getLang()==='fr'?'fr-TN':'ar-TN',{hour:'2-digit',minute:'2-digit',hour12:false});
