@@ -1,0 +1,287 @@
+/* PRO KAYAK FISHING V2 — light marine theme
+   Visual-only overrides. Keep the existing map, interactions, panels and translations intact. */
+:root {
+  color-scheme: light;
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #15324a;
+  background: #f3f8fc;
+  --pkf-light-ink: #15324a;
+  --pkf-light-muted: #5f778b;
+  --pkf-light-line: #d7e5ef;
+  --pkf-light-panel: rgba(255,255,255,.96);
+  --pkf-light-soft: #f2f8fc;
+  --pkf-light-blue: #087db5;
+  --pkf-light-blue-strong: #066a9b;
+  --pkf-light-red: #d83b50;
+  --pkf-light-shadow: 0 14px 38px rgba(24,65,92,.16);
+}
+html, body, #app { background: #f3f8fc; color: var(--pkf-light-ink); }
+button, input, select, textarea { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid rgba(8,125,181,.3);
+  outline-offset: 2px;
+}
+.shell, .ki-page { background: #f3f8fc; color: var(--pkf-light-ink); }
+.topbar, .ki-topbar {
+  color: var(--pkf-light-ink);
+  background: rgba(255,255,255,.96);
+  border-bottom: 1px solid var(--pkf-light-line);
+  box-shadow: 0 5px 20px rgba(30,75,105,.08);
+  backdrop-filter: blur(16px);
+}
+.topbar > strong, .ki-topbar, .ki-title { color: var(--pkf-light-ink); }
+.brand { color: var(--pkf-light-ink); }
+.lang-toggle {
+  color: var(--pkf-light-blue-strong);
+  background: #f2f8fc;
+  border-color: #c8dce9;
+}
+.lang-toggle:hover { background: #e6f3fb; border-color: #9bc8df; }
+.search { min-width: 0; }
+.search input, .ki-searchbar input {
+  color: #15324a;
+  background: #f7fbfe;
+  border: 1px solid #cbdde9;
+  box-shadow: inset 0 1px 2px rgba(20,62,90,.03);
+}
+.search input::placeholder, .ki-searchbar input::placeholder { color: #8298a9; }
+.search input:focus, .ki-searchbar input:focus {
+  border-color: #4ba8d4;
+  box-shadow: 0 0 0 3px rgba(8,125,181,.10);
+}
+.search button, .ki-plan-btn, .trip-primary {
+  color: #fff;
+  background: linear-gradient(135deg,#0789c4,#066b9d);
+  box-shadow: 0 5px 14px rgba(6,106,155,.18);
+}
+.search button:hover, .ki-plan-btn:hover, .trip-primary:hover { filter: brightness(1.04); }
+.map { background: #dcecf5; }
+
+/* Map toolbars stay above the map; only their visual treatment changes. */
+.map-actions { color: var(--pkf-light-ink); }
+.map-action-group, .pkf-bottom-nav {
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(177,204,222,.9);
+  box-shadow: 0 12px 32px rgba(18,62,91,.17);
+  backdrop-filter: blur(16px);
+}
+.map-action-label { color: #6c8395; opacity: 1; }
+.map-action {
+  color: #24465f;
+  border-color: #d7e5ef;
+  box-shadow: none;
+}
+.map-action-sea { background: #087db5; color: #fff; }
+.map-action-measure { background: #eaf3f9; color: #1d5879; border-color: #c8dce9; }
+.map-action-trip { background: #e4f5f2; color: #176d67; border-color: #bde5df; }
+.map-action:hover { border-color: #94c5df; filter: none; }
+.pkf-map-toolbar { filter: none; }
+.pkf-tool {
+  color: #1b526f;
+  background: rgba(255,255,255,.96);
+  border-color: #c8dce9;
+  box-shadow: 0 7px 20px rgba(18,62,91,.14);
+}
+.pkf-tool:hover { background: #edf7fc; }
+.pkf-tool-wind.active {
+  color: #066a9b;
+  border-color: #70b8d9;
+  background: #e1f3fb;
+  box-shadow: 0 0 0 1px rgba(8,125,181,.1), 0 7px 20px rgba(18,62,91,.12);
+}
+.pkf-layer-panel {
+  color: var(--pkf-light-ink);
+  background: rgba(255,255,255,.98);
+  border-color: #d4e4ee;
+  box-shadow: var(--pkf-light-shadow);
+}
+.pkf-layer-panel h2, .pkf-layer-panel h3, .pkf-layer-panel b { color: var(--pkf-light-ink); }
+.pkf-layer-note, .pkf-layer-row small { color: var(--pkf-light-muted); }
+.pkf-layer-row { border-color: #e3edf4; }
+.pkf-bottom-nav button { color: #637e92; }
+.pkf-bottom-nav button.active {
+  color: #066a9b;
+  background: #e6f4fb;
+  box-shadow: inset 0 0 0 1px #c3e2f1;
+}
+.pkf-bottom-nav button.active span, .pkf-bottom-nav button.active .pkf-nav-icon { color: #087db5; }
+
+/* Reports and floating panels */
+.report, .trip-panel, .group-panel, .safety-panel, .measure-panel, .route-view,
+.model-comparison, .ki-open, .ki-planner, .ki-analysis, .ki-section,
+.ki-window-card, .ki-trip-summary, .sea-overview, .sea-reasons-box {
+  color: var(--pkf-light-ink);
+  background: var(--pkf-light-panel);
+  border-color: var(--pkf-light-line);
+  box-shadow: var(--pkf-light-shadow);
+  backdrop-filter: blur(16px);
+}
+.report, .trip-panel, .group-panel, .safety-panel, .measure-panel, .route-view { color: var(--pkf-light-ink); }
+.report-head {
+  color: var(--pkf-light-ink);
+  background: rgba(255,255,255,.97);
+  border-bottom: 1px solid #e2edf4;
+}
+.report-head button, .trip-head button, .route-view-head button {
+  color: #42677f;
+  background: #edf5fa;
+}
+.report p, .report h4, .report small, .report .updated, .report .safety-note,
+.trip-panel p, .trip-panel small, .group-panel p, .group-help,
+.route-view-head small, .assessment-details small {
+  color: var(--pkf-light-muted);
+}
+.report-grid span, .assessment-details, .kayak-summary, .kayak-assessment,
+.kayak-window, .trip-recording, .trip-idle, .trip-card,
+.safety-grid span, .safety-grid label, .weekly-sea-card, .model-compare-card,
+.ki-metric, .ki-window, .ki-reasons, .ki-recommendation, .ki-best-window,
+.ki-data-status, .ki-decision, .ki-verdict, .sea-hour-card, .sea-reasons {
+  color: var(--pkf-light-ink);
+  background: #f5f9fc;
+  border-color: #dce9f1;
+}
+.report-grid span b, .depth-card b, .kayak-summary strong, .kayak-assessment strong,
+.ki-score, .ki-metric b, .weekly-sea-values b { color: #15324a; }
+.depth-card, .ki-status {
+  color: #145b7d;
+  background: #e8f5fb;
+  border-color: #c3e2f1;
+}
+.kayak-window { background: #eff8fd; border-color: #cfe7f3; }
+.kayak-assessment { background: #f8fbfd; }
+.assessment-details { background: #f4f8fb; }
+.report hr { border-top-color: #dce9f1; }
+.report button:not(#close-report), .measure-panel button {
+  color: #fff;
+  background: #087db5;
+}
+.today-sea, .trip-toggle, .group-toggle, .safety-toggle, .measure-toggle {
+  color: #fff;
+  background: #087db5;
+  box-shadow: 0 7px 20px rgba(18,62,91,.18);
+}
+.trip-toggle { background: #087db5; }
+.group-toggle { background: #167c78; }
+.measure-toggle { background: #28617e; }
+.safety-toggle { background: #087db5; }
+.trip-actions button, .trip-actions a, .trip-secondary {
+  color: #24465f;
+  background: #f2f8fc;
+  border-color: #d1e2ec;
+}
+.trip-actions .danger-action { color: #b4233a; }
+.trip-recording { border-inline-start: 4px solid #d83b50; }
+.trip-idle { border-inline-start: 4px solid #93b4c7; }
+.trip-error, .safety-warning, .ki-error, .ki-invalid {
+  color: #922d31;
+  background: #fff0f0;
+  border-color: #f0c6c8;
+}
+.safety-ok, .safe, .excellent, .ok {
+  color: #176545;
+  background: #eaf8f0;
+  border-color: #c6e9d4;
+}
+.good { color: #176545; }
+.caution, .warn { color: #8a5a09; }
+.danger, .bad { color: #a52b37; }
+.trip-card, .weekly-sea-card, .model-compare-card {
+  box-shadow: 0 3px 12px rgba(24,65,92,.05);
+}
+.trip-card small, .weekly-sea-day strong, .weekly-sea-values span { color: #5f778b; }
+.weekly-sea-day { border-bottom-color: #dce9f1; }
+.weekly-sea-day strong { background: #eaf8f0; color: #176545; }
+.weekly-sea-values span { background: #f1f7fb; border-color: #e0ebf2; }
+.route-view-head b, .trip-head b, .report-head b { color: #15324a; }
+.route-view-stats span { color: #42677f; background: #f2f8fc; border-color: #dce9f1; }
+.route-hide { background: #087db5; color: #fff; }
+.search-results {
+  color: var(--pkf-light-ink);
+  background: rgba(255,255,255,.98);
+  border: 1px solid #d7e5ef;
+  box-shadow: var(--pkf-light-shadow);
+}
+.search-results button, .search-results div {
+  color: var(--pkf-light-ink);
+  border-bottom-color: #e4edf3;
+}
+.search-results button:hover { background: #eef7fc; }
+.safety-grid select, .ki-planner input, .ki-planner select {
+  color: #15324a;
+  background: #f7fbfe;
+  border-color: #cbdde9;
+}
+.safety-note, .updated, .report-updated { color: #6b8192; }
+
+/* Smart Fishing Planner: light cards, crisp hierarchy, and readable controls. */
+.ki-page {
+  color: var(--pkf-light-ink);
+  background: linear-gradient(180deg,#f7fbfe 0%,#edf5fa 100%);
+}
+.ki-topbar { background: rgba(255,255,255,.97); border-color: #d7e5ef; }
+.ki-eyebrow, .ki-muted, .ki-location small, .ki-planner-title small,
+.ki-section-head small, .ki-data-status, .ki-disclaimer { color: #6a8294; opacity: 1; }
+.ki-title, .ki-location-main, .ki-place, .ki-window-main, .ki-verdict-copy,
+.ki-recommendation b, .ki-section-head b, .ki-planner-title b { color: #15324a; }
+.ki-planner { background: #fff; border-color: #d7e5ef; box-shadow: 0 5px 18px rgba(24,65,92,.06); }
+.ki-planner label span { color: #637d90; opacity: 1; }
+.ki-planner input, .ki-planner select { color: #15324a; background: #f7fbfe; border-color: #cbdde9; }
+.ki-planner input:focus, .ki-planner select:focus { border-color: #4ba8d4; }
+.ki-score-ring { color: #087db5; }
+.ki-hero { background: linear-gradient(135deg,#e9f6fc,#fafdff); border-color: #cfe7f3; }
+.ki-verdict { background: #f1f8fc; border-color: #d7e5ef; }
+.ki-status { border-color: #c8e3f0; }
+.ki-icon-btn { color: #42677f; background: #eef6fb; border-color: #d4e4ee; }
+.ki-live-dot { box-shadow: 0 0 0 4px rgba(22,163,74,.12); }
+.ki-window-card { background: #fff; border-color: #d7e5ef; }
+.ki-window-card:hover { border-color: #8fc7e0; }
+.ki-plan-btn { min-height: 44px; border: 0; border-radius: 12px; font-weight: 750; }
+.ki-metrics { gap: 9px; }
+.ki-metric { border-radius: 13px; box-shadow: 0 3px 12px rgba(24,65,92,.04); }
+.ki-section { border-radius: 16px; }
+.ki-spinner { border-color: #c6e1ee; border-top-color: #087db5; }
+
+/* Make the light palette robust in both Arabic RTL and French LTR. */
+[dir="rtl"] .report, [dir="rtl"] .trip-panel, [dir="rtl"] .group-panel,
+[dir="rtl"] .safety-panel, [dir="rtl"] .measure-panel { text-align: start; }
+@media (max-width: 700px) {
+  .topbar { background: rgba(255,255,255,.98); }
+  .report, .trip-panel, .group-panel, .safety-panel, .measure-panel {
+    box-shadow: 0 12px 32px rgba(18,62,91,.18);
+  }
+  .map-actions { max-width: calc(100vw - 20px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+
+/* Mobile bottom navigation contrast fix:
+   Keep inactive destinations readable; only the active destination gets a tint. */
+.pkf-bottom-nav button {
+  color: #31566f !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-text-fill-color: currentColor;
+}
+.pkf-bottom-nav button span,
+.pkf-bottom-nav button small,
+.pkf-bottom-nav button .pkf-nav-icon,
+.pkf-bottom-nav button svg {
+  color: inherit !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.pkf-bottom-nav button .pkf-nav-icon {
+  stroke: currentColor;
+  fill: none;
+}
+.pkf-bottom-nav button.active {
+  color: #075f8d !important;
+  background: #e2f3fb !important;
+}
+.pkf-bottom-nav button:disabled {
+  color: #637e92 !important;
+  opacity: 1 !important;
+}

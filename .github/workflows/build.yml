@@ -2,7 +2,7 @@ name: TypeScript Build Check
 
 on:
   push:
-    branches: [main]
+    branches: [main, ui/light-marine-balanced]
   workflow_dispatch:
 
 jobs:
