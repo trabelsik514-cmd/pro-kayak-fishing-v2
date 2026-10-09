@@ -30,6 +30,13 @@ jobs:
           if [ ! -d android ]; then
             npx cap add android
           fi
+      - name: Prepare app branding assets
+        run: |
+          mkdir -p assets
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/icon.png
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/splash.png
+      - name: Generate Android app icon and splash assets
+        run: npx @capacitor/assets@3.0.5 generate --android --assetPath assets --iconBackgroundColor '#07141f' --iconBackgroundColorDark '#07141f' --splashBackgroundColor '#07141f' --splashBackgroundColorDark '#07141f'
       - name: Configure background runner Android AAR repository
         run: |
           python3 - <<'PY'
