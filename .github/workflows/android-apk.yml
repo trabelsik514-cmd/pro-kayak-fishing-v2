@@ -2,7 +2,7 @@ name: Android APK Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, ui/light-marine-balanced]
   workflow_dispatch:
 
 permissions:
