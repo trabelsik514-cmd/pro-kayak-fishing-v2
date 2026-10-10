@@ -2451,3 +2451,40 @@
  .topbar .lang-toggle{min-width:76px!important;padding:0 8px!important;font-size:13px!important}
  .topbar .pkf-updates-button{flex-basis:34px!important;width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important}
 }
+
+
+/* Coherent mobile header: brand, language + updates grouped, search below. */
+@media(max-width:700px){
+ .topbar{
+   height:116px!important;
+   min-height:116px!important;
+   box-sizing:border-box!important;
+   padding:8px 12px 9px!important;
+   display:grid!important;
+   grid-template-columns:minmax(0,1fr) auto!important;
+   grid-template-rows:52px 42px!important;
+   grid-template-areas:"brand controls" "search search"!important;
+   gap:7px 10px!important;
+   align-items:center!important;
+   justify-content:stretch!important;
+ }
+ .topbar>.brand{grid-area:brand!important;justify-self:start!important;align-self:center!important;display:flex!important;flex-direction:row!important;gap:8px!important;min-width:0!important;max-width:100%!important}
+ .topbar>.brand .brand-logo{width:48px!important;height:48px!important;flex:0 0 48px!important;object-fit:cover!important;border-radius:12px!important}
+ .topbar>.brand .brand-name{font-size:11px!important;line-height:1.1!important;letter-spacing:0!important;white-space:nowrap!important}
+ .topbar>.header-controls{grid-area:controls!important;justify-self:end!important;align-self:center!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;min-width:0!important}
+ .topbar .header-controls .lang-toggle{grid-area:auto!important;align-self:center!important;justify-self:auto!important;display:inline-flex!important;width:auto!important;min-width:66px!important;height:38px!important;min-height:38px!important;padding:0 9px!important;border-radius:12px!important;font-size:13px!important}
+ .topbar .header-controls .pkf-updates-button{position:relative!important;inset:auto!important;transform:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 38px!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;margin:0!important;padding:0!important;border-radius:12px!important;background:#f2f8fc!important;border:1px solid #c8dce8!important;color:#17668b!important;box-shadow:none!important}
+ .topbar>.search{grid-area:search!important;justify-self:stretch!important;align-self:stretch!important;width:100%!important;max-width:none!important;height:42px!important;min-width:0!important;display:flex!important;flex-direction:row!important;gap:8px!important;margin:0!important}
+ .topbar>.search input{height:42px!important;min-width:0!important;flex:1 1 auto!important;border-radius:12px!important;padding:0 12px!important;font-size:14px!important}
+ .topbar>.search button{height:42px!important;min-width:78px!important;flex:0 0 auto!important;padding:0 12px!important;border-radius:12px!important;font-size:13px!important}
+ .search-results{top:122px!important;right:12px!important;width:calc(100% - 24px)!important}
+}
+@media(max-width:380px){
+ .topbar{grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important;padding-inline:9px!important}
+ .topbar>.brand{gap:6px!important}
+ .topbar>.brand .brand-logo{width:42px!important;height:42px!important;flex-basis:42px!important}
+ .topbar>.brand .brand-name{font-size:10px!important}
+ .topbar .header-controls{gap:5px!important}
+ .topbar .header-controls .lang-toggle{min-width:58px!important;padding-inline:7px!important}
+ .topbar .header-controls .pkf-updates-button{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex-basis:34px!important}
+}
