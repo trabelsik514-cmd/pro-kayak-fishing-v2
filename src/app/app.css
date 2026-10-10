@@ -2424,3 +2424,10 @@
 .pkf-map-toolbar.collapsed .pkf-toolbar-toggle{color:#38bdf8}
 .pkf-updates-button{left:12px!important;right:auto!important;top:auto!important;bottom:calc(158px + env(safe-area-inset-bottom, 0px))!important}
 @media(max-width:700px){.pkf-map-toolbar{right:9px!important;bottom:calc(158px + env(safe-area-inset-bottom, 0px))!important;gap:6px;padding:5px}.pkf-updates-button{left:10px!important;bottom:calc(158px + env(safe-area-inset-bottom, 0px))!important}}
+
+
+/* Header bell: never overlap map markers, bottom navigation, or sea labels. */
+.topbar .pkf-updates-button{position:relative!important;inset:auto!important;z-index:3!important;flex:0 0 38px!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;margin:0 0 0 8px!important;padding:0!important;border-radius:12px!important;background:rgba(5,18,28,.06)!important;border:1px solid rgba(23,68,94,.18)!important;color:#17445e!important;box-shadow:none!important}
+.topbar .pkf-updates-button .pkf-updates-bell{font-size:17px}
+.topbar .pkf-updates-button .pkf-updates-dot{border-color:#eef5f8}
+@media(max-width:700px){.topbar .pkf-updates-button{flex-basis:34px!important;width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;margin-inline-start:5px!important}}
