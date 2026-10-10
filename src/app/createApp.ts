@@ -1935,7 +1935,7 @@ export function createApp(root: HTMLElement) {
               '<div><span>🪸 '+t('العمق')+'</span><b>'+value(depthResult?.depthMeters ?? null,' m')+'</b></div>'+
               '<div><span>🌊 '+t('التيار')+'</span><b>'+value(data.sea.currentVelocity,' m/s')+'</b></div>'+
               '<div><span>🌡️ '+t('حرارة البحر')+'</span><b>'+value(data.sea.seaTemperature,' °C')+'</b></div>'+
-              '<div><span>💨 '+t('هبات الرياح')+'</span><b>'+value(data.weather.windGusts,' kn')+'</b></div>'+
+              '<div><span>💨 '+t('هبات الرياح')+'</span><b>'+value(data.weather.windGusts,' km/h')+'</b></div>'+
             '</div>'+
             '<details open class="advisor-detail"><summary>🎣 '+t('الأنواع الأكثر ملاءمة')+'</summary><div class="advisor-section">'+speciesHtml+'</div></details>'+
             '<details class="advisor-detail"><summary>⏱️ '+t('أفضل النوافذ')+'</summary><div class="advisor-windows">'+(windowsHtml||'<small>'+t('لا توجد نافذة موثوقة حالياً')+'</small>')+'</div></details>'+
