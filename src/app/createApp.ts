@@ -618,7 +618,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
 export function createApp(root: HTMLElement) {
   setDocumentLanguage();
   void initSeaNotifications();
-  root.innerHTML = `<main class="shell"><header class="topbar"><a class="brand" href="#" aria-label="PRO KAYAK FISHING V2"><img class="brand-logo" src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/></a>
+  root.innerHTML = `<main class="shell"><header class="topbar"><a class="brand" href="#" aria-label="PRO KAYAK FISHING V2"><img class="brand-logo" src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/><span class="brand-name">PRO KAYAK<br/><b>FISHING V2</b></span></a>
     <button id="lang-toggle" class="lang-toggle" type="button">🌐 ${getLang() === 'ar' ? 'FR' : 'العربية'}</button>
     <form id="search-form" class="search"><input id="search-input" placeholder="${t('ابحث عن مدينة أو ساحل تونسي')}" autocomplete="off"/><button type="submit">${t('بحث')}</button></form></header>
     <section id="map" class="map"></section>
@@ -635,7 +635,6 @@ export function createApp(root: HTMLElement) {
       </div>
     </nav>
     <div class="pkf-map-toolbar" id="pkf-map-toolbar" aria-label="${getLang()==='fr'?'Outils de navigation':'أدوات الملاحة'}">
-      <button id="pkf-toolbar-toggle" class="pkf-toolbar-toggle" style="display:grid;place-items:center;width:38px;height:36px;flex:0 0 36px;border:1px solid rgba(255,255,255,.16);border-radius:11px;background:rgba(5,18,28,.96);color:#e8f5fb;font-size:22px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.22)" type="button" aria-expanded="true" aria-controls="pkf-map-toolbar-tools" title="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}" aria-label="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}">×</button>
       <div class="pkf-map-toolbar-tools" id="pkf-map-toolbar-tools">
       <button id="pkf-gps" class="pkf-tool pkf-tool-gps" type="button" title="${getLang()==='fr'?'Ma position':'موقعي'}" aria-label="${getLang()==='fr'?'Ma position':'موقعي'}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path></svg>
@@ -663,6 +662,7 @@ export function createApp(root: HTMLElement) {
       </button>
       </div>
     </div>
+    <button id="pkf-toolbar-toggle" class="pkf-toolbar-toggle" style="display:grid;place-items:center;width:44px;height:44px;border:1px solid rgba(255,255,255,.16);border-radius:50%;background:rgba(5,18,28,.96);color:#e8f5fb;font-size:21px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3)" type="button" aria-expanded="true" aria-controls="pkf-map-toolbar-tools" title="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}" aria-label="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}">×</button>
     <aside id="pkf-layer-panel" class="pkf-layer-panel hidden">
       <div class="pkf-layer-head"><b>◈ ${getLang()==='fr'?'Couches':'الطبقات'}</b><button id="pkf-layer-close" type="button" aria-label="${t('إغلاق')}">×</button></div>
       <label class="pkf-layer-row"><span>🛰️ ${getLang()==='fr'?'Satellite':'الأقمار الصناعية'}</span><input id="pkf-satellite-toggle" type="checkbox" checked></label>
@@ -1013,18 +1013,15 @@ export function createApp(root: HTMLElement) {
       toolbarTools.style.flexDirection = 'column';
       toolbarTools.style.gap = '7px';
     }
-    mapToolbar.style.display = 'flex';
-    mapToolbar.style.flexDirection = 'column';
-    mapToolbar.style.alignItems = 'center';
-    mapToolbar.style.gap = '7px';
-    mapToolbar.style.padding = '6px';
-    mapToolbar.style.borderRadius = '16px';
-    mapToolbar.style.background = 'rgba(3,15,24,.88)';
-    mapToolbar.style.border = '1px solid rgba(255,255,255,.14)';
-    mapToolbar.style.backdropFilter = 'blur(14px)';
-    toolbarToggle.style.width = collapsed ? '38px' : '38px';
-    toolbarToggle.style.height = '36px';
-    toolbarToggle.style.flexBasis = '36px';
+    mapToolbar.style.display = collapsed ? 'none' : 'flex';
+    toolbarToggle.style.position = 'absolute';
+    toolbarToggle.style.zIndex = '50';
+    toolbarToggle.style.top = 'auto';
+    toolbarToggle.style.right = '12px';
+    toolbarToggle.style.bottom = 'calc(104px + env(safe-area-inset-bottom, 0px))';
+    toolbarToggle.style.width = '44px';
+    toolbarToggle.style.height = '44px';
+    toolbarToggle.style.borderRadius = '50%';
     toolbarToggle.setAttribute('aria-expanded', String(!collapsed));
     toolbarToggle.setAttribute('aria-label', collapsed
       ? (getLang()==='fr' ? 'Ouvrir les outils' : 'فتح أدوات الخريطة')
@@ -1032,6 +1029,15 @@ export function createApp(root: HTMLElement) {
     toolbarToggle.title = toolbarToggle.getAttribute('aria-label') || '';
     toolbarToggle.textContent = collapsed ? '☰' : '×';
     if (collapsed) layerPanel.classList.add('hidden');
+  });
+  toolbarToggle?.addEventListener('dblclick', () => {
+    if (!mapToolbar || !toolbarToggle) return;
+    mapToolbar.classList.remove('collapsed');
+    mapToolbar.style.display = 'flex';
+    const toolbarTools = mapToolbar.querySelector<HTMLElement>('#pkf-map-toolbar-tools');
+    if (toolbarTools) toolbarTools.style.display = 'flex';
+    toolbarToggle.textContent = '×';
+    toolbarToggle.setAttribute('aria-expanded', 'true');
   });
   document.querySelector<HTMLButtonElement>('#pkf-layers')?.addEventListener('click', () => layerPanel.classList.toggle('hidden'));
   document.querySelector<HTMLButtonElement>('#pkf-layer-close')?.addEventListener('click', () => layerPanel.classList.add('hidden'));
