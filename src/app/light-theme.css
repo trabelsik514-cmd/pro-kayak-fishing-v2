@@ -1,0 +1,177 @@
+/* PRO KAYAK FISHING V2 — Light Marine Theme
+   UI-only overrides. Map imagery and data layers remain unchanged. */
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #17364b;
+  background: #edf5fa;
+  --pkf-bg: #edf5fa;
+  --pkf-panel: rgba(255,255,255,.97);
+  --pkf-line: #d5e3ed;
+  --pkf-accent: #1677ad;
+  --pkf-text: #17364b;
+  --pkf-muted: #607c90;
+  --pkf-surface: #f5f9fc;
+  --pkf-blue: #1479b8;
+}
+
+html, body, #app { color: #17364b; background: #edf5fa; }
+.topbar {
+  color: #17364b !important;
+  background: rgba(255,255,255,.94) !important;
+  border-bottom: 1px solid #d5e3ed !important;
+  box-shadow: 0 4px 20px rgba(24,65,91,.09) !important;
+  backdrop-filter: blur(16px);
+}
+.topbar .search input {
+  color: #17364b !important;
+  background: #f6fafc !important;
+  border: 1px solid #c8dce9 !important;
+}
+.topbar .search input::placeholder { color: #7890a1 !important; }
+.topbar .search button,
+.today-sea,
+.trip-toggle,
+.trip-primary { background: #1479b8 !important; color: #fff !important; }
+.lang-toggle {
+  color: #1b5579 !important;
+  border-color: #c7deeb !important;
+  background: #eaf4fa !important;
+}
+.search-results {
+  color: #17364b !important;
+  background: rgba(255,255,255,.99) !important;
+  border: 1px solid #d5e3ed;
+  box-shadow: 0 14px 34px rgba(24,65,91,.16) !important;
+}
+.search-results button, .search-results div {
+  color: #17364b !important;
+  border-bottom-color: #e2edf4 !important;
+}
+.search-results button:hover { background: #eef7fc !important; }
+
+.report, .trip-panel, .group-panel, .safety-panel, .measure-panel,
+.saved-waypoints-panel, .coordinate-waypoint-card {
+  color: #17364b !important;
+  background: rgba(255,255,255,.98) !important;
+  border: 1px solid #d5e3ed !important;
+  box-shadow: 0 18px 48px rgba(19,57,81,.18) !important;
+  backdrop-filter: blur(18px);
+}
+.report *, .trip-panel *, .group-panel *, .safety-panel *, .measure-panel *,
+.saved-waypoints-panel *, .coordinate-waypoint-card * { color: inherit; }
+.report p, .trip-panel p, .group-panel p, .safety-panel p,
+.report small, .trip-panel small, .group-panel small, .safety-panel small,
+.saved-waypoint-main small, .dashboard-date, .coords { color: #607c90 !important; }
+.report-head button, .trip-head button, .saved-waypoints-head button,
+.coordinate-waypoint-head button {
+  color: #234b65 !important;
+  background: #edf5fa !important;
+  border: 1px solid #d2e2ec !important;
+}
+.report button:not(#close-report), .trip-panel button, .group-panel button,
+.measure-panel button, .coordinate-waypoint-card button,
+.saved-waypoints-panel button:not(.saved-waypoint-delete) {
+  border-color: #c8dce9 !important;
+}
+.report-grid span, .kayak-summary, .assessment-details, .loading-report,
+.trip-recording, .trip-idle, .trip-card, .group-trip-row,
+.safety-grid span, .safety-grid label, .route-order-hint,
+.saved-waypoint-card, .dashboard-card, .dashboard-metrics > div,
+.dashboard-forecast, .dashboard-mini-card, .dashboard-forecast .departure-hour,
+.fishing-intelligence-grid > div, .advisor-grid > div, .advisor-species,
+.advisor-window, .tide-event {
+  color: #23465c !important;
+  background: #f3f8fb !important;
+  border-color: #d8e6ef !important;
+}
+.report h4, .dashboard-section-title b, .dashboard-title b,
+.fishing-intelligence-head b, .advisor-head b,
+.trip-head, .saved-waypoints-head, .coordinate-waypoint-head { color: #17364b !important; }
+.report-grid b, .dashboard-card strong, .dashboard-metrics b,
+.dashboard-score strong, .score-copy b, .score-copy span,
+.dashboard-mini-card b, .mini-window b, .fishing-intelligence-head > strong,
+.fishing-intelligence-grid b, .advisor-grid b, .advisor-species strong,
+.advisor-window b, .advisor-window strong { color: #17364b !important; }
+.dashboard-score {
+  color: #17364b !important;
+  background: linear-gradient(135deg, #f8fcff, #eaf4fa) !important;
+  border-color: #d2e3ee !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.9), 0 4px 12px rgba(32,82,113,.06) !important;
+}
+.score-gauge { background: conic-gradient(#159b72 var(--score), #dce9f1 var(--score)) !important; }
+.score-gauge:after { background: #fff !important; border-color: #d7e6ef !important; }
+.dashboard-forecast .departure-best {
+  color: #184a64 !important;
+  background: linear-gradient(90deg, #e6f4fb, #e6f7ef) !important;
+}
+.dashboard-forecast .departure-best span,
+.dashboard-forecast .departure-reasons,
+.dashboard-forecast .departure-note,
+.dashboard-footer small,
+.fishing-intelligence-head small,
+.fishing-intelligence-note,
+.fishing-intelligence-source,
+.advisor-head small,
+.advisor-note,
+.advisor-source { color: #607c90 !important; }
+.dashboard-actions button {
+  color: #21516d !important;
+  background: #edf5fa !important;
+  border-color: #d4e3ed !important;
+}
+.dashboard-actions button:nth-child(3) { color: #fff !important; background: #1479b8 !important; }
+.dashboard-actions button:last-child { color: #fff !important; background: #16845d !important; }
+.dashboard-fishing-intelligence-slot, .dashboard-advisor-slot {
+  color: #17364b !important;
+  background: linear-gradient(135deg, #f6fbfe, #eaf4fa) !important;
+  border-color: #d3e3ed !important;
+}
+.dashboard-fishing-intelligence-slot *, .dashboard-advisor-slot * { color: inherit; }
+.dashboard-fishing-intelligence-slot small, .dashboard-advisor-slot small { color: #607c90 !important; }
+.dashboard-card em.good { background: #d9f4e6 !important; color: #176344 !important; }
+.dashboard-card em.caution { background: #fff0bf !important; color: #72520b !important; }
+.dashboard-card em.danger { background: #ffe1e1 !important; color: #9d2929 !important; }
+.safety-warning { color: #8c2525 !important; background: #fff0f0 !important; border-color: #f0c5c5 !important; }
+.safety-ok { color: #176344 !important; background: #e6f8ef !important; border-color: #b7e8cf !important; }
+.safety-panel select, .coordinate-waypoint-card input,
+.coordinate-waypoint-card select, .coordinate-waypoint-card textarea,
+.safety-grid select {
+  color: #17364b !important;
+  background: #fff !important;
+  border-color: #cbdde8 !important;
+}
+.coordinate-waypoint-card label { color: #35586e !important; }
+.coordinate-point-error { color: #b42318 !important; }
+.saved-waypoints-head button:hover, .coordinate-waypoint-head button:hover { background: #e2f1f9 !important; }
+.saved-waypoint-add, .saved-waypoints-add { color: #176b9f !important; background: #e6f4fb !important; }
+.saved-waypoint-delete { color: #b42318 !important; }
+.pkf-waypoint-notice { color: #176344 !important; background: #e8f8f1 !important; border-color: #b9e7d3 !important; }
+.depth-card { color: #1d5779 !important; background: #eaf5fc !important; border-color: #c7e1f0 !important; }
+.trip-error { color: #9d2929 !important; background: #fff0f0 !important; }
+.trip-actions button, .trip-actions a, .trip-secondary {
+  color: #24516c !important;
+  background: #edf5fa !important;
+  border-color: #d0e1ec !important;
+}
+.trip-actions .danger-action { color: #b42318 !important; }
+.group-help, .group-trip-row small { color: #607c90 !important; }
+.group-color { border: 1px solid rgba(30,70,100,.1); }
+.tide-event.high { border-color: #b6e5d7 !important; }
+.tide-event.low { border-color: #bfdef1 !important; }
+
+/* Keep the map and map controls legible without changing geographic layers. */
+.maplibregl-ctrl-group {
+  border: 1px solid #d2e2ec !important;
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 4px 14px rgba(26,66,91,.14) !important;
+}
+.maplibregl-ctrl-group button { filter: none; }
+.maplibregl-ctrl-attrib { color: #34556a !important; background: rgba(255,255,255,.88) !important; }
+.maplibregl-ctrl-attrib a { color: #176b9f !important; }
+
+@media (max-width: 700px) {
+  .topbar { box-shadow: 0 3px 15px rgba(24,65,91,.12) !important; }
+  .report, .trip-panel, .group-panel, .safety-panel, .measure-panel,
+  .saved-waypoints-panel { border-radius: 18px !important; }
+}

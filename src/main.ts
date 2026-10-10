@@ -1,5 +1,6 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './app/app.css';
+import './app/light-theme.css';
 import { createApp } from './app/createApp';
 import { Capacitor } from '@capacitor/core';
 import { registerOffline, watchConnection } from './offline/registerOffline';

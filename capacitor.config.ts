@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
     androidScheme: 'https'
   },
   android: {
-    backgroundColor: '#07141f'
+    backgroundColor: '#edf5fa'
   },
   plugins: {
     BackgroundRunner: {
