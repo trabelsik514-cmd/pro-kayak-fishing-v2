@@ -2333,3 +2333,54 @@
   }
 }
 /* Preserve the satellite map; brighten the interface panels, not the map imagery. */
+
+
+/* Light surfaces and high-contrast typography for the marine/fishing reports */
+.ki-hero,.ki-metric,.ki-stat,.ki-card,.ki-row,.ki-item,
+.ki-status>section,.ki-status>div:not(.ki-location-main),
+.sea-overview>div,.sea-hour-card,.sea-best-window,.sea-reasons-box,
+.weekly-sea-card,.model-compare-card,.model-comparison,
+.weather-highlight,.weather-overview>div,.forecast-card,
+.fishing-score-card,.species-card,.species-row,.fish-species-card,
+.sea-hour-strip,.sea-reasons,.ki-location-main{
+  background-color:#f0f7fb;
+  color:#234658;
+  border-color:#d5e6ef;
+  box-shadow:0 5px 16px rgba(23,67,91,.06);
+}
+.ki-hero{background:linear-gradient(135deg,#f8fcff,#eaf5fb)}
+.ki-hero b,.ki-hero strong,.ki-location-main b,
+.ki-metric b,.ki-stat b,.ki-card b,.ki-row b,
+.sea-overview b,.sea-overview strong,.sea-hour-card strong,
+.sea-hour-card b,.sea-best-window b,.sea-best-window strong,
+.weekly-sea-card b,.model-compare-card b,.model-compare-head strong{
+  color:#163e55;
+}
+.ki-hero small,.ki-location-main small,.ki-metric small,
+.ki-stat small,.ki-card small,.ki-row small,
+.sea-overview span,.sea-location,.sea-source,
+.sea-hour-card span,.sea-best-window small,
+.weekly-sea-card span,.model-comparison small{
+  color:#587382;
+  opacity:1;
+}
+.ki-searchbar input,.ki-searchbar select{
+  background:#fff;
+  color:#234658;
+  border-color:#c9dfe9;
+}
+.ki-searchbar input::placeholder{color:#6c8795}
+.sea-section-toggle{
+  color:#1b4b65;
+  background:#eaf5fb;
+  border-color:#cfe3ed;
+}
+.sea-hour-card.excellent,.sea-hour-card.good{background:#eaf8f0}
+.sea-hour-card.caution{background:#fff7e8}
+.sea-hour-card.danger{background:#fff0f0}
+.sea-best-window{border-color:#b9e5d0}
+.weekly-sea-values span,.model-compare-grid span{
+  background:#f7fbfd;
+  color:#35586a;
+  border-color:#dceaf1;
+}
