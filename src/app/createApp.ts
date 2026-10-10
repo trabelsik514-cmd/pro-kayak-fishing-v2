@@ -2335,6 +2335,8 @@ export function createApp(root: HTMLElement) {
   const showTodaySea = async (lat:number, lng:number) => {
     if (routeTripId) removeRoute();
     report.classList.remove('hidden');
+    report.dir = getLang()==='fr' ? 'ltr' : 'rtl';
+    report.lang = getLang();
     setReportOpen(true);
     tripPanel.classList.add('hidden');
     measurePanel.classList.add('hidden');
