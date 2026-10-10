@@ -635,7 +635,7 @@ export function createApp(root: HTMLElement) {
       </div>
     </nav>
     <div class="pkf-map-toolbar" id="pkf-map-toolbar" aria-label="${getLang()==='fr'?'Outils de navigation':'أدوات الملاحة'}">
-      <button id="pkf-toolbar-toggle" class="pkf-toolbar-toggle" type="button" aria-expanded="true" aria-controls="pkf-map-toolbar-tools" title="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}" aria-label="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}">×</button>
+      <button id="pkf-toolbar-toggle" class="pkf-toolbar-toggle" style="display:grid;place-items:center;width:38px;height:36px;flex:0 0 36px;border:1px solid rgba(255,255,255,.16);border-radius:11px;background:rgba(5,18,28,.96);color:#e8f5fb;font-size:22px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.22)" type="button" aria-expanded="true" aria-controls="pkf-map-toolbar-tools" title="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}" aria-label="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}">×</button>
       <div class="pkf-map-toolbar-tools" id="pkf-map-toolbar-tools">
       <button id="pkf-gps" class="pkf-tool pkf-tool-gps" type="button" title="${getLang()==='fr'?'Ma position':'موقعي'}" aria-label="${getLang()==='fr'?'Ma position':'موقعي'}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path></svg>
@@ -1007,6 +1007,24 @@ export function createApp(root: HTMLElement) {
   toolbarToggle?.addEventListener('click', () => {
     if (!mapToolbar || !toolbarToggle) return;
     const collapsed = mapToolbar.classList.toggle('collapsed');
+    const toolbarTools = mapToolbar.querySelector<HTMLElement>('#pkf-map-toolbar-tools');
+    if (toolbarTools) {
+      toolbarTools.style.display = collapsed ? 'none' : 'flex';
+      toolbarTools.style.flexDirection = 'column';
+      toolbarTools.style.gap = '7px';
+    }
+    mapToolbar.style.display = 'flex';
+    mapToolbar.style.flexDirection = 'column';
+    mapToolbar.style.alignItems = 'center';
+    mapToolbar.style.gap = '7px';
+    mapToolbar.style.padding = '6px';
+    mapToolbar.style.borderRadius = '16px';
+    mapToolbar.style.background = 'rgba(3,15,24,.88)';
+    mapToolbar.style.border = '1px solid rgba(255,255,255,.14)';
+    mapToolbar.style.backdropFilter = 'blur(14px)';
+    toolbarToggle.style.width = collapsed ? '38px' : '38px';
+    toolbarToggle.style.height = '36px';
+    toolbarToggle.style.flexBasis = '36px';
     toolbarToggle.setAttribute('aria-expanded', String(!collapsed));
     toolbarToggle.setAttribute('aria-label', collapsed
       ? (getLang()==='fr' ? 'Ouvrir les outils' : 'فتح أدوات الخريطة')
