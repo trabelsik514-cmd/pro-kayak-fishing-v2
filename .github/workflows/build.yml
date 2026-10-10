@@ -2,7 +2,7 @@ name: TypeScript Build Check
 
 on:
   push:
-    branches: [main]
+    branches: [main, cloudflare-migration]
   workflow_dispatch:
 
 jobs:
