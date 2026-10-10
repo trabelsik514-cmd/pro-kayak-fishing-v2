@@ -1933,7 +1933,7 @@ export function createApp(root: HTMLElement) {
             '<div class="advisor-head"><div><b>🎯 '+t('تحليل الصيد المتقدم')+'</b><small>'+t(profile)+'</small></div><span class="advisor-confidence">'+t('ثقة التحليل')+' '+confidence.score+'%</span></div>'+
             '<div class="advisor-grid">'+
               '<div><span>🪸 '+t('العمق')+'</span><b>'+value(depthResult?.depthMeters ?? null,' m')+'</b></div>'+
-              '<div><span>🌊 '+t('التيار')+'</span><b>'+value(data.sea.currentVelocity,' m/s')+'</b></div>'+
+              '<div><span>🌊 '+t('التيار')+'</span><b>'+value(data.sea.currentVelocity,' km/h')+'</b></div>'+
               '<div><span>🌡️ '+t('حرارة البحر')+'</span><b>'+value(data.sea.seaTemperature,' °C')+'</b></div>'+
               '<div><span>💨 '+t('هبات الرياح')+'</span><b>'+value(data.weather.windGusts,' km/h')+'</b></div>'+
             '</div>'+
