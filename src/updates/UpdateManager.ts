@@ -36,10 +36,17 @@ export function initUpdateManager(root: HTMLElement): void {
   button.setAttribute('aria-label', text('آخر التحديثات', 'Dernières nouveautés'));
   button.title = text('آخر التحديثات', 'Dernières nouveautés');
   // Keep update notifications in the header, never over map pins or sea labels.
-  const topbar = root.querySelector<HTMLElement>('.topbar');
+  const topbar = document.querySelector<HTMLElement>('.topbar');
   const languageButton = topbar?.querySelector<HTMLElement>('#lang-toggle');
   if (topbar && languageButton) {
-    languageButton.insertAdjacentElement('afterend', button);
+    let controls = topbar.querySelector<HTMLElement>('.header-controls');
+    if (!controls) {
+      controls = document.createElement('div');
+      controls.className = 'header-controls';
+      languageButton.parentElement?.insertBefore(controls, languageButton);
+      controls.append(languageButton);
+    }
+    controls.append(button);
   } else if (topbar) {
     topbar.append(button);
   }
@@ -49,10 +56,12 @@ export function initUpdateManager(root: HTMLElement): void {
   button.style.flex = '0 0 38px';
   button.style.width = '38px';
   button.style.height = '38px';
+  button.style.minWidth = '38px';
+  button.style.minHeight = '38px';
   button.style.borderRadius = '12px';
-  button.style.background = 'rgba(5,18,28,.06)';
-  button.style.border = '1px solid rgba(23,68,94,.18)';
-  button.style.color = '#17445e';
+  button.style.background = '#f2f8fc';
+  button.style.border = '1px solid #c8dce8';
+  button.style.color = '#17668b';
   button.style.boxShadow = 'none';
 
   const dialog = document.createElement('section');
