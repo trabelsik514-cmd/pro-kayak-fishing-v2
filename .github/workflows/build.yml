@@ -19,5 +19,7 @@ jobs:
         run: npm install
       - name: TypeScript check
         run: npm run check
+      - name: Kayak safety regression tests
+        run: npm run test:safety
       - name: Production build
         run: npm run build
