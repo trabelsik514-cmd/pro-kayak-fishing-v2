@@ -10,7 +10,8 @@
     "check": "tsc -b --noEmit",
     "android:build": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
-    "audit": "npm audit --audit-level=high"
+    "audit": "npm audit --audit-level=high",
+    "test:safety": "node --experimental-strip-types --test tests/safety-regression.test.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^5.0.0",
