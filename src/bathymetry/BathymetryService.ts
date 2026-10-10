@@ -36,7 +36,7 @@ export async function getBathymetryDepth(
     if (!res.ok) return null;
     const data = await res.json() as BathymetryApiResponse;
     const rawDepth = data.depthMeters;
-    if (rawDepth == null || rawDepth === '') return null;
+    if (rawDepth == null) return null;
     const depth = Number(rawDepth);
     if (!Number.isFinite(depth) || depth < 0) return null;
     if (
