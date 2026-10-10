@@ -12,6 +12,7 @@ import { loadWaypoints, saveWaypoint, deleteWaypoint, type FishingWaypoint, type
 import { getCoastDistance } from '../coastline/CoastDistanceService';
 import { getFishingIntelligence } from '../fishing/FishingIntelligence';
 import { rankSpecies, rankFishingWindows, calculateConfidence, tunisianProfile } from '../fishing/FishingAdvisor';
+import { initUpdateManager } from '../updates/UpdateManager';
 
 const value = (v: number|null, unit = '') => v == null ? '—' : `${v.toFixed(1)}${unit}`;
 const directionValue = (direction: number|null, speed: number|null) => direction == null || speed == null || speed < 0.1 ? '—' : `${direction.toFixed(1)}°`;
@@ -742,6 +743,8 @@ export function createApp(root: HTMLElement) {
     <aside class="route-view hidden" id="route-view" aria-live="polite"></aside>
     <aside class="report" id="report"><div class="report-head"><b>${t('حالة البحر')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
     <p>${t('اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.')}</p></aside><div class="search-results hidden" id="search-results"></div></main>`;
+
+  initUpdateManager(root);
 
   if (!sessionStorage.getItem('pkf-v2-splash-seen')) {
     const splash = document.createElement('div');
