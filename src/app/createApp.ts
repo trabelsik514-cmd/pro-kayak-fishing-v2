@@ -634,7 +634,9 @@ export function createApp(root: HTMLElement) {
         </div>
       </div>
     </nav>
-    <div class="pkf-map-toolbar" aria-label="${getLang()==='fr'?'Outils de navigation':'أدوات الملاحة'}">
+    <div class="pkf-map-toolbar" id="pkf-map-toolbar" aria-label="${getLang()==='fr'?'Outils de navigation':'أدوات الملاحة'}">
+      <button id="pkf-toolbar-toggle" class="pkf-toolbar-toggle" type="button" aria-expanded="true" aria-controls="pkf-map-toolbar-tools" title="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}" aria-label="${getLang()==='fr'?'Réduire les outils':'إغلاق أدوات الخريطة'}">×</button>
+      <div class="pkf-map-toolbar-tools" id="pkf-map-toolbar-tools">
       <button id="pkf-gps" class="pkf-tool pkf-tool-gps" type="button" title="${getLang()==='fr'?'Ma position':'موقعي'}" aria-label="${getLang()==='fr'?'Ma position':'موقعي'}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path></svg>
         <span class="pkf-tool-label">${getLang()==='fr'?'Position':'موقعي'}</span>
@@ -659,6 +661,7 @@ export function createApp(root: HTMLElement) {
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c5-1 7-8 12-8h4"></path><path d="m16 7 4 4-4 4"></path><circle cx="5" cy="19" r="1.5"></circle></svg>
         <span class="pkf-tool-label">${getLang()==='fr'?'Sorties':'رحلاتي'}</span>
       </button>
+      </div>
     </div>
     <aside id="pkf-layer-panel" class="pkf-layer-panel hidden">
       <div class="pkf-layer-head"><b>◈ ${getLang()==='fr'?'Couches':'الطبقات'}</b><button id="pkf-layer-close" type="button" aria-label="${t('إغلاق')}">×</button></div>
@@ -999,6 +1002,19 @@ export function createApp(root: HTMLElement) {
   });
 
 
+  const mapToolbar = document.querySelector<HTMLElement>('#pkf-map-toolbar');
+  const toolbarToggle = document.querySelector<HTMLButtonElement>('#pkf-toolbar-toggle');
+  toolbarToggle?.addEventListener('click', () => {
+    if (!mapToolbar || !toolbarToggle) return;
+    const collapsed = mapToolbar.classList.toggle('collapsed');
+    toolbarToggle.setAttribute('aria-expanded', String(!collapsed));
+    toolbarToggle.setAttribute('aria-label', collapsed
+      ? (getLang()==='fr' ? 'Ouvrir les outils' : 'فتح أدوات الخريطة')
+      : (getLang()==='fr' ? 'Réduire les outils' : 'إغلاق أدوات الخريطة'));
+    toolbarToggle.title = toolbarToggle.getAttribute('aria-label') || '';
+    toolbarToggle.textContent = collapsed ? '☰' : '×';
+    if (collapsed) layerPanel.classList.add('hidden');
+  });
   document.querySelector<HTMLButtonElement>('#pkf-layers')?.addEventListener('click', () => layerPanel.classList.toggle('hidden'));
   document.querySelector<HTMLButtonElement>('#pkf-layer-close')?.addEventListener('click', () => layerPanel.classList.add('hidden'));
   document.querySelector<HTMLInputElement>('#pkf-satellite-toggle')?.addEventListener('change', e => {
