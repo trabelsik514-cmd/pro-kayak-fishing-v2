@@ -551,15 +551,21 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
       : !kayakAssessment.dataComplete
         ? (getLang()==='fr'?'Données de sécurité incomplètes':'بيانات السلامة غير مكتملة')
         : (getLang()==='fr'?'Évaluation de sécurité du kayak':'تقييم سلامة الكياك');
-  const safetyRecommendation = kayakAssessment
-    ? (getLang()==='fr'
+  const safetyRecommendation = !kayakAssessment
+    ? (getLang()==='fr'?'La sécurité ne peut pas être évaluée sans les données nécessaires.':'لا يمكن تقييم السلامة دون البيانات اللازمة.')
+    : getLang()==='fr'
       ? (kayakAssessment.hardStop
         ? 'Ne partez pas en kayak dans ces conditions selon les seuils de prudence. Reportez la sortie et vérifiez le bulletin maritime officiel.'
         : !kayakAssessment.dataComplete
-          ? 'Les données de sécurité sont incomplètes. Vérifiez vent, rafales, vagues, houle et courant avant de décider.'
-          : kayakAssessment.recommendation)
-      : kayakAssessment.recommendation)
-    : (getLang()==='fr'?'La sécurité ne peut pas être évaluée sans les données nécessaires.':'لا يمكن تقييم السلامة دون البيانات اللازمة.');
+          ? 'Les données de sécurité sont incomplètes. Vérifiez le vent, les rafales, les vagues, la houle et le courant avant de décider.'
+          : kayakAssessment.level==='ممتاز'
+            ? 'Les conditions semblent favorables à la planification, mais vérifiez le bulletin maritime officiel, la direction du vent et le trajet de retour avant le départ.'
+            : kayakAssessment.level==='جيد'
+              ? 'Les conditions peuvent convenir à un pagayeur expérimenté en eaux abritées. Surveillez les changements et réévaluez avant le départ.'
+              : kayakAssessment.level==='حذر'
+                ? 'La prudence est nécessaire. Le choix le plus sûr est de reporter la sortie ou de rester dans des eaux abritées près du rivage.'
+                : 'Les conditions ne conviennent pas à une sortie en kayak. Il est recommandé de reporter la sortie.')
+      : kayakAssessment.recommendation;
   const safetyReasonsHtml = kayakAssessment?.reasons.length
     ? '<ul>'+kayakAssessment.reasons.slice(0,4).map(reason=>'<li>'+escapeHtml(translateReason(reason))+'</li>').join('')+'</ul>'
     : '';
@@ -573,7 +579,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
     <section class="dashboard-cards"><article class="dashboard-card"><span>🌤️ ${t('الطقس')}</span><strong>${weather.score}<small>/100</small></strong><em class="${badge(weather.level)}">${translateLevel(weather.level)}</em></article><article class="dashboard-card"><span>🌊 ${t('البحر')}</span><strong>${seaScore}<small>/100</small></strong><em class="${badge(seaLevel)}">${translateLevel(seaLevel)}</em></article><article class="dashboard-card"><span>🛶 ${t('الكياك')}</span><strong>${kayakScore}<small>/100</small></strong><em class="${badge(kayakAssessment?.level ?? overallLevel)}">${translateLevel(kayakAssessment?.level ?? overallLevel)}</em></article></section>
     <section class="dashboard-metrics">
       <div><span>💨 ${t('الرياح')}</span><b>${value(data.weather.windSpeed,' km/h')}</b></div><div><span>🌬️ ${t('الهبات')}</span><b>${value(data.weather.windGusts,' km/h')}</b></div><div><span>🌊 ${t('ارتفاع الموج')}</span><b>${value(data.sea.waveHeight,' m')}</b></div><div><span>⏱️ ${t('فترة الموج')}</span><b>${value(data.sea.wavePeriod,' s')}</b></div><div><span>🧭 ${t('اتجاه الرياح')}</span><b>${directionValue(data.weather.windDirection,data.weather.windSpeed)}</b></div>
-      <div><span>🧭 ${t('اتجاه الموج')}</span><b>${value(data.sea.waveDirection,'°')}</b></div><div><span>🌡️ ${t('الهواء')}</span><b>${value(data.weather.temperature,' °C')}</b></div><div><span>📈 ${t('الضغط')}</span><b>${value(data.weather.pressure,' hPa')}</b></div><div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div><div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div>
+      <div><span>🧭 ${t('اتجاه الموج')}</span><b>${value(data.sea.waveDirection,'°')}</b></div><div><span>🌡️ ${t('الهواء')}</span><b>${value(data.weather.temperature,' °C')}</b></div><div><span>📈 ${t('الضغط')}</span><b>${value(data.weather.pressure,' hPa')}</b></div><div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div><div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div><div><span>↔️ ${getLang()==='fr'?'Courant':'التيار البحري'}</span><b>${value(data.sea.currentVelocity,' km/h')}</b></div><div><span>🧭 ${getLang()==='fr'?'Direction du courant':'اتجاه التيار'}</span><b>${directionValue(data.sea.currentDirection,data.sea.currentVelocity)}</b></div>
     </section>
     <section class="dashboard-fishing-intelligence-slot"><div class="fishing-intelligence-loading">🎣 ${t('جاري تحليل الإشارة البيئية…')}</div></section>
      <section class="dashboard-advisor-slot"><div class="advisor-loading">🎯 ${t('جاري بناء تحليل الصيد المتقدم…')}</div></section>
