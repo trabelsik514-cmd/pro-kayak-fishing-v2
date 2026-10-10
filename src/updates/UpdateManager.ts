@@ -26,13 +26,17 @@ export function initUpdateManager(root: HTMLElement): void {
   const french = () => document.documentElement.lang.toLowerCase().startsWith('fr');
   const text = (ar: string, fr: string) => french() ? fr : ar;
 
+  // Keep the update entry compact so it never covers the map or sea data.
   const button = document.createElement('button');
   button.type = 'button';
   button.id = 'pkf-updates-button';
   button.className = 'pkf-updates-button';
-  button.innerHTML = '<span aria-hidden="true">🔔</span> <span class="pkf-updates-label">آخر التحديثات</span>';
-  button.setAttribute('aria-label', 'آخر التحديثات');
-  root.querySelector('.topbar')?.append(button);
+  button.innerHTML = '<span class="pkf-updates-bell" aria-hidden="true">♧</span><span class="pkf-updates-dot" aria-hidden="true"></span>';
+  button.querySelector('.pkf-updates-bell')!.textContent = '🔔';
+  button.setAttribute('aria-label', text('آخر التحديثات', 'Dernières nouveautés'));
+  button.title = text('آخر التحديثات', 'Dernières nouveautés');
+  const topbar = root.querySelector('.topbar');
+  if (topbar) topbar.append(button);
 
   const dialog = document.createElement('section');
   dialog.className = 'pkf-updates-dialog hidden';
@@ -65,19 +69,26 @@ export function initUpdateManager(root: HTMLElement): void {
 
   let lastRelease: Release | null = null;
   let checked = false;
+  let lastCheckedAt: Date | null = null;
 
   const renderRelease = (release: Release, updateAvailable: boolean) => {
     const notes = release.notes?.[french() ? 'fr' : 'ar'] ?? [];
     const date = new Date(release.releasedAt);
     const dateText = Number.isNaN(date.getTime()) ? release.releasedAt : date.toLocaleDateString(french() ? 'fr-FR' : 'ar-TN');
+    const checkedText = lastCheckedAt
+      ? lastCheckedAt.toLocaleTimeString(french() ? 'fr-FR' : 'ar-TN', {hour:'2-digit',minute:'2-digit',hour12:false})
+      : '—';
     status.innerHTML = `${text('النسخة المثبتة','Version installée')}: <b>${APP_VERSION}</b> · ${text('أحدث نسخة','Dernière version')}: <b>${esc(release.latestVersion)}</b>`;
     content.innerHTML = `
       ${updateAvailable ? `<div class="pkf-update-alert">${text('🆕 توجد نسخة أحدث. للحصول على تغييرات الكود داخل APK، نزّل النسخة الجديدة وثبّتها.','🆕 Une nouvelle version est disponible. Pour intégrer les changements dans l’APK, téléchargez et installez la nouvelle version.')}</div>` : `<div class="pkf-update-current">${text('✓ تطبيقك على آخر نسخة معلنة.','✓ Votre application est à jour selon la version publiée.')}</div>`}
       <p class="pkf-updates-date">${text('تاريخ الإصدار','Date de sortie')}: ${esc(dateText)}</p>
+      <p class="pkf-updates-date">${text('آخر تحقق','Dernière vérification')}: <b>${esc(checkedText)}</b></p>
       <h3>${text('شنوّة تبدّل؟','Quoi de neuf ?')}</h3>
       ${notes.length ? '<ul>' + notes.map(note => '<li>' + esc(note) + '</li>').join('') + '</ul>' : `<p>${text('لا توجد تفاصيل إضافية حالياً.','Aucun détail supplémentaire pour le moment.')}</p>`}
       ${updateAvailable ? `<a class="pkf-updates-link" href="${RELEASES_URL}" target="_blank" rel="noopener noreferrer">${text('فتح صفحة تنزيلات المشروع','Ouvrir les téléchargements du projet')} ↗</a>` : ''}
+      <button type="button" class="pkf-updates-retry pkf-updates-refresh">${text('التحقق الآن','Vérifier maintenant')}</button>
     `;
+    content.querySelector('.pkf-updates-refresh')?.addEventListener('click', () => { checked = false; void refresh(true); });
   };
 
   async function refresh(showDialog: boolean): Promise<void> {
@@ -96,16 +107,18 @@ export function initUpdateManager(root: HTMLElement): void {
       }
       lastRelease = release;
       checked = true;
+      lastCheckedAt = new Date();
       const updateAvailable = isNewer(release.latestVersion, APP_VERSION);
       renderRelease(release, updateAvailable);
+      button.classList.toggle('has-update', updateAvailable);
+      button.setAttribute('aria-label', updateAvailable
+        ? text('تحديث جديد متوفر','Nouvelle version disponible')
+        : text('آخر التحديثات','Dernières nouveautés'));
+      button.title = button.getAttribute('aria-label') || '';
       if (updateAvailable && localStorage.getItem('pkf-last-notified-version') !== release.latestVersion) {
         localStorage.setItem('pkf-last-notified-version', release.latestVersion);
-        if (!showDialog) {
-          button.classList.add('has-update');
-          button.querySelector('.pkf-updates-label')!.textContent = text('تحديث جديد','Nouvelle version');
-          button.setAttribute('aria-label', text('تحديث جديد متوفر','Nouvelle version disponible'));
-          dialog.classList.remove('hidden');
-        }
+        button.classList.add('has-update');
+        if (!showDialog) dialog.classList.remove('hidden');
       }
     } catch (error) {
       console.warn('PKF release check failed', error);
@@ -114,6 +127,6 @@ export function initUpdateManager(root: HTMLElement): void {
     }
   }
 
-  // Check quietly at startup; show a dialog only when a newer release exists.
+  // Check quietly at startup; only indicate a new version with a tiny dot.
   void refresh(false);
 }
