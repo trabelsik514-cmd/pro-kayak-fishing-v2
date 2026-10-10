@@ -2277,6 +2277,8 @@ export function createApp(root: HTMLElement) {
   const showTodayWeather = async (lat:number, lng:number) => {
     if (routeTripId) removeRoute();
     report.classList.remove('hidden');
+    report.dir = getLang()==='fr' ? 'ltr' : 'rtl';
+    report.lang = getLang();
     setReportOpen(true);
     tripPanel.classList.add('hidden');
     measurePanel.classList.add('hidden');
@@ -2309,13 +2311,13 @@ export function createApp(root: HTMLElement) {
           <b>📍 ${placeName || (getLang()==='fr' ? 'Point sélectionné' : 'النقطة المحددة')}</b>
           <small dir="ltr">${formatGarminPair(lat, lng)}</small>
         </section>
-        <section class="sea-overview weather-overview">
-          <div><span>🌡️ ${t('الحرارة')}</span><b>${value(d.temperatureMin,' °C')} – ${value(d.temperatureMax,' °C')}</b></div>
-          <div><span>🌧️ ${t('احتمال الأمطار')}</span><b>${value(d.precipitationProbabilityMax,' %')}</b></div>
-          <div><span>💨 ${t('الرياح')}</span><b>${value(d.windMin,' km/h')} – ${value(d.windMax,' km/h')}</b></div>
-          <div><span>💨 ${t('أقصى هبات')}</span><b>${value(d.gustMax,' km/h')}</b></div>
-          <div><span>🧭 ${t('اتجاه الرياح')}</span><b dir="ltr">${dir(d.windDirectionDominant)}</b></div>
-          <div><span>💧 ${t('الرطوبة')}</span><b>${value(d.humidityMean,' %')}</b></div>
+        <section class="sea-overview weather-overview" dir="${getLang()==='fr'?'ltr':'rtl'}">
+          <div><span>🌡️ ${t('الحرارة')}</span><b class="weather-number" dir="ltr">${value(d.temperatureMin,' °C')} – ${value(d.temperatureMax,' °C')}</b></div>
+          <div><span>🌧️ ${t('احتمال الأمطار')}</span><b class="weather-number" dir="ltr">${value(d.precipitationProbabilityMax,' %')}</b></div>
+          <div><span>💨 ${t('الرياح')}</span><b class="weather-number" dir="ltr">${value(d.windMin,' km/h')} – ${value(d.windMax,' km/h')}</b></div>
+          <div><span>💨 ${t('أقصى هبات')}</span><b class="weather-number" dir="ltr">${value(d.gustMax,' km/h')}</b></div>
+          <div><span>🧭 ${t('اتجاه الرياح')}</span><b class="weather-number" dir="ltr">${dir(d.windDirectionDominant)}</b></div>
+          <div><span>💧 ${t('الرطوبة')}</span><b class="weather-number" dir="ltr">${value(d.humidityMean,' %')}</b></div>
         </section>
         <section class="sea-best-window weather-highlight">
           <div><b>☀️ ${weatherText(d.weatherCode)}</b></div>
