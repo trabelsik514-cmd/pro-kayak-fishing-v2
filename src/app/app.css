@@ -2384,3 +2384,13 @@
   color:#35586a;
   border-color:#dceaf1;
 }
+
+/* Compact, collapsible map toolbar */
+.pkf-map-toolbar{display:flex;flex-direction:column;align-items:center;gap:8px;padding:7px;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:rgba(3,15,24,.86);backdrop-filter:blur(16px);box-shadow:0 12px 30px rgba(0,0,0,.28)}
+.pkf-toolbar-toggle{display:grid;place-items:center;width:40px;height:32px;flex:0 0 32px;border:1px solid rgba(255,255,255,.13);border-radius:11px;background:rgba(255,255,255,.06);color:#dcecf4;font-size:25px;line-height:1;cursor:pointer}
+.pkf-toolbar-toggle:hover{background:rgba(53,184,238,.16);border-color:rgba(53,184,238,.45)}
+.pkf-map-toolbar-tools{display:flex;flex-direction:column;align-items:center;gap:8px;overflow:hidden;max-height:360px;opacity:1;transition:max-height .2s ease,opacity .16s ease}
+.pkf-map-toolbar.collapsed{padding:5px;border-radius:15px}
+.pkf-map-toolbar.collapsed .pkf-map-toolbar-tools{max-height:0;opacity:0;pointer-events:none;gap:0}
+.pkf-map-toolbar.collapsed .pkf-toolbar-toggle{width:38px;height:36px;flex-basis:36px;font-size:18px;color:#35b8ee}
+@media(max-width:700px){.pkf-map-toolbar{gap:6px;padding:5px;border-radius:16px}.pkf-toolbar-toggle{width:36px;height:30px;flex-basis:30px}.pkf-map-toolbar-tools{gap:6px;max-height:320px}}
