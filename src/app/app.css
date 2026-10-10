@@ -2217,3 +2217,119 @@
 .advisor-note{margin-top:8px;font-size:9px;line-height:1.45;opacity:.62}.advisor-source{display:block;margin-top:4px;font-size:8px;opacity:.38}
 .advisor-loading,.advisor-error{font-size:10px;opacity:.6}
 @media(max-width:600px){.advisor-grid{grid-template-columns:repeat(2,1fr)}.advisor-windows{grid-template-columns:1fr}.advisor-head{align-items:flex-start}}
+
+
+/* PKF LIGHT MARINE THEME — improve readability on mobile */
+:root{
+  color:#183447;
+  background:#f3f8fb;
+  --pkf-bg:#f3f8fb;
+  --pkf-panel:#ffffff;
+  --pkf-line:rgba(28,76,104,.16);
+  --pkf-accent:#0786b5;
+}
+.topbar{
+  background:rgba(248,252,255,.96);
+  border-bottom:1px solid #d7e6ef;
+  box-shadow:0 4px 18px rgba(16,56,78,.08);
+}
+.search input{
+  background:#fff;
+  color:#183447;
+  border-color:#c7dce8;
+}
+.search input::placeholder{color:#718997}
+.lang-toggle{
+  background:#f2f8fc;
+  color:#17668b;
+  border-color:#c8dce8;
+}
+.report,.trip-panel,.group-panel,.safety-panel,.measure-panel{
+  background:rgba(250,253,255,.98);
+  color:#183447;
+  border-color:#d3e4ed;
+  box-shadow:0 14px 36px rgba(19,59,80,.18);
+}
+.report-head button,.trip-head button{
+  color:#24495d;
+  background:#edf5f9;
+}
+.report p,.report h4,.report b,.report strong,
+.trip-panel,.group-panel,.safety-panel,.measure-panel{
+  color:#244354;
+}
+.report-grid span,.kayak-summary,.assessment-details,
+.loading-report,.trip-recording,.trip-idle,.trip-card,
+.group-trip-row,.safety-grid span,.safety-grid label,
+.measure-panel,.trip-secondary{
+  background:#f0f7fb;
+  border-color:#d6e6ee;
+  color:#234658;
+}
+.report-grid span b,.kayak-summary strong,.depth-card b,
+.trip-stats,.trip-actions button,.trip-actions a{
+  color:#173e53;
+}
+.search-results{
+  background:rgba(250,253,255,.98);
+  border-color:#d3e4ed;
+  box-shadow:0 10px 28px rgba(19,59,80,.18);
+}
+.search-results button,.search-results div{
+  color:#234658;
+  border-bottom-color:#dfebf1;
+}
+.search-results button:hover{background:#e9f5fb}
+.trip-actions button,.trip-actions a{
+  background:#fff;
+  border-color:#d2e3ec;
+}
+.trip-secondary{
+  background:#eaf4f9;
+  border-color:#c9dfe9;
+}
+.safety-grid select{
+  background:#fff;
+  color:#234658;
+  border-color:#cbdfe9;
+}
+.group-help,.trip-empty,.trip-card small,.trip-stats,
+.trip-recording span,.trip-idle span,.trip-actions .danger-action{
+  color:#5d7786;
+}
+.assessment-details small,.updated,.safety-note,.coords{
+  color:#5b7482;
+  opacity:.9;
+}
+.depth-card{
+  background:#eaf6fc;
+  border-color:#c4e2f1;
+  color:#194c68;
+}
+.map-actions{
+  background:rgba(242,249,253,.96);
+  border-color:#cbdfe9;
+  box-shadow:0 12px 28px rgba(19,59,80,.2);
+}
+.map-action{
+  background:#eaf3f8;
+  border-color:#d1e2eb;
+  color:#23485c;
+}
+.map-action:hover{background:#dceef7;border-color:#b6d8e8}
+.map-action-measure{background:#dceaf2;color:#24495d}
+.map-action-measure:hover{background:#cfe3ee}
+.map-action-sea{background:#0786b5;color:#fff}
+.map-action-sea:hover{background:#06749d}
+.map-action-trip{background:#0b827c;color:#fff}
+.map-action-trip:hover{background:#096e69}
+.trip-toggle,.today-sea{background:#0786b5;color:#fff}
+.group-toggle{background:#0b827c;color:#fff}
+.safety-toggle{background:#147ca5;color:#fff}
+.measure-toggle{background:#4b7187;color:#fff}
+@media(max-width:700px){
+  .report,.trip-panel,.group-panel,.safety-panel,.measure-panel{
+    background:rgba(250,253,255,.99);
+  }
+}
+/* Preserve the satellite map; brighten the interface panels, not the map imagery. */
