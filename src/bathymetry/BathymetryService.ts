@@ -30,17 +30,14 @@ export async function getBathymetryDepth(
   if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
   if (lat < 15 || lat > 90 || lng < -36 || lng > 43) return null;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 13000);
-
   try {
     const params = new URLSearchParams({ lat: lat.toFixed(6), lng: lng.toFixed(6) });
-    const res = await fetchApi(`${CLIENT_API}?${params.toString()}`, { cache: 'no-store' }, 13000);
-
+    const res = await fetchApi(`${CLIENT_API}?${params.toString()}`, { cache: 'no-store' }, 9000);
     if (!res.ok) return null;
     const data = await res.json() as BathymetryApiResponse;
-    const depth = Number(data.depthMeters);
-
+    const rawDepth = data.depthMeters;
+    if (rawDepth == null || rawDepth === '') return null;
+    const depth = Number(rawDepth);
     if (!Number.isFinite(depth) || depth < 0) return null;
     if (
       data.source !== 'EMODnet Bathymetry DTM 2024' &&
@@ -48,8 +45,14 @@ export async function getBathymetryDepth(
       data.source !== 'OpenStreetMap coastline'
     ) return null;
 
-    return { depthMeters: depth, source: data.source, nearShore: Boolean(data.nearShore), substrate: data.substrate ?? null };
-  } finally {
-    clearTimeout(timer);
+    return {
+      depthMeters: depth,
+      source: data.source,
+      nearShore: Boolean(data.nearShore),
+      substrate: data.substrate ?? null
+    };
+  } catch {
+    // Optional bathymetry must fail cleanly without breaking the sea-state report.
+    return null;
   }
 }

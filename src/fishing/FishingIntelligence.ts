@@ -1,3 +1,4 @@
+import { fetchApi } from '../services/ApiClient';
 export type FishingIntelligence = {
   centerSst:number|null;
   minSst:number|null;
@@ -33,19 +34,18 @@ async function getJson(url:string,timeoutMs=12000):Promise<any>{
 }
 
 async function getChlorophyll(latitude:number,longitude:number):Promise<number|null>{
-  // NOAA CoastWatch ERDDAP: VIIRS SNPP near-real-time global 4 km chlorophyll-a.
-  // The service is optional: a NOAA outage/cloud gap must never break the sea report.
-  const lat=Math.max(-89.9,Math.min(89.9,latitude));
-  const lon=Math.max(-179.9,Math.min(179.9,longitude));
-  const url='https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNchlaDaily.json'
-    +'?chlor_a[(last)][(0)]['+lat.toFixed(4)+']['+lon.toFixed(4)+']';
+  // Read chlorophyll through our API proxy so Android WebView does not depend
+  // on cross-origin access to NOAA ERDDAP. The proxy also falls back across sensors.
+  if(!Number.isFinite(latitude)||!Number.isFinite(longitude)) return null;
   try{
-    // NOAA is optional and can be slow or temporarily unavailable on mobile networks.
-    // Bound the request so it can never keep the environmental card loading forever.
-    const payload=await getJson(url,8000);
-    const rows=payload?.table?.rows;
-    const value=Array.isArray(rows)&&rows.length ? Number(rows[0]?.[rows[0].length-1]) : NaN;
-    return Number.isFinite(value)&&value>=0 ? value : null;
+    const params=new URLSearchParams({lat:latitude.toFixed(5),lng:longitude.toFixed(5)});
+    const response=await fetchApi('/api/chlorophyll?'+params.toString(),{cache:'no-store'},9000);
+    if(!response.ok) return null;
+    const payload=await response.json() as {chlorophyll?:unknown};
+    const raw=payload?.chlorophyll;
+    if(raw==null||raw==='') return null;
+    const value=Number(raw);
+    return Number.isFinite(value)&&value>=0.001&&value<=1000?value:null;
   }catch{
     return null;
   }

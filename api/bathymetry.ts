@@ -150,6 +150,36 @@ async function isNearOsmCoastline(lat: number, lng: number, signal: AbortSignal)
   return best <= 15;
 }
 
+async function withTimeout<T>(
+  task:(signal:AbortSignal)=>Promise<T>,
+  timeoutMs:number,
+  fallback:T
+):Promise<T>{
+  const controller=new AbortController();
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  const timeout=new Promise<T>(resolve=>{
+    timer=setTimeout(()=>{controller.abort();resolve(fallback)},timeoutMs);
+  });
+  try{
+    const work=Promise.resolve().then(()=>task(controller.signal)).catch(()=>fallback);
+    return await Promise.race([work,timeout]);
+  }finally{
+    if(timer!==undefined) clearTimeout(timer);
+  }
+}
+
+async function waitForOptional<T>(promise:Promise<T>, timeoutMs:number, fallback:T):Promise<T>{
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  try{
+    return await Promise.race([
+      promise,
+      new Promise<T>(resolve=>{timer=setTimeout(()=>resolve(fallback),timeoutMs)})
+    ]);
+  }finally{
+    if(timer!==undefined) clearTimeout(timer);
+  }
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -167,67 +197,69 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Invalid coordinates' });
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  // Start substrate as optional enrichment, but never make depth wait for it.
+  // Each upstream request has its own timeout so the Vercel function can respond
+  // before the default serverless execution limit is reached.
+  const substratePromise = withTimeout(
+    signal => querySubstrate(lat,lng,signal),
+    1800,
+    null as {code:number;label:string;confidence:number|null}|null
+  );
 
   try {
-    let substrate: {code:number;label:string;confidence:number|null}|null = null;
-    try { substrate = await querySubstrate(lat,lng,controller.signal); } catch { substrate = null; }
+    const result = await withTimeout(
+      signal => queryEmodnet(lat,lng,signal),
+      3500,
+      null as {depth:number;hasSource:boolean}|null
+    );
 
-    try {
-      const result = await queryEmodnet(lat, lng, controller.signal);
-      if (result !== null) {
-        // A shallow DTM cell can still be offshore even when its value is only
-        // a few metres. Check the actual shoreline before applying a shoreline
-        // interpretation; never invent a shallow value merely from the depth.
-        if (result.depth <= 10) {
-          try {
-            if (await isNearOsmCoastline(lat, lng, controller.signal)) {
-              res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
-              return res.status(200).json({
-                depthMeters: 0,
-                source: 'OpenStreetMap coastline',
-                nearShore: true,
-                substrate
-              });
-            }
-          } catch {
-            // Coastline lookup is an enhancement only; keep the real DTM value.
-          }
-        }
+    if (result !== null) {
+      let nearShore = false;
+      if (result.depth <= 10) {
+        nearShore = await withTimeout(
+          signal => isNearOsmCoastline(lat,lng,signal),
+          650,
+          false
+        );
+      }
 
-        res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
+      const substrate = await waitForOptional(substratePromise,250,null);
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
+      if (nearShore) {
         return res.status(200).json({
-          depthMeters: Number(result.depth.toFixed(1)),
-          source: 'EMODnet Bathymetry DTM 2024',
-          nearShore: false,
+          depthMeters: 0,
+          source: 'OpenStreetMap coastline',
+          nearShore: true,
           substrate
         });
       }
-    } catch {
-      // Continue to GEBCO.
+      return res.status(200).json({
+        depthMeters: Number(result.depth.toFixed(1)),
+        source: 'EMODnet Bathymetry DTM 2024',
+        nearShore: false,
+        substrate
+      });
     }
 
-    try {
-      const depth = await queryGebco(lat, lng, controller.signal);
-      if (depth !== null) {
-        res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
-        return res.status(200).json({
-          depthMeters: Number(depth.toFixed(1)),
-          source: 'GEBCO',
-          nearShore: false,
-          substrate
-        });
-      }
-    } catch {
-      // Return a clean no-data response.
+    const depth = await withTimeout(
+      signal => queryGebco(lat,lng,signal),
+      3000,
+      null as number|null
+    );
+    if (depth !== null) {
+      const substrate = await waitForOptional(substratePromise,250,null);
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
+      return res.status(200).json({
+        depthMeters: Number(depth.toFixed(1)),
+        source: 'GEBCO',
+        nearShore: false,
+        substrate
+      });
     }
 
     res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600');
     return res.status(200).json({ depthMeters: null, source: null, error: 'No bathymetry value for this coordinate' });
   } catch (error: any) {
-    return res.status(504).json({ error: 'Bathymetry request timed out', detail: error?.name || 'unknown' });
-  } finally {
-    clearTimeout(timer);
+    return res.status(504).json({ error: 'Bathymetry request failed', detail: error?.name || 'unknown' });
   }
 }
