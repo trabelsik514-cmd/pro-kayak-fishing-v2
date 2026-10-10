@@ -50,15 +50,15 @@ async function sampleChlorophyllDataset(
   latitude:number,
   longitude:number
 ):Promise<number|null>{
-  // ERDDAP geographic axis coordinates must be in parentheses; otherwise the
-  // service can interpret them as array indices and return no valid satellite pixel.
+  // ERDDAP's last is an index keyword, not a coordinate value: use [last].
+  // Geographic axes use actual coordinate values in parentheses.
   const lat=Math.max(-89.9,Math.min(89.9,latitude));
   const lon=Math.max(-179.9,Math.min(179.9,longitude));
   const latCoord='('+lat.toFixed(4)+')';
   const lonCoord='('+lon.toFixed(4)+')';
   const selectors=dataset.dimensions===4
-    ? '[(last)][(0)]['+latCoord+']['+lonCoord+']'
-    : '[(last)]['+latCoord+']['+lonCoord+']';
+    ? '[last][(0)]['+latCoord+']['+lonCoord+']'
+    : '[last]['+latCoord+']['+lonCoord+']';
   const url='https://coastwatch.pfeg.noaa.gov/erddap/griddap/'+dataset.id+'.json?'+dataset.variable+selectors;
   try{
     const payload=await getJson(url,4500);

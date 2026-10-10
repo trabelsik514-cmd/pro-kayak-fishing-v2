@@ -16,9 +16,10 @@ async function sampleSource(
   try{
     const latCoord='('+lat.toFixed(4)+')';
     const lngCoord='('+lng.toFixed(4)+')';
+    // `last` is an ERDDAP index keyword and must not be wrapped as a coordinate.
     const selectors=source.dimensions===4
-      ? '[(last)][(0)]['+latCoord+']['+lngCoord+']'
-      : '[(last)]['+latCoord+']['+lngCoord+']';
+      ? '[last][(0)]['+latCoord+']['+lngCoord+']'
+      : '[last]['+latCoord+']['+lngCoord+']';
     const url='https://coastwatch.pfeg.noaa.gov/erddap/griddap/'+source.id+'.json?'+source.variable+selectors;
     const response=await fetch(url,{
       headers:{Accept:'application/json'},
