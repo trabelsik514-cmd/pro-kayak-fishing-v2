@@ -489,10 +489,31 @@ const moonInfo = (date=new Date(), latitude=35.8, longitude=10.7) => {
 
 const translateReason = (reason: string) => {
   if (getLang() !== 'fr') return reason;
+  if (reason.startsWith('بيانات السلامة غير مكتملة:')) {
+    return `Données de sécurité incomplètes : ${reason.replace('بيانات السلامة غير مكتملة:', '').trim().split('، ').map(t).join(', ')}`;
+  }
   if (reason.startsWith('بيانات غير مكتملة:')) {
     return `${t('بيانات غير مكتملة')}: ${reason.replace('بيانات غير مكتملة:', '').trim().split('، ').map(t).join(', ')}`;
   }
-  return t(reason);
+  const safetyTranslations:Record<string,string> = {
+    'الرياح تبلغ حد الإيقاف المحافظ للكياك':'Le vent atteint le seuil prudent d’annulation de la sortie en kayak.',
+    'الرياح مرتفعة جدًا؛ أجّل الخروج':'Vent trop fort ; reportez la sortie.',
+    'رياح متوسطة؛ تحقّق من اتجاهها ومسار العودة':'Vent modéré ; vérifiez sa direction et le trajet de retour.',
+    'هبات الرياح تبلغ حد الإيقاف المحافظ للكياك':'Les rafales atteignent le seuil prudent d’annulation de la sortie.',
+    'هبات قوية قد تفقدك السيطرة على الكياك':'Des rafales fortes peuvent vous faire perdre le contrôle du kayak.',
+    'ارتفاع الموج يبلغ حد الإيقاف المحافظ للكياك':'La hauteur des vagues atteint le seuil prudent d’annulation.',
+    'الموج يتجاوز النطاق المثالي للصيد بالكياك':'Les vagues dépassent la plage idéale pour la pêche en kayak.',
+    'موج قصير وحاد نسبيًا؛ قد يجعل حركة الكياك صعبة':'Des vagues courtes et raides peuvent rendre le kayak difficile à manœuvrer.',
+    'فترة الموج قصيرة نسبيًا':'La période des vagues est relativement courte.',
+    'فترة الموج طويلة مع ارتفاع ملحوظ':'La période des vagues est longue avec une hauteur notable.',
+    'ارتفاع الـSwell يبلغ حد الإيقاف المحافظ للكياك':'La houle atteint le seuil prudent d’annulation de la sortie.',
+    'الـSwell مرتفع نسبيًا':'La houle est relativement élevée.',
+    'فترة الـSwell طويلة مع ارتفاع ملحوظ':'La période de houle est longue avec une hauteur notable.',
+    'فترة الـSwell طويلة نسبيًا':'La période de houle est relativement longue.',
+    'التيار قوي؛ لا تعتمد على التجديف وحده للعودة':'Le courant est fort ; ne comptez pas uniquement sur la pagaie pour revenir.',
+    'التيار مرتفع نسبيًا':'Le courant est relativement fort.'
+  };
+  return safetyTranslations[reason] ?? t(reason);
 };
 const translateLevel = (level: string) => t(level);
 const locale = () => getLang() === 'fr' ? 'fr-TN' : 'ar-TN';
@@ -2362,8 +2383,10 @@ export function createApp(root: HTMLElement) {
         if(d.waveMax!=null) s-=d.waveMax<=0.3?0:d.waveMax<=0.5?8:d.waveMax<=0.6?18:d.waveMax<0.8?30:d.waveMax<1.0?45:d.waveMax<1.2?65:85;
         if(d.windMax!=null) s-=d.windMax<=10?0:d.windMax<=15?8:d.windMax<=18?20:d.windMax<20?30:d.windMax<25?45:d.windMax<30?65:85;
         if(d.gustMax!=null) s-=d.gustMax<=15?0:d.gustMax<=20?8:d.gustMax<=25?20:d.gustMax<30?30:d.gustMax<35?45:d.gustMax<40?65:85;
+        if(d.swellMax!=null) s-=d.swellMax<=0.4?0:d.swellMax<=0.6?10:d.swellMax<=0.8?25:d.swellMax<1.0?45:d.swellMax<1.4?65:80;
+        if(d.currentMax!=null) s-=d.currentMax<=0.5?0:d.currentMax<=1.0?8:d.currentMax<=1.5?20:d.currentMax<2.0?35:50;
         // Do not let a daily average hide a major hazard at any time during the day.
-        if((d.waveMax!=null&&d.waveMax>=0.8)||(d.windMax!=null&&d.windMax>=20)||(d.gustMax!=null&&d.gustMax>=30)) s=Math.min(s,44);
+        if((d.waveMax!=null&&d.waveMax>=0.8)||(d.windMax!=null&&d.windMax>=20)||(d.gustMax!=null&&d.gustMax>=30)||(d.swellMax!=null&&d.swellMax>=1.0)||(d.currentMax!=null&&d.currentMax>=2.0)) s=Math.min(s,44);
         return Math.max(0,Math.min(100,Math.round(s)));
       };
       const level=(s:number)=>s>=82?'ممتاز':s>=65?'جيد':s>=45?'حذر':'غير مناسب';
