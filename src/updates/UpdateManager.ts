@@ -1,4 +1,4 @@
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '0.1.1';
 const RELEASE_ENDPOINT = 'https://pro-kayak-fishing-v2.vercel.app/api/app-release';
 const RELEASES_URL = 'https://github.com/trabelsik514-cmd/pro-kayak-fishing-v2/actions';
 
