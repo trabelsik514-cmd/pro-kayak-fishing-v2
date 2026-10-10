@@ -2498,3 +2498,53 @@
  html[lang^="fr"] .topbar>.search button{max-width:112px!important;padding-inline:10px!important;font-size:12px!important}
  html[lang^="fr"] .topbar>.search input{font-size:13px!important}
 }
+
+
+/* Weather and sea reports: high contrast, consistent RTL/LTR, and safe map controls. */
+.report{
+  color:#17384b!important;
+  background:rgba(247,251,253,.98)!important;
+  border:1px solid #c8dce7!important;
+  text-align:start!important;
+  direction:inherit;
+  overscroll-behavior:contain;
+}
+.report .report-head{
+  color:#f3f9fc!important;
+  background:#122b3b!important;
+  border-bottom:1px solid #29485b!important;
+  text-align:start!important;
+}
+.report .report-head b{color:#f3f9fc!important;opacity:1!important;line-height:1.35}
+.report .report-head button{flex:0 0 42px!important;width:42px!important;height:42px!important;border-radius:12px!important;background:#edf6fb!important;color:#1b4358!important;border:1px solid #c8dce7!important}
+.report .weather-location-banner{
+  color:#eaf5fb!important;background:#38515d!important;border:1px solid #718c9a!important;
+  overflow-wrap:anywhere;text-align:start!important;
+}
+.report .weather-location-banner b{color:#f4f9fc!important;line-height:1.5}
+.report .weather-location-banner small{display:block;color:#d5e4eb!important;margin-top:6px;unicode-bidi:isolate}
+.report .weather-overview{direction:inherit!important;text-align:start!important}
+.report .weather-overview>div{min-width:0;text-align:start!important;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.report .weather-overview>div>span{color:#5c7481!important;line-height:1.4;overflow-wrap:anywhere}
+.report .weather-overview>div>b,
+.report .weather-overview .weather-number{
+  color:#183b4e!important;font-size:clamp(15px,3.8vw,20px)!important;
+  font-weight:750!important;line-height:1.35!important;text-align:start!important;
+  direction:ltr!important;unicode-bidi:isolate!important;overflow-wrap:anywhere;
+  font-variant-numeric:tabular-nums;
+}
+.report .weather-highlight{color:#17384b!important;background:#edf8f5!important;border-color:#b8dfd3!important}
+.report .weather-highlight b,.report .weather-highlight p,.report .weather-highlight small{color:#24495a!important;line-height:1.6}
+.report .sea-source{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;color:#637c89!important}
+.report p{color:#526e7c;line-height:1.65}
+.report .sea-loading{color:#526e7c}
+@media(max-width:700px){
+ .report{max-height:calc(100dvh - 150px)!important;bottom:12px!important;overflow:auto!important;padding:10px!important}
+ .report .report-head{gap:10px!important;min-height:64px!important}
+ .report .report-head b{font-size:clamp(16px,4.5vw,21px)!important}
+ .report .weather-overview{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .report .weather-overview>div{padding:12px!important;min-height:88px!important}
+ .report .weather-overview>div>span{font-size:13px!important}
+ .report .weather-overview>div>b,.report .weather-overview .weather-number{font-size:clamp(14px,3.8vw,18px)!important}
+ .map-control,.map-controls,.maplibregl-ctrl-group,.leaflet-control-container{z-index:4!important}
+}
