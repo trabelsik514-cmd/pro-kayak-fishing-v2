@@ -13,6 +13,9 @@ const config: CapacitorConfig = {
     backgroundColor: '#edf5fa'
   },
   plugins: {
+    CapacitorHttp: {
+      enabled: true
+    },
     BackgroundRunner: {
       label: 'com.prokayakfishing.app.background',
       src: 'runners/background.js',
