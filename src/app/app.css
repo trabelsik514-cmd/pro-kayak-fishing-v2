@@ -2548,3 +2548,112 @@
  .report .weather-overview>div>b,.report .weather-overview .weather-number{font-size:clamp(14px,3.8vw,18px)!important}
  .map-control,.map-controls,.maplibregl-ctrl-group,.leaflet-control-container{z-index:4!important}
 }
+
+
+/* Refined PRO KAYAK header: clear identity, compact controls, and consistent RTL/LTR layout. */
+.topbar{
+  z-index:20!important;
+  display:grid!important;
+  grid-template-columns:minmax(205px,260px) minmax(240px,1fr) auto!important;
+  grid-template-areas:"brand search controls"!important;
+  align-items:center!important;
+  gap:16px!important;
+  min-height:88px!important;
+  padding:12px 20px!important;
+  background:rgba(244,249,252,.97)!important;
+  border-bottom:1px solid #c9dce6!important;
+  box-shadow:0 8px 26px rgba(6,31,47,.10)!important;
+  backdrop-filter:blur(16px)!important;
+}
+.topbar>.brand{
+  grid-area:brand!important;
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-self:start!important;gap:11px!important;min-width:0!important;
+  text-decoration:none!important;direction:ltr!important;
+}
+.topbar>.brand .brand-logo{
+  display:block!important;width:58px!important;height:58px!important;flex:0 0 58px!important;
+  object-fit:cover!important;border-radius:15px!important;
+  border:1px solid rgba(23,68,94,.14)!important;
+  box-shadow:0 4px 12px rgba(9,40,58,.13)!important;background:#eaf3f8!important;
+}
+.topbar>.brand .brand-name{
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+  gap:2px!important;white-space:nowrap!important;text-align:left!important;
+  font-size:15px!important;font-weight:850!important;line-height:1.08!important;
+  letter-spacing:.25px!important;color:#173d53!important;text-shadow:none!important;
+}
+.topbar>.brand .brand-name>span{color:#173d53!important}
+.topbar>.brand .brand-name>b{color:#087eaf!important;font-size:.98em!important}
+.topbar>.brand .brand-name i{font-style:normal;color:#087eaf!important}
+.topbar>.brand .brand-name small{
+  margin-top:3px!important;color:#698391!important;font-size:9px!important;
+  font-weight:700!important;letter-spacing:.45px!important;line-height:1.2!important;
+}
+.topbar>.search{
+  grid-area:search!important;justify-self:stretch!important;align-self:center!important;
+  display:flex!important;flex-direction:row!important;align-items:stretch!important;
+  gap:8px!important;width:100%!important;max-width:620px!important;min-width:0!important;margin:0 auto!important;
+}
+.topbar>.search input{
+  min-width:0!important;flex:1 1 auto!important;height:46px!important;
+  padding:0 15px!important;border:1px solid #c9dce6!important;border-radius:14px!important;
+  outline:none!important;background:#fff!important;color:#173d53!important;
+  font-size:14px!important;box-shadow:inset 0 1px 2px rgba(8,41,60,.03)!important;
+}
+.topbar>.search input::placeholder{color:#8297a2!important;opacity:1!important}
+.topbar>.search input:focus{border-color:#1986b8!important;box-shadow:0 0 0 3px rgba(25,134,184,.12)!important}
+.topbar>.search button{
+  flex:0 0 auto!important;height:46px!important;min-width:96px!important;padding:0 17px!important;
+  border:0!important;border-radius:13px!important;background:#087fb5!important;color:#fff!important;
+  font-size:14px!important;font-weight:750!important;box-shadow:0 4px 10px rgba(8,127,181,.17)!important;
+}
+.topbar>.header-controls{
+  grid-area:controls!important;display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-self:end!important;justify-content:flex-end!important;gap:8px!important;min-width:0!important;
+}
+.topbar .header-controls .lang-toggle{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;
+  width:auto!important;min-width:78px!important;height:42px!important;padding:0 12px!important;
+  border:1px solid #c8dce7!important;border-radius:13px!important;background:#fff!important;
+  color:#17445e!important;font-size:14px!important;font-weight:850!important;box-shadow:none!important;
+}
+.topbar .header-controls .lang-globe{font-size:16px!important}
+.topbar .header-controls .pkf-updates-button{
+  position:relative!important;inset:auto!important;transform:none!important;display:inline-flex!important;
+  align-items:center!important;justify-content:center!important;flex:0 0 42px!important;width:42px!important;height:42px!important;
+  min-width:42px!important;min-height:42px!important;margin:0!important;padding:0!important;border-radius:13px!important;
+  background:#fff!important;border:1px solid #c8dce7!important;color:#17668b!important;box-shadow:none!important;
+}
+.topbar .header-controls .pkf-updates-button .pkf-updates-bell{font-size:18px!important}
+@media(max-width:700px){
+ .topbar{
+   height:116px!important;min-height:116px!important;padding:8px 12px 9px!important;
+   grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:52px 42px!important;
+   grid-template-areas:"brand controls" "search search"!important;gap:7px 9px!important;
+ }
+ .topbar>.brand{gap:7px!important;max-width:100%!important}
+ .topbar>.brand .brand-logo{width:46px!important;height:46px!important;flex-basis:46px!important;border-radius:12px!important}
+ .topbar>.brand .brand-name{font-size:11px!important;letter-spacing:0!important}
+ .topbar>.brand .brand-name small{font-size:8px!important;letter-spacing:0!important;margin-top:2px!important}
+ .topbar>.header-controls{gap:6px!important}
+ .topbar .header-controls .lang-toggle{min-width:61px!important;height:36px!important;min-height:36px!important;padding:0 8px!important;gap:4px!important;font-size:12px!important;border-radius:11px!important}
+ .topbar .header-controls .lang-globe{font-size:14px!important}
+ .topbar .header-controls .pkf-updates-button{flex-basis:36px!important;width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;border-radius:11px!important}
+ .topbar>.search{height:42px!important;max-width:none!important;gap:7px!important}
+ .topbar>.search input{height:42px!important;padding:0 11px!important;font-size:14px!important;border-radius:12px!important}
+ .topbar>.search button{height:42px!important;min-width:0!important;max-width:112px!important;padding:0 12px!important;font-size:13px!important;border-radius:12px!important}
+ html[lang^="fr"] .topbar>.search input{font-size:13px!important}
+ html[lang^="fr"] .topbar>.search button{font-size:12px!important;padding-inline:10px!important}
+ .search-results{top:122px!important;right:12px!important;width:calc(100% - 24px)!important}
+}
+@media(max-width:360px){
+ .topbar{padding-inline:8px!important;gap:6px 7px!important}
+ .topbar>.brand{gap:5px!important}
+ .topbar>.brand .brand-logo{width:40px!important;height:40px!important;flex-basis:40px!important}
+ .topbar>.brand .brand-name{font-size:10px!important}
+ .topbar>.brand .brand-name small{font-size:7px!important}
+ .topbar .header-controls{gap:4px!important}
+ .topbar .header-controls .lang-toggle{min-width:54px!important;padding-inline:6px!important}
+ .topbar .header-controls .pkf-updates-button{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;flex-basis:32px!important}
+}
