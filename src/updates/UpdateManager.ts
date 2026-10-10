@@ -35,20 +35,25 @@ export function initUpdateManager(root: HTMLElement): void {
   button.querySelector('.pkf-updates-bell')!.textContent = '🔔';
   button.setAttribute('aria-label', text('آخر التحديثات', 'Dernières nouveautés'));
   button.title = text('آخر التحديثات', 'Dernières nouveautés');
-  // Keep the bell clear of the header and map labels; place it above the bottom navigation.
-  button.style.position = 'absolute';
-  button.style.zIndex = '48';
-  button.style.left = '12px';
-  button.style.right = 'auto';
-  button.style.top = 'auto';
-  button.style.bottom = 'calc(158px + env(safe-area-inset-bottom, 0px))';
-  button.style.width = '42px';
-  button.style.height = '42px';
-  button.style.borderRadius = '14px';
-  button.style.background = 'rgba(5,18,28,.92)';
-  button.style.border = '1px solid rgba(56,189,248,.32)';
-  button.style.boxShadow = '0 6px 18px rgba(0,0,0,.28)';
-  root.append(button);
+  // Keep update notifications in the header, never over map pins or sea labels.
+  const topbar = root.querySelector<HTMLElement>('.topbar');
+  const languageButton = topbar?.querySelector<HTMLElement>('#lang-toggle');
+  if (topbar && languageButton) {
+    languageButton.insertAdjacentElement('afterend', button);
+  } else if (topbar) {
+    topbar.append(button);
+  }
+  button.style.position = 'relative';
+  button.style.inset = 'auto';
+  button.style.zIndex = '2';
+  button.style.flex = '0 0 38px';
+  button.style.width = '38px';
+  button.style.height = '38px';
+  button.style.borderRadius = '12px';
+  button.style.background = 'rgba(5,18,28,.06)';
+  button.style.border = '1px solid rgba(23,68,94,.18)';
+  button.style.color = '#17445e';
+  button.style.boxShadow = 'none';
 
   const dialog = document.createElement('section');
   dialog.className = 'pkf-updates-dialog hidden';
