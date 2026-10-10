@@ -1908,7 +1908,7 @@ export function createApp(root: HTMLElement) {
           }).slice(0,4);
           const windows=rankFishingWindows(hourlyAdvisor.slice(0,24).map(p=>({
             time:p.time,windSpeed:p.windSpeed,windGusts:p.windGusts,waveHeight:p.waveHeight,
-            wavePeriod:p.wavePeriod,currentVelocity:p.currentVelocity
+            wavePeriod:p.wavePeriod,currentVelocity:p.currentVelocity,swellHeight:p.swellHeight,swellPeriod:p.swellPeriod
           })));
           const comparableDays = modelComparison
             .filter(day => day.agreement != null && Number.isFinite(day.agreement))
