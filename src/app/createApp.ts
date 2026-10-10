@@ -507,10 +507,14 @@ function setDocumentLanguage() {
 
 
 function weatherDashboardScore(data: Awaited<ReturnType<MarineService['getPointConditions']>>) {
-  const penalty=(v:number|null,bands:Array<[number,number]>)=>{ if(v==null)return 0; for(const [limit,p] of bands) if(v>limit)return p; return 0; };
+  const penalty=(v:number|null,bands:Array<[number,number]>)=>{
+    if(v==null)return 0;
+    for(let i=bands.length-1;i>=0;i--){const [limit,p]=bands[i];if(v>limit)return p;}
+    return 0;
+  };
   let p=0;
-  p+=penalty(data.weather.windSpeed,[[10,0],[15,8],[20,18],[25,35],[30,55],[Infinity,75]]);
-  p+=penalty(data.weather.windGusts,[[20,0],[25,6],[30,16],[35,28],[40,45],[Infinity,65]]);
+  p+=penalty(data.weather.windSpeed,[[10,5],[15,15],[18,30],[20,45],[25,65],[30,80],[Infinity,90]]);
+  p+=penalty(data.weather.windGusts,[[15,5],[20,12],[25,25],[30,45],[35,65],[40,82],[Infinity,90]]);
   if(data.weather.temperature!=null){
     const temp=data.weather.temperature;
     if(temp<8)p+=12; else if(temp<12)p+=5; else if(temp>36)p+=15; else if(temp>32)p+=7;
@@ -522,20 +526,50 @@ function weatherDashboardScore(data: Awaited<ReturnType<MarineService['getPointC
 
 function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']>>, placeName: string|null, kayakAssessment?: ReturnType<typeof assessKayakConditions>) {
   const weather = weatherDashboardScore(data);
+  const thresholdPenalty=(v:number|null,bands:Array<[number,number]>)=>{
+    if(v==null)return 0;
+    for(let i=bands.length-1;i>=0;i--){const [limit,p]=bands[i];if(v>limit)return p;}
+    return 0;
+  };
   const seaPenalty =
-    (data.sea.waveHeight!=null ? (data.sea.waveHeight>1.2?45:data.sea.waveHeight>0.9?24:data.sea.waveHeight>0.6?10:0) : 0) +
-    (data.sea.wavePeriod!=null && data.sea.wavePeriod>=9 ? 8 : 0) +
-    (data.sea.swellHeight!=null ? (data.sea.swellHeight>1.0?28:data.sea.swellHeight>0.7?12:data.sea.swellHeight>0.4?5:0) : 0);
+    thresholdPenalty(data.sea.waveHeight,[[0.3,5],[0.5,15],[0.6,25],[0.8,45],[1.0,65],[1.2,80],[Infinity,90]]) +
+    (data.sea.wavePeriod!=null && data.sea.waveHeight!=null && data.sea.wavePeriod<5 && data.sea.waveHeight>0.5 ? 18 :
+      data.sea.wavePeriod!=null && data.sea.waveHeight!=null && data.sea.wavePeriod<7 && data.sea.waveHeight>0.5 ? 10 :
+      data.sea.wavePeriod!=null && data.sea.wavePeriod>=10 && data.sea.waveHeight!=null && data.sea.waveHeight>0.7 ? 10 : 0) +
+    thresholdPenalty(data.sea.swellHeight,[[0.3,5],[0.4,12],[0.6,25],[0.8,45],[1.0,65],[1.4,80],[Infinity,90]]);
   const seaScore=Math.max(0,Math.min(100,Math.round(100-seaPenalty)));
   const seaLevel=seaScore>=82?'ممتاز':seaScore>=65?'جيد':seaScore>=45?'حذر':'غير مناسب';
   const kayakScore=kayakAssessment?.score ?? Math.min(weather.score,seaScore);
-  const overall=Math.round((weather.score+seaScore+kayakScore)/3);
+  // A good weather or fishing score must never override a poor kayak-safety score.
+  const averagedOverall=Math.round((weather.score+seaScore+kayakScore)/3);
+  const overall=kayakAssessment ? Math.min(averagedOverall,kayakScore) : averagedOverall;
   const overallLevel=overall>=82?'ممتاز':overall>=65?'جيد':overall>=45?'حذر':'غير مناسب';
+  const safetyTitle = !kayakAssessment
+    ? (getLang()==='fr'?'Sécurité du kayak non vérifiée':'لم يتم التحقق من سلامة الكياك')
+    : kayakAssessment.hardStop
+      ? (getLang()==='fr'?'SORTIE DÉCONSEILLÉE — conditions dangereuses':'لا تخرج بالكياك — ظروف خطرة')
+      : !kayakAssessment.dataComplete
+        ? (getLang()==='fr'?'Données de sécurité incomplètes':'بيانات السلامة غير مكتملة')
+        : (getLang()==='fr'?'Évaluation de sécurité du kayak':'تقييم سلامة الكياك');
+  const safetyRecommendation = kayakAssessment
+    ? (getLang()==='fr'
+      ? (kayakAssessment.hardStop
+        ? 'Ne partez pas en kayak dans ces conditions selon les seuils de prudence. Reportez la sortie et vérifiez le bulletin maritime officiel.'
+        : !kayakAssessment.dataComplete
+          ? 'Les données de sécurité sont incomplètes. Vérifiez vent, rafales, vagues, houle et courant avant de décider.'
+          : kayakAssessment.recommendation)
+      : kayakAssessment.recommendation)
+    : (getLang()==='fr'?'La sécurité ne peut pas être évaluée sans les données nécessaires.':'لا يمكن تقييم السلامة دون البيانات اللازمة.');
+  const safetyReasonsHtml = kayakAssessment?.reasons.length
+    ? '<ul>'+kayakAssessment.reasons.slice(0,4).map(reason=>'<li>'+escapeHtml(translateReason(reason))+'</li>').join('')+'</ul>'
+    : '';
+  const safetyHtml = '<section class="safety-warning" role="status"><strong>'+safetyTitle+'</strong><p>'+escapeHtml(safetyRecommendation)+'</p>'+safetyReasonsHtml+'</section>';
   const badge=(level:string)=>level==='ممتاز'||level==='جيد'?'good':level==='حذر'?'caution':'danger';
   return `<div class="report-dashboard">
     <div class="dashboard-topline"><div class="dashboard-title"><b>🐟 ${t('لوحة حالة البحر والصيد')}</b><small>${new Date(data.fetchedAt).toLocaleDateString((getLang()==='fr'?'fr-FR':'ar-TN'),{weekday:'long',day:'2-digit',month:'long'})}</small></div><button id="close-report" class="dashboard-close" aria-label="${t('إغلاق')}">×</button></div>
     <div class="dashboard-location"><b>📍 ${escapeHtml(placeName ?? t('موقع بحري محدد'))}</b><span>${ltr(formatGarminPair(data.latitude,data.longitude))}</span></div>
     <section class="dashboard-score"><div class="score-gauge" style="--score:${Math.max(0,Math.min(100,overall))*3.6}deg"><div><strong>${overall}</strong><small>/100</small></div></div><div class="score-copy"><b>${translateLevel(overallLevel)}</b><span>${t('ملاءمة عامة للتخطيط للصيد والكياك')}</span><small>${t('التقييم تخطيطي وليس شهادة سلامة. تحقق من التغيرات قبل الانطلاق.')}</small></div></section>
+    ${safetyHtml}
     <section class="dashboard-cards"><article class="dashboard-card"><span>🌤️ ${t('الطقس')}</span><strong>${weather.score}<small>/100</small></strong><em class="${badge(weather.level)}">${translateLevel(weather.level)}</em></article><article class="dashboard-card"><span>🌊 ${t('البحر')}</span><strong>${seaScore}<small>/100</small></strong><em class="${badge(seaLevel)}">${translateLevel(seaLevel)}</em></article><article class="dashboard-card"><span>🛶 ${t('الكياك')}</span><strong>${kayakScore}<small>/100</small></strong><em class="${badge(kayakAssessment?.level ?? overallLevel)}">${translateLevel(kayakAssessment?.level ?? overallLevel)}</em></article></section>
     <section class="dashboard-metrics">
       <div><span>💨 ${t('الرياح')}</span><b>${value(data.weather.windSpeed,' km/h')}</b></div><div><span>🌬️ ${t('الهبات')}</span><b>${value(data.weather.windGusts,' km/h')}</b></div><div><span>🌊 ${t('ارتفاع الموج')}</span><b>${value(data.sea.waveHeight,' m')}</b></div><div><span>⏱️ ${t('فترة الموج')}</span><b>${value(data.sea.wavePeriod,' s')}</b></div><div><span>🧭 ${t('اتجاه الرياح')}</span><b>${directionValue(data.weather.windDirection,data.weather.windSpeed)}</b></div>
@@ -2319,9 +2353,11 @@ export function createApp(root: HTMLElement) {
       };
       const score=(d:WeeklySeaSummary)=>{
         let s=100;
-        if(d.waveMax!=null) s-=d.waveMax<=0.5?0:d.waveMax<=0.8?10:d.waveMax<=1.2?25:45;
-        if(d.windMax!=null) s-=d.windMax<=15?0:d.windMax<=25?10:d.windMax<=35?25:40;
-        if(d.gustMax!=null) s-=d.gustMax<=25?0:d.gustMax<=40?10:25;
+        if(d.waveMax!=null) s-=d.waveMax<=0.3?0:d.waveMax<=0.5?8:d.waveMax<=0.6?18:d.waveMax<0.8?30:d.waveMax<1.0?45:d.waveMax<1.2?65:85;
+        if(d.windMax!=null) s-=d.windMax<=10?0:d.windMax<=15?8:d.windMax<=18?20:d.windMax<20?30:d.windMax<25?45:d.windMax<30?65:85;
+        if(d.gustMax!=null) s-=d.gustMax<=15?0:d.gustMax<=20?8:d.gustMax<=25?20:d.gustMax<30?30:d.gustMax<35?45:d.gustMax<40?65:85;
+        // Do not let a daily average hide a major hazard at any time during the day.
+        if((d.waveMax!=null&&d.waveMax>=0.8)||(d.windMax!=null&&d.windMax>=20)||(d.gustMax!=null&&d.gustMax>=30)) s=Math.min(s,44);
         return Math.max(0,Math.min(100,Math.round(s)));
       };
       const level=(s:number)=>s>=82?'ممتاز':s>=65?'جيد':s>=45?'حذر':'غير مناسب';
