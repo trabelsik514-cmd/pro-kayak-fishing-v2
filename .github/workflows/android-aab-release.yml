@@ -10,7 +10,7 @@ jobs:
   android-aab:
     runs-on: ubuntu-latest
     env:
-      ANDROID_KEYSTORE_PATH: android/app/upload-keystore.jks
+      ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/upload-keystore.jks
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -37,7 +37,7 @@ jobs:
           test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_KEYSTORE_PASSWORD" && exit 1)
           test -n "$ANDROID_KEY_ALIAS" || (echo "Missing secret: ANDROID_KEY_ALIAS" && exit 1)
           test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing secret: ANDROID_KEY_PASSWORD" && exit 1)
-          mkdir -p android/app
+          mkdir -p "$(dirname "$ANDROID_KEYSTORE_PATH")"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           test -s "$ANDROID_KEYSTORE_PATH"
 
