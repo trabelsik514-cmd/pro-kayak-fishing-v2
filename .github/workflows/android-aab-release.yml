@@ -81,11 +81,11 @@ jobs:
           text = path.read_text()
           # Start above previously used version codes; each workflow run gets a unique code.
           code = int(os.environ["BUILD_VERSION_CODE"]) + 2
-          text, count = re.subn(r"(versionCode\\s+)\\d+", lambda m: m.group(1) + str(code), text, count=1)
+          text, count = re.subn(r"(versionCode\s+)\d+", lambda m: m.group(1) + str(code), text, count=1)
           if count != 1:
               raise SystemExit("Could not find versionCode in android/app/build.gradle")
           name = f"1.0.{code}"
-          text, count = re.subn(r'(versionName\\s+")([^"]+)(")', lambda m: m.group(1) + name + m.group(3), text, count=1)
+          text, count = re.subn(r'(versionName\s+")([^"]+)(")', lambda m: m.group(1) + name + m.group(3), text, count=1)
           if count != 1:
               raise SystemExit("Could not find versionName in android/app/build.gradle")
           path.write_text(text)
