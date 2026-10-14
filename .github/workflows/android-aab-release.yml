@@ -213,10 +213,19 @@ jobs:
           test "$ACTUAL_CODE" = "$EXPECTED_CODE" || (echo "ERROR: AAB versionCode does not match expected version" && exit 1)
           echo "AAB metadata verified; safe to publish artifact."
 
+      - name: Give verified AAB a unique filename
+        run: |
+          set -euo pipefail
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          CODE="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB" --xpath='/manifest/@android:versionCode')"
+          NAME="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB" --xpath='/manifest/@android:versionName')"
+          mkdir -p release-artifact
+          cp "$AAB" "release-artifact/PRO-KAYAK-FISHING-v${NAME}-code${CODE}.aab"
+          ls -lh release-artifact/
       - name: Upload signed AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pro-kayak-fishing-v2-release-aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          name: pro-kayak-fishing-v2-verified-aab
+          path: release-artifact/*.aab
           if-no-files-found: error
           retention-days: 14
