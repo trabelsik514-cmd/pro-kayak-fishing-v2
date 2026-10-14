@@ -137,7 +137,7 @@ jobs:
       - name: Build signed Android App Bundle
         run: |
           cd android
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease --stacktrace
 
       - name: Verify AAB exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab
