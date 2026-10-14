@@ -105,6 +105,21 @@ jobs:
           PY
           grep -n "minSdkVersion" android/variables.gradle
 
+      - name: Set target Android SDK to 36 for Google Play
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/variables.gradle")
+          content = path.read_text()
+          updated, count = re.subn(r"(targetSdkVersion\s*=\s*)\d+", r"\g<1>36", content, count=1)
+          if count != 1:
+              raise SystemExit("Could not find targetSdkVersion in android/variables.gradle.")
+          path.write_text(updated)
+          print("Configured targetSdkVersion = 36")
+          PY
+          grep -nE "minSdkVersion|targetSdkVersion" android/variables.gradle
+
       - name: Configure Background Runner AAR repository
         run: |
           python3 - <<'PY'
