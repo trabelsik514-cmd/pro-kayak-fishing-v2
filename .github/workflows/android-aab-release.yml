@@ -70,23 +70,38 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Set minimum Android SDK to 24 for Play App Signing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/variables.gradle")
+          if not path.is_file():
+              raise SystemExit("Expected android/variables.gradle was not generated.")
+          content = path.read_text()
+          updated, count = re.subn(r"(minSdkVersion\s*=\s*)\d+", r"\g<1>24", content, count=1)
+          if count != 1:
+              raise SystemExit("Could not find minSdkVersion in android/variables.gradle.")
+          path.write_text(updated)
+          print("Configured minSdkVersion = 24")
+          PY
+          grep -n "minSdkVersion" android/variables.gradle
+
       - name: Configure Background Runner AAR repository
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           gradle_file = Path("android/app/build.gradle")
           content = gradle_file.read_text()
           required = "dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'"
           if required not in content:
-              pattern = r"(dirs\s+['\"]\.\./capacitor-cordova-android-plugins/src/main/libs['\"],\s*['\"]libs['\"])"
-              updated, count = re.subn(pattern, r"\1\n            " + required, content, count=1)
+              pattern = r"dirs\s+['\"]\.\./capacitor-cordova-android-plugins/src/main/libs['\"],\s*['\"]libs['\"]"
+              updated, count = re.subn(pattern, lambda m: m.group(0) + "\n            " + required, content, count=1)
               if count != 1:
                   raise SystemExit("Could not find the expected flatDir repository in android/app/build.gradle")
               content = updated
               gradle_file.write_text(content)
-
           aar = Path("node_modules/@capacitor/background-runner/android/src/main/libs/android-js-engine-release.aar")
           if not aar.is_file():
               raise SystemExit(f"Required background-runner AAR is missing: {aar}")
@@ -102,12 +117,10 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           path = Path("android/app/build.gradle")
           text = path.read_text()
           if "signingConfigs" in text and "signingConfigs.release" in text:
               raise SystemExit("Release signing already configured; refusing to duplicate it.")
-
           signing = """
               signingConfigs {
                   release {
@@ -129,10 +142,11 @@ jobs:
           path.write_text(text)
           PY
 
-      - name: Verify package ID
+      - name: Verify package ID and min SDK
         run: |
           grep -q "com.prokayakfishing.app" capacitor.config.ts
           grep -q "com.prokayakfishing.app" android/app/build.gradle || true
+          grep -q "minSdkVersion = 24" android/variables.gradle
 
       - name: Build signed Android App Bundle
         env:
