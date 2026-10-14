@@ -135,7 +135,12 @@ jobs:
           grep -q "com.prokayakfishing.app" android/app/build.gradle || true
 
       - name: Build signed Android App Bundle
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: redline-fishing
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
+          test -s "$ANDROID_KEYSTORE_PATH"
           cd android
           ./gradlew bundleRelease --stacktrace
 
