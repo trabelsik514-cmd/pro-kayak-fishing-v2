@@ -1,0 +1,145 @@
+name: Android AAB Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-aab:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_PATH: android/app/upload-keystore.jks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Validate signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing secret: ANDROID_KEYSTORE_BASE64" && exit 1)
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$ANDROID_KEY_ALIAS" || (echo "Missing secret: ANDROID_KEY_ALIAS" && exit 1)
+          test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing secret: ANDROID_KEY_PASSWORD" && exit 1)
+          mkdir -p android/app
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          test -s "$ANDROID_KEYSTORE_PATH"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Generate Android project if missing
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: Prepare app branding assets
+        run: |
+          mkdir -p assets
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/icon.png
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/splash.png
+
+      - name: Generate Android icon and splash assets
+        run: npx @capacitor/assets@3.0.5 generate --android --assetPath assets --iconBackgroundColor '#edf5fa' --iconBackgroundColorDark '#edf5fa' --splashBackgroundColor '#edf5fa' --splashBackgroundColorDark '#edf5fa'
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Configure Background Runner AAR repository
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          gradle_file = Path("android/app/build.gradle")
+          content = gradle_file.read_text()
+          required = "dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'"
+          if required not in content:
+              pattern = r"(dirs\s+['\"]\.\./capacitor-cordova-android-plugins/src/main/libs['\"],\s*['\"]libs['\"])"
+              updated, count = re.subn(pattern, r"\1\n            " + required, content, count=1)
+              if count != 1:
+                  raise SystemExit("Could not find the expected flatDir repository in android/app/build.gradle")
+              content = updated
+              gradle_file.write_text(content)
+
+          aar = Path("node_modules/@capacitor/background-runner/android/src/main/libs/android-js-engine-release.aar")
+          if not aar.is_file():
+              raise SystemExit(f"Required background-runner AAR is missing: {aar}")
+          print("Background Runner AAR found.")
+          PY
+
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("android/app/build.gradle")
+          text = path.read_text()
+          if "signingConfigs" in text and "signingConfigs.release" in text:
+              raise SystemExit("Release signing already configured; refusing to duplicate it.")
+
+          signing = """
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+
+          """
+          if not re.search(r"\bbuildTypes\s*\{\s*release\s*\{", text):
+              raise SystemExit("Could not find the generated release buildTypes block.")
+          text = re.sub(r"\bbuildTypes\s*\{", signing + "    buildTypes {", text, count=1)
+          text, count = re.subn(r"(buildTypes\s*\{\s*release\s*\{)", r"\1\n            signingConfig signingConfigs.release", text, count=1)
+          if count != 1:
+              raise SystemExit("Could not attach the upload signing config to the release build.")
+          path.write_text(text)
+          PY
+
+      - name: Verify package ID
+        run: |
+          grep -q "com.prokayakfishing.app" capacitor.config.ts
+          grep -q "com.prokayakfishing.app" android/app/build.gradle || true
+
+      - name: Build signed Android App Bundle
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Verify AAB exists
+        run: test -s android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload signed AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pro-kayak-fishing-v2-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
