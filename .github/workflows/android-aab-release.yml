@@ -2,6 +2,10 @@ name: Android AAB Release
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-aab-release.yml'
 
 permissions:
   contents: read
@@ -30,16 +34,17 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: redline-fishing
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing secret: ANDROID_KEYSTORE_BASE64" && exit 1)
           test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_KEYSTORE_PASSWORD" && exit 1)
-          test -n "$ANDROID_KEY_ALIAS" || (echo "Missing secret: ANDROID_KEY_ALIAS" && exit 1)
-          test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing secret: ANDROID_KEY_PASSWORD" && exit 1)
+          test -n "$ANDROID_KEY_ALIAS" || (echo "Upload key alias is not configured" && exit 1)
+          test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing secret: ANDROID_KEYSTORE_PASSWORD" && exit 1)
           mkdir -p "$(dirname "$ANDROID_KEYSTORE_PATH")"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           test -s "$ANDROID_KEYSTORE_PATH"
+          keytool -list -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS"
 
       - name: Install dependencies
         run: npm install
@@ -91,8 +96,8 @@ jobs:
       - name: Configure release signing
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: redline-fishing
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           python3 - <<'PY'
           from pathlib import Path
