@@ -70,6 +70,24 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Bump Android version code for Google Play
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/app/build.gradle")
+          text = path.read_text()
+          text, count = re.subn(r"(versionCode\\s+)\\d+", r"\\g<1>2", text, count=1)
+          if count != 1:
+              raise SystemExit("Could not find versionCode in android/app/build.gradle")
+          text, count = re.subn(r'(versionName\\s+")[^"]+(")', r'\\g<1>1.0.1\\2', text, count=1)
+          if count != 1:
+              raise SystemExit("Could not find versionName in android/app/build.gradle")
+          path.write_text(text)
+          print("Configured versionCode 2 and versionName 1.0.1")
+          PY
+          grep -nE "versionCode|versionName" android/app/build.gradle
+
       - name: Set minimum Android SDK to 24 for Play App Signing
         run: |
           python3 - <<'PY'
