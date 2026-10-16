@@ -70,6 +70,33 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Remove unnecessary background location permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          if not path.is_file():
+              raise SystemExit("Android app manifest was not generated.")
+          text = path.read_text()
+          if "xmlns:tools=" not in text:
+              text, count = re.subn(r"<manifest\\b", '<manifest xmlns:tools="http://schemas.android.com/tools"', text, count=1)
+              if count != 1:
+                  raise SystemExit("Could not find the manifest root element.")
+          permission = '    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove" />'
+          if "android.permission.ACCESS_BACKGROUND_LOCATION" not in text:
+              text = text.replace("</manifest>", permission + "\\n</manifest>")
+          elif 'tools:node="remove"' not in text:
+              text = re.sub(
+                  r'\\s*<uses-permission\\b(?=[^>]*android:name="android\\.permission\\.ACCESS_BACKGROUND_LOCATION")[^>]*/>',
+                  "",
+                  text,
+              )
+              text = text.replace("</manifest>", permission + "\\n</manifest>")
+          path.write_text(text)
+          print("Configured manifest merger to remove ACCESS_BACKGROUND_LOCATION.")
+          PY
+
       - name: Set unique Android version for Google Play
         env:
           BUILD_VERSION_CODE: ${{ github.run_number }}
@@ -211,6 +238,12 @@ jobs:
           echo "Expected versionCode: $EXPECTED_CODE"
           test "$ACTUAL_PACKAGE" = "com.prokayakfishing.app" || (echo "ERROR: unexpected package ID" && exit 1)
           test "$ACTUAL_CODE" = "$EXPECTED_CODE" || (echo "ERROR: AAB versionCode does not match expected version" && exit 1)
+          MANIFEST_XML="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB")"
+          if printf '%s' "$MANIFEST_XML" | grep -q 'android.permission.ACCESS_BACKGROUND_LOCATION'; then
+            echo "ERROR: AAB still requests ACCESS_BACKGROUND_LOCATION"
+            exit 1
+          fi
+          echo "Verified: AAB does not request ACCESS_BACKGROUND_LOCATION."
           echo "AAB metadata verified; safe to publish artifact."
 
       - name: Give verified AAB a unique filename
