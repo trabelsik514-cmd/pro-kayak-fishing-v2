@@ -80,19 +80,19 @@ jobs:
               raise SystemExit("Android app manifest was not generated.")
           text = path.read_text()
           if "xmlns:tools=" not in text:
-              text, count = re.subn(r"<manifest\\b", '<manifest xmlns:tools="http://schemas.android.com/tools"', text, count=1)
+              text, count = re.subn(r"<manifest\b", '<manifest xmlns:tools="http://schemas.android.com/tools"', text, count=1)
               if count != 1:
                   raise SystemExit("Could not find the manifest root element.")
           permission = '    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove" />'
           if "android.permission.ACCESS_BACKGROUND_LOCATION" not in text:
-              text = text.replace("</manifest>", permission + "\\n</manifest>")
+              text = text.replace("</manifest>", permission + "\n</manifest>")
           elif 'tools:node="remove"' not in text:
               text = re.sub(
-                  r'\\s*<uses-permission\\b(?=[^>]*android:name="android\\.permission\\.ACCESS_BACKGROUND_LOCATION")[^>]*/>',
+                  r'\s*<uses-permission\b(?=[^>]*android:name="android\.permission\.ACCESS_BACKGROUND_LOCATION")[^>]*/>',
                   "",
                   text,
               )
-              text = text.replace("</manifest>", permission + "\\n</manifest>")
+              text = text.replace("</manifest>", permission + "\n</manifest>")
           path.write_text(text)
           print("Configured manifest merger to remove ACCESS_BACKGROUND_LOCATION.")
           PY
