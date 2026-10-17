@@ -106,8 +106,8 @@ jobs:
           import os, re
           path = Path("android/app/build.gradle")
           text = path.read_text()
-          # Play Console permanently consumes version codes once uploaded; each run gets a new, never-reused code.
-          code = int(os.environ["BUILD_VERSION_CODE"]) + 2
+          # Alpha currently has versionCode 19. Do not use github.run_number: it restarts per workflow.
+          code = 20
           text, count = re.subn(r"(versionCode\s+)\d+", lambda m: m.group(1) + str(code), text, count=1)
           if count != 1:
               raise SystemExit("Could not find versionCode in android/app/build.gradle")
@@ -232,7 +232,7 @@ jobs:
             --output /tmp/bundletool.jar
           ACTUAL_CODE="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB" --xpath='/manifest/@android:versionCode')"
           ACTUAL_PACKAGE="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB" --xpath='/manifest/@package')"
-          EXPECTED_CODE="$((GITHUB_RUN_NUMBER + 2))"
+          EXPECTED_CODE="20"
           echo "Final AAB package: $ACTUAL_PACKAGE"
           echo "Final AAB versionCode: $ACTUAL_CODE"
           echo "Expected versionCode: $EXPECTED_CODE"
