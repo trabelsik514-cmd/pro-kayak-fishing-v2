@@ -1,0 +1,125 @@
+name: Android Release AAB
+
+on:
+  push:
+    branches: [currentcast-template-adaptation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-aab:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: npm install
+      - name: Add Android platform if missing
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+      - name: Prepare branding assets
+        run: |
+          mkdir -p assets
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/icon.png
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/splash.png
+          npx @capacitor/assets@3.0.5 generate --android --assetPath assets --iconBackgroundColor '#edf5fa' --iconBackgroundColorDark '#edf5fa' --splashBackgroundColor '#edf5fa' --splashBackgroundColorDark '#edf5fa'
+      - name: Configure background runner AAR repository
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          required = "dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'"
+          if required not in s:
+              pattern = r"(dirs\\s+['\\"]\\.\\./capacitor-cordova-android-plugins/src/main/libs['\\"],\\s*['\\"]libs['\\"])"
+              s, n = re.subn(pattern, r"\\1\\n            " + required, s, count=1)
+              if n != 1:
+                  raise SystemExit("Could not configure the BackgroundRunner AAR repository")
+              p.write_text(s)
+          if not Path("node_modules/@capacitor/background-runner/android/src/main/libs/android-js-engine-release.aar").is_file():
+              raise SystemExit("Required BackgroundRunner AAR is missing")
+          PY
+      - name: Configure release version and signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing GitHub secret ANDROID_KEYSTORE_BASE64" && exit 1)
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing GitHub secret ANDROID_KEYSTORE_PASSWORD" && exit 1)
+          KEY_ALIAS="${ANDROID_KEY_ALIAS:-redline-fishing}"
+          KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          test -s "$RUNNER_TEMP/release.keystore"
+          export RELEASE_KEYSTORE="$RUNNER_TEMP/release.keystore"
+          export RELEASE_STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD"
+          export RELEASE_KEY_ALIAS="$KEY_ALIAS"
+          export RELEASE_KEY_PASSWORD="$KEY_PASSWORD"
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          if "versionCode 20" not in s:
+              s, n = re.subn(r'versionCode\\s+\\d+', 'versionCode 20', s, count=1)
+              if n != 1: raise SystemExit("Could not set versionCode 20")
+          if "versionName \"1.0.20\"" not in s:
+              s, n = re.subn(r'versionName\\s+["\\'][^"\\']+["\\']', 'versionName "1.0.20"', s, count=1)
+              if n != 1: raise SystemExit("Could not set versionName 1.0.20")
+          signing = '''
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("RELEASE_KEYSTORE"))
+                      storePassword System.getenv("RELEASE_STORE_PASSWORD")
+                      keyAlias System.getenv("RELEASE_KEY_ALIAS")
+                      keyPassword System.getenv("RELEASE_KEY_PASSWORD")
+                  }
+              }
+          '''
+          if "signingConfigs {" not in s:
+              s = s.replace("android {", "android {\\n" + signing, 1)
+          s, n = re.subn(r'buildTypes\\s*\\{\\s*release\\s*\\{', 'buildTypes {\\n        release {\\n            signingConfig signingConfigs.release', s, count=1)
+          if n != 1: raise SystemExit("Could not attach release signing config")
+          p.write_text(s)
+          print("Configured version 1.0.20 (20) and release signing.")
+          PY
+      - name: Build signed Android App Bundle
+        run: |
+          npm run build
+          npx cap sync android
+          cd android
+          ./gradlew bundleRelease
+      - name: Verify AAB and signature
+        run: |
+          set -euo pipefail
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$AAB"
+          jarsigner -verify -verbose -certs "$AAB" >/dev/null
+          sha256sum "$AAB" | tee aab-sha256.txt
+          echo "AAB_SIZE=$(du -h "$AAB" | cut -f1)" >> "$GITHUB_ENV"
+      - name: Upload signed AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pro-kayak-fishing-v2-release-aab-v1.0.20-code20
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            aab-sha256.txt
+          if-no-files-found: error
+          retention-days: 14
