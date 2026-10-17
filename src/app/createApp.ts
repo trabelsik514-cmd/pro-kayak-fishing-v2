@@ -768,7 +768,7 @@ export function createApp(root: HTMLElement) {
       .pkf-forecast-panel{position:absolute;z-index:30;inset-inline-start:12px;top:calc(var(--topbar-height,70px) + 66px);bottom:82px;width:min(510px,calc(100% - 24px));max-height:calc(100% - 160px);overflow:auto;background:rgba(10,24,37,.97);color:#eef6fb;border:1px solid rgba(148,190,211,.24);border-radius:18px;box-shadow:0 18px 48px #0008;padding:16px;backdrop-filter:blur(16px)}
       .pkf-forecast-panel.hidden{display:none}.pkf-forecast-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.pkf-forecast-head small{color:#72d5d0;letter-spacing:.12em;font-size:10px}.pkf-forecast-head h2{font-size:19px;margin:5px 0}.pkf-forecast-head p{font-size:12px;color:#a9bdc9;margin:0}.pkf-forecast-head>button{border:1px solid #456071;background:#1b3445;color:white;border-radius:10px;width:36px;height:36px;font-size:22px}
       .pkf-forecast-tabs{display:flex;gap:8px;margin:16px 0 12px}.pkf-forecast-tabs button{flex:1;border:1px solid #344e60;border-radius:10px;background:#152d3e;color:#bcd0db;padding:10px}.pkf-forecast-tabs button.active{background:#146b70;border-color:#4ab9b6;color:white}
-      .pkf-forecast-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}.pkf-forecast-metric{background:#142b3a;border:1px solid #294454;border-radius:12px;padding:11px}.pkf-forecast-metric small{display:block;color:#9fb8c6;font-size:11px}.pkf-forecast-metric strong{display:block;font-size:20px;margin-top:4px;font-variant-numeric:tabular-nums}.pkf-forecast-hour{display:grid;grid-template-columns:54px 1fr 1fr;gap:8px;align-items:center;border-bottom:1px solid #29404f;padding:10px 2px;font-size:12px}.pkf-forecast-hour b{font-variant-numeric:tabular-nums}.pkf-forecast-days{display:grid;gap:9px}.pkf-forecast-day{display:grid;grid-template-columns:1.25fr 1fr;gap:7px;background:#142b3a;border:1px solid #294454;border-radius:12px;padding:11px}.pkf-forecast-day h3{font-size:13px;margin:0 0 6px}.pkf-forecast-day p{font-size:11px;color:#b2c6d1;margin:4px 0}.pkf-forecast-day strong{font-size:15px}.pkf-forecast-panel footer{color:#8fa8b6;font-size:10px;line-height:1.6;margin-top:14px}.pkf-forecast-empty{padding:20px;text-align:center;color:#b2c6d1}
+      .pkf-forecast-charts{display:grid;grid-template-columns:1fr;gap:10px;margin:10px 0 18px}.pkf-forecast-chart{background:#102432;border:1px solid #294454;border-radius:12px;padding:10px 12px;min-width:0}.pkf-forecast-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.pkf-forecast-chart h3{font-size:12px;font-weight:600;margin:0;color:#dbeaf1}.pkf-forecast-chart-head strong{font-size:12px;color:#fff;font-variant-numeric:tabular-nums}.pkf-forecast-chart svg{width:100%;height:80px;display:block;overflow:visible}.pkf-forecast-chart-range,.pkf-forecast-chart-times{display:flex;justify-content:space-between;color:#91a9b6;font-size:10px;margin-top:4px}.pkf-forecast-subhead{font-size:13px;margin:14px 0 6px;color:#d9e9f1}.pkf-forecast-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}.pkf-forecast-metric{background:#142b3a;border:1px solid #294454;border-radius:12px;padding:11px}.pkf-forecast-metric small{display:block;color:#9fb8c6;font-size:11px}.pkf-forecast-metric strong{display:block;font-size:20px;margin-top:4px;font-variant-numeric:tabular-nums}.pkf-forecast-hour{display:grid;grid-template-columns:54px 1fr 1fr;gap:8px;align-items:center;border-bottom:1px solid #29404f;padding:10px 2px;font-size:12px}.pkf-forecast-hour b{font-variant-numeric:tabular-nums}.pkf-forecast-days{display:grid;gap:9px}.pkf-forecast-day{display:grid;grid-template-columns:1.25fr 1fr;gap:7px;background:#142b3a;border:1px solid #294454;border-radius:12px;padding:11px}.pkf-forecast-day h3{font-size:13px;margin:0 0 6px}.pkf-forecast-day p{font-size:11px;color:#b2c6d1;margin:4px 0}.pkf-forecast-day strong{font-size:15px}.pkf-forecast-panel footer{color:#8fa8b6;font-size:10px;line-height:1.6;margin-top:14px}.pkf-forecast-empty{padding:20px;text-align:center;color:#b2c6d1}
       @media(max-width:600px){.pkf-forecast-panel{top:116px;bottom:76px;inset-inline-start:8px;width:calc(100% - 16px);padding:12px}.pkf-forecast-head h2{font-size:17px}}
     </style>
     <div class="search-results hidden" id="search-results"></div></main>`;
@@ -2601,21 +2601,59 @@ export function createApp(root: HTMLElement) {
   const forecastNum = (n:number|null, unit:string, digits=1) => n==null ? '—' : `${n.toFixed(digits)}${unit}`;
   const forecastDirection = (n:number|null) => n==null ? '—' : `${Math.round(n)}°`;
   const forecastDate = (v:string) => new Intl.DateTimeFormat(getLang()==='fr'?'fr-FR':'ar-TN',{weekday:'short',day:'numeric',month:'short'}).format(new Date(v+'T12:00:00'));
+  const forecastGraph = (title:string, icon:string, data:(number|null)[], unit:string, color:string, mode:'line'|'bar'='line') => {
+    const clean=data.filter((v):v is number=>v!=null&&Number.isFinite(v));
+    if(clean.length<2) return `<section class="pkf-forecast-chart"><h3>${icon} ${title}</h3><p class="pkf-forecast-empty">${getLang()==='fr'?'Données insuffisantes pour tracer ce graphique.':'بيانات غير كافية لرسم هذا المخطط.'}</p></section>`;
+    const width=320,height=78,pad=7,min=Math.min(...clean),max=Math.max(...clean),range=Math.max(max-min,0.01);
+    const points=data.map((v,i)=>v==null?null:{x:pad+i*(width-2*pad)/Math.max(1,data.length-1),y:height-pad-((v-min)/range)*(height-2*pad),v}).filter((p):p is {x:number;y:number;v:number}=>p!==null);
+    const marks=mode==='bar'
+      ? points.map(p=>`<rect x="${p.x-2.5}" y="${p.y}" width="5" height="${height-pad-p.y}" rx="1.5" fill="${color}" opacity=".88"><title>${p.v.toFixed(1)}${unit}</title></rect>`).join('')
+      : `<polyline points="${points.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`+`<polygon points="${points[0].x},${height-pad} ${points.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')} ${points[points.length-1].x},${height-pad}" fill="${color}" opacity=".13"/>`;
+    const last=clean[clean.length-1];
+    return `<section class="pkf-forecast-chart"><div class="pkf-forecast-chart-head"><h3>${icon} ${title}</h3><strong>${last.toFixed(1)}${unit}</strong></div><div class="pkf-forecast-chart-range"><span>${Math.min(...clean).toFixed(1)}${unit}</span><span>${Math.max(...clean).toFixed(1)}${unit}</span></div><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)}" preserveAspectRatio="none"><line x1="0" y1="${height/2}" x2="${width}" y2="${height/2}" stroke="#355061" stroke-dasharray="3 4"/>${marks}</svg><div class="pkf-forecast-chart-times"><span>${escapeHtml(forecastHourly[0]?.time.slice(11,16)??'')}</span><span>${escapeHtml(forecastHourly[Math.floor((forecastHourly.length-1)/2)]?.time.slice(11,16)??'')}</span><span>${escapeHtml(forecastHourly[forecastHourly.length-1]?.time.slice(11,16)??'')}</span></div></section>`;
+  };
+  const fishingScore = (x:HourlyKayakPoint,index:number,all:HourlyKayakPoint[]) => {
+    let score=60;
+    if(x.windSpeed!=null) score += x.windSpeed<=8?12:x.windSpeed<=15?5:x.windSpeed<=22?-8:-22;
+    if(x.windGusts!=null) score += x.windGusts<=15?5:x.windGusts<=25?-5:-15;
+    if(x.waveHeight!=null) score += x.waveHeight<=0.4?12:x.waveHeight<=0.8?3:x.waveHeight<=1.2?-12:-25;
+    if(x.pressure!=null) score += x.pressure>=1008&&x.pressure<=1022?5:x.pressure<1000?-8:0;
+    if(x.cloudCover!=null) score += x.cloudCover>=50&&x.cloudCover<=90?4:0;
+    if(x.pressure!=null&&index>0&&all[index-1].pressure!=null) {
+      const delta=x.pressure-all[index-1].pressure!;
+      score+=delta>0.7?4:delta< -1.2?-6:0;
+    }
+    return Math.max(0,Math.min(100,Math.round(score)));
+  };
   const renderForecast = () => {
     const content = document.querySelector<HTMLElement>('#pkf-forecast-content')!;
     document.querySelectorAll<HTMLButtonElement>('[data-forecast-tab]').forEach(b=>b.classList.toggle('active',b.dataset.forecastTab===forecastTab));
     if(forecastTab==='hourly'){
       const next = forecastHourly.slice(0,24);
-      const vals = next.filter(x=>x.windSpeed!=null || x.waveHeight!=null);
+      const vals = next.filter(x=>x.windSpeed!=null || x.waveHeight!=null || x.temperature!=null);
       if(!vals.length){content.innerHTML='<div class="pkf-forecast-empty">'+(getLang()==='fr'?'Aucune donnée horaire disponible pour ce point.':'لا تتوفر بيانات ساعية لهذه النقطة.')+'</div>';return;}
       const windMax=Math.max(...vals.map(x=>x.windSpeed??0));
       const waveMax=Math.max(...vals.map(x=>x.waveHeight??0));
       const gustMax=Math.max(...vals.map(x=>x.windGusts??0));
+      const labels=getLang()==='fr'
+        ? {temp:'Température horaire',sst:'Température de la mer (SST)',cloud:'Couverture nuageuse',rain:'Probabilité de pluie',wind:'Vitesse du vent',pressure:'Pression barométrique',score:'Prévision de pêche'}
+        : {temp:'درجة الحرارة بالساعة',sst:'حرارة سطح البحر (SST)',cloud:'الغطاء السحابي',rain:'احتمال الأمطار',wind:'سرعة الرياح',pressure:'الضغط الجوي',score:'توقعات الصيد'};
+      const charts=[
+        forecastGraph(labels.temp,'🌡️',next.map(x=>x.temperature),'°C','#fb923c','line'),
+        forecastGraph(labels.sst,'🌊',next.map(x=>x.seaTemperature),'°C','#22d3ee','line'),
+        forecastGraph(labels.cloud,'☁️',next.map(x=>x.cloudCover),'%','#a78bfa','bar'),
+        forecastGraph(labels.rain,'🌧️',next.map(x=>x.precipitationProbability),'%','#38bdf8','bar'),
+        forecastGraph(labels.wind,'💨',next.map(x=>x.windSpeed),' km/h','#4ade80','bar'),
+        forecastGraph(labels.pressure,'🔵',next.map(x=>x.pressure),' hPa','#818cf8','line'),
+        forecastGraph(labels.score,'🐟',next.map((x,i)=>fishingScore(x,i,next)),'/100','#34d399','bar')
+      ].join('');
       content.innerHTML=`<div class="pkf-forecast-metrics">
         <div class="pkf-forecast-metric"><small>${getLang()==='fr'?'Vent max. • 24 h':'أقصى رياح • 24 ساعة'}</small><strong>${forecastNum(windMax,' km/h')}</strong></div>
         <div class="pkf-forecast-metric"><small>${getLang()==='fr'?'Rafales max.':'أقصى هبات'}</small><strong>${forecastNum(gustMax,' km/h')}</strong></div>
         <div class="pkf-forecast-metric"><small>${getLang()==='fr'?'Vagues max.':'أقصى موج'}</small><strong>${forecastNum(waveMax,' m')}</strong></div>
         <div class="pkf-forecast-metric"><small>${getLang()==='fr'?'Heures affichées':'الساعات المعروضة'}</small><strong>${vals.length}</strong></div></div>
+        <div class="pkf-forecast-charts">${charts}</div>
+        <h3 class="pkf-forecast-subhead">${getLang()==='fr'?'Détail horaire vent & mer':'التفاصيل الساعية للرياح والبحر'}</h3>
         ${next.map(x=>`<div class="pkf-forecast-hour"><b>${escapeHtml(x.time.slice(11,16))}</b><span>💨 ${forecastNum(x.windSpeed,' km/h')} <small>${forecastDirection(x.windDirection)}</small></span><span>🌊 ${forecastNum(x.waveHeight,' m')} <small>${forecastNum(x.wavePeriod,' s')}</small></span></div>`).join('')}`;
     } else {
       if(!forecastDays.length){content.innerHTML='<div class="pkf-forecast-empty">'+(getLang()==='fr'?'Aucune prévision sur 7 jours disponible.':'لا تتوفر توقعات الأيام السبعة.')+'</div>';return;}
