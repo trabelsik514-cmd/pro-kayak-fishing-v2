@@ -263,3 +263,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 @media(min-width:701px){
   .report{right:18px!important;bottom:18px!important}
 }
+
+/* The daily-weather panel is a six-metric grid, not a single fishing-score hero. */
+.report .weather-overview>div:first-child{
+  grid-column:auto!important;min-height:86px!important;
+  background:linear-gradient(145deg,#0b2032,#061321)!important;
+  border-color:var(--cc-line)!important;
+}
+.report .weather-overview>div:first-child>strong{
+  font-size:clamp(15px,3.7vw,21px)!important;line-height:1.35!important;
+  color:#ecfeff!important;letter-spacing:0;
+}
+.report .weather-overview>div:first-child>strong small{font-size:inherit!important;color:inherit!important}
