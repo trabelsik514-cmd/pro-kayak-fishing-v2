@@ -137,6 +137,12 @@ export type HourlyKayakPoint = {
   swellDirection:number|null;
   swellPeriod:number|null;
   currentVelocity:number|null;
+  temperature:number|null;
+  precipitationProbability:number|null;
+  precipitation:number|null;
+  pressure:number|null;
+  cloudCover:number|null;
+  seaTemperature:number|null;
 };
 
 export class MarineService {
@@ -450,7 +456,7 @@ export class MarineService {
     const weatherUrl=new URL('https://api.open-meteo.com/v1/forecast');
     weatherUrl.searchParams.set('latitude',String(latitude));
     weatherUrl.searchParams.set('longitude',String(longitude));
-    weatherUrl.searchParams.set('hourly','wind_speed_10m,wind_gusts_10m,wind_direction_10m');
+    weatherUrl.searchParams.set('hourly','temperature_2m,precipitation_probability,precipitation,pressure_msl,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover');
     weatherUrl.searchParams.set('timezone','auto');
     weatherUrl.searchParams.set('forecast_days','7');
     weatherUrl.searchParams.set('cell_selection','nearest');
@@ -458,7 +464,7 @@ export class MarineService {
     const seaUrl=new URL('https://marine-api.open-meteo.com/v1/marine');
     seaUrl.searchParams.set('latitude',String(latitude));
     seaUrl.searchParams.set('longitude',String(longitude));
-    seaUrl.searchParams.set('hourly','wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,ocean_current_velocity');
+    seaUrl.searchParams.set('hourly','wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,ocean_current_velocity,sea_surface_temperature');
     seaUrl.searchParams.set('timezone','auto');
     seaUrl.searchParams.set('forecast_days','7');
     seaUrl.searchParams.set('cell_selection','sea');
@@ -484,13 +490,19 @@ export class MarineService {
         windSpeed:wi==null?null:num(w.wind_speed_10m,wi),
         windGusts:wi==null?null:num(w.wind_gusts_10m,wi),
         windDirection:wi==null?null:num(w.wind_direction_10m,wi),
+        temperature:wi==null?null:num(w.temperature_2m,wi),
+        precipitationProbability:wi==null?null:num(w.precipitation_probability,wi),
+        precipitation:wi==null?null:num(w.precipitation,wi),
+        pressure:wi==null?null:num(w.pressure_msl,wi),
+        cloudCover:wi==null?null:num(w.cloud_cover,wi),
         waveHeight:mi==null?null:num(m.wave_height,mi),
         waveDirection:mi==null?null:num(m.wave_direction,mi),
         wavePeriod:mi==null?null:num(m.wave_period,mi),
         swellHeight:mi==null?null:num(m.swell_wave_height,mi),
         swellDirection:mi==null?null:num(m.swell_wave_direction,mi),
         swellPeriod:mi==null?null:num(m.swell_wave_period,mi),
-        currentVelocity:mi==null?null:num(m.ocean_current_velocity,mi)
+        currentVelocity:mi==null?null:num(m.ocean_current_velocity,mi),
+        seaTemperature:mi==null?null:num(m.sea_surface_temperature,mi)
       });
     }
     return out;

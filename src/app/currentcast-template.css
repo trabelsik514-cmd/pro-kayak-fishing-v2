@@ -1,0 +1,312 @@
+/* CurrentCast-inspired template adaptation for Tunisia.
+   Visual layer only: preserves the existing MapLibre, marine-data and kayak services. */
+:root{
+  --cc-bg:#020a14;
+  --cc-panel:rgba(4,15,28,.96);
+  --cc-panel-solid:#071525;
+  --cc-line:rgba(56,189,248,.18);
+  --cc-text:#e5f3ff;
+  --cc-muted:#8ca5bb;
+  --cc-accent:#06b6d4;
+  --cc-accent-strong:#0ea5e9;
+}
+html,body,#app{background:var(--cc-bg);color:var(--cc-text)}
+.shell{background:transparent}
+.topbar{
+  background:rgba(2,10,20,.94)!important;
+  border-bottom:1px solid var(--cc-line)!important;
+  box-shadow:0 8px 28px rgba(0,0,0,.3)!important;
+  backdrop-filter:blur(18px)!important;
+}
+.topbar .brand-name,.topbar .brand-name span,.topbar .brand-name b{color:var(--cc-text)!important}
+.topbar .brand-name small{color:var(--cc-muted)!important}
+.topbar .lang-toggle{
+  color:var(--cc-text)!important;background:#0b1b2b!important;
+  border-color:var(--cc-line)!important;
+}
+.topbar .lang-toggle:focus-visible{outline-color:var(--cc-accent)!important}
+.topbar .search input{
+  background:#020a14!important;color:var(--cc-text)!important;
+  border-color:#1c3448!important;box-shadow:inset 0 1px 2px #0005;
+}
+.topbar .search input:focus{border-color:var(--cc-accent)!important;box-shadow:0 0 0 3px #06b6d422}
+.topbar .search button,.map-action-sea,.today-sea,.trip-toggle,.trip-primary,
+.group-toggle,.safety-toggle,.pkf-tool-gps{
+  background:linear-gradient(135deg,#0891b2,#0284c7)!important;color:#fff!important;
+  border-color:#22d3ee55!important;
+}
+.topbar .pkf-updates-button{background:#071525!important;color:#7dd3fc!important;border-color:var(--cc-line)!important}
+.search-results,.pkf-layer-panel,.saved-waypoints-panel,.route-view,.report,.trip-panel,.group-panel,.safety-panel,.measure-panel,.ki-panel,.weekly-sea-panel{
+  color:var(--cc-text)!important;background:var(--cc-panel)!important;
+  border:1px solid var(--cc-line)!important;box-shadow:0 18px 48px #0008!important;
+  backdrop-filter:blur(18px)!important;
+}
+.search-results button,.search-results div{color:var(--cc-text)!important;border-color:#ffffff12!important}
+.search-results button:hover{background:#0ea5e91c!important}
+.report-head,.trip-head,.saved-waypoints-head,.pkf-layer-head{
+  border-color:var(--cc-line)!important;color:var(--cc-text)!important;
+}
+.report p,.report small,.updated,.safety-note,.assessment-details small{color:var(--cc-muted)!important}
+.report h4,.place-title{color:var(--cc-text)!important}
+.report-grid span,.kayak-summary,.assessment-details,.depth-card,
+.trip-recording,.trip-idle,.safety-grid span,.safety-grid label,
+.ki-hero,.ki-metric,.ki-stat,.ki-card,.ki-row,.ki-item,
+.sea-overview>div,.sea-hour-card,.sea-best-window,.sea-reasons-box,
+.weekly-sea-card,.model-compare-card,.model-comparison,.weather-highlight{
+  background:#071525!important;border-color:var(--cc-line)!important;color:var(--cc-text)!important;
+}
+.report-grid span{box-shadow:inset 0 1px 0 #ffffff05}
+.report-grid b,.depth-card b{color:#f0f9ff!important}
+.report button:not(#close-report),.trip-panel button:not(.trip-head button),.saved-waypoints-panel button:not(.saved-waypoints-head button){
+  border-color:#22d3ee33;
+}
+.report button:not(#close-report),.trip-primary,.saved-waypoints-add{
+  background:linear-gradient(135deg,#0891b2,#0284c7)!important;color:#fff!important;
+}
+.report-head button,.trip-head button,.saved-waypoints-head button,.pkf-layer-head button{
+  color:#d7f3ff!important;background:#0b1b2b!important;border:1px solid #ffffff12!important;border-radius:10px!important;
+}
+.map-actions{
+  background:rgba(2,10,20,.92)!important;border:1px solid var(--cc-line)!important;
+  box-shadow:0 12px 32px #0007!important;backdrop-filter:blur(16px)!important;
+}
+.map-action{
+  color:#c8dced!important;background:#0b1b2b!important;border-color:#203a50!important;
+}
+.map-action:hover{background:#102b40!important;border-color:#155e75!important}
+.map-action-trip{background:#0b2638!important;color:#7dd3fc!important}
+.map-action-intelligence{background:#10233a!important;color:#bae6fd!important}
+.pkf-map-toolbar{
+  background:rgba(2,10,20,.94)!important;border:1px solid var(--cc-line)!important;
+  box-shadow:0 12px 32px #0008!important;backdrop-filter:blur(16px)!important;
+}
+.pkf-tool,.pkf-toolbar-toggle{
+  color:#c8dced!important;background:#081827!important;border-color:#1c3448!important;
+}
+.pkf-tool:hover,.pkf-toolbar-toggle:hover{background:#0d2a3e!important;border-color:#0e7490!important}
+.pkf-tool svg{stroke:currentColor!important}
+.pkf-layer-row{color:var(--cc-text)!important;border-color:#ffffff10!important}
+.pkf-layer-note{color:var(--cc-muted)!important}
+.pkf-bottom-nav{
+  background:rgba(2,10,20,.96)!important;border:1px solid var(--cc-line)!important;
+  box-shadow:0 12px 32px #0009!important;backdrop-filter:blur(20px)!important;
+}
+.pkf-bottom-nav button{color:#91a9bd!important}
+.pkf-bottom-nav button.active{
+  color:#67e8f9!important;background:linear-gradient(180deg,#08344a,#082336)!important;
+  border:1px solid #06b6d433!important;box-shadow:inset 0 1px 0 #67e8f922!important;
+}
+.pkf-bottom-nav button.active .pkf-nav-icon{color:#22d3ee!important}
+.pkf-bottom-nav .pkf-nav-icon{color:#94a3b8!important}
+.pkf-bottom-nav button b{font-weight:700!important}
+.pkf-layer-row input{accent-color:var(--cc-accent)!important}
+.safety-warning{background:#451a1a!important;border-color:#ef444455!important}
+.safety-ok{background:#052e2b!important;border-color:#14b8a655!important}
+.kayak-summary.safe,.kayak-summary.good{border-inline-start:4px solid #22c55e!important;border-right-color:#22c55e!important}
+.kayak-summary.caution{border-right-color:#f59e0b!important}
+.kayak-summary.danger{border-right-color:#ef4444!important}
+.trip-recording{border-right-color:var(--cc-accent)!important}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #22d3ee!important;outline-offset:2px}
+@media(max-width:700px){
+  .topbar{background:rgba(2,10,20,.97)!important}
+  .topbar .search input{min-width:0}
+  .map-actions{max-width:calc(100vw - 24px)!important}
+  .pkf-bottom-nav{bottom:calc(8px + env(safe-area-inset-bottom,0px))!important}
+  .report,.trip-panel,.group-panel,.safety-panel,.measure-panel,.saved-waypoints-panel,.route-view{
+    background:rgba(4,15,28,.985)!important;border-color:var(--cc-line)!important;
+    max-height:calc(100dvh - 150px)!important;
+  }
+  .report-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .report-grid span{min-width:0;overflow-wrap:anywhere}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+
+
+/* CurrentCast-style forecast cards and report sheet, adapted to existing Tunisia data. */
+.report{
+  width:min(490px,calc(100% - 28px))!important;
+  max-height:min(78dvh,900px)!important;
+  padding:14px!important;
+  border:1px solid rgba(34,211,238,.22)!important;
+  border-radius:22px!important;
+  background:linear-gradient(180deg,rgba(5,18,32,.985),rgba(2,10,20,.985))!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  scrollbar-width:thin;
+  scrollbar-color:#164e63 transparent;
+}
+.report .report-head{
+  position:sticky;top:-14px;z-index:3;
+  margin:-14px -14px 12px!important;
+  padding:14px 14px 12px!important;
+  min-height:48px;
+  background:rgba(4,15,28,.97)!important;
+  border-bottom:1px solid var(--cc-line)!important;
+  backdrop-filter:blur(16px);
+}
+.report .report-head b{color:#f0f9ff!important;font-size:16px;letter-spacing:.01em}
+.report .report-head button{
+  width:34px;height:34px;display:grid;place-items:center;
+  border-radius:11px!important;background:#0b1b2b!important;
+  color:#bae6fd!important;border:1px solid #164e63!important;
+}
+.report .sea-location,.report .weather-location-banner{
+  border-radius:13px!important;margin:8px 0 12px!important;
+  padding:10px 12px!important;background:#071b2c!important;
+  border:1px solid var(--cc-line)!important;color:#d9f2ff!important;
+}
+.report .sea-overview{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;margin:10px 0 12px!important;
+}
+.report .sea-overview>div{
+  min-width:0;min-height:86px;padding:12px!important;
+  border:1px solid var(--cc-line)!important;border-radius:15px!important;
+  background:linear-gradient(145deg,#0b2032,#061321)!important;
+  display:flex;flex-direction:column;justify-content:center;gap:7px;
+}
+.report .sea-overview>div:first-child{
+  grid-column:1/-1;min-height:112px;
+  background:radial-gradient(circle at 92% 12%,rgba(6,182,212,.17),transparent 42%),linear-gradient(135deg,#0b2a40,#071525)!important;
+  border-color:#0891b255!important;
+}
+.report .sea-overview>div>span,.report .sea-overview>div>small{
+  color:#8ca5bb!important;font-size:12px;line-height:1.45;
+}
+.report .sea-overview>div>b,.report .sea-overview>div>strong,
+.report .sea-overview .weather-number{
+  color:#ecfeff!important;font-size:clamp(15px,3.7vw,21px)!important;
+  font-weight:800!important;line-height:1.35!important;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+.report .sea-overview>div:first-child>strong{
+  font-size:clamp(32px,8vw,44px)!important;color:#67e8f9!important;
+  letter-spacing:-.04em;line-height:1!important;
+}
+.report .sea-overview>div:first-child>strong small{
+  color:#8ca5bb!important;font-size:13px!important;letter-spacing:0;
+}
+.report .sea-best-window,.report .weather-highlight,.report .sea-reasons-box,
+.report .model-comparison,.report .weather-highlight{
+  border:1px solid var(--cc-line)!important;border-radius:16px!important;
+  background:linear-gradient(145deg,#092239,#071525)!important;
+  color:#e0f2fe!important;padding:13px!important;margin:10px 0!important;
+}
+.report .sea-best-window b,.report .sea-best-window strong,
+.report .weather-highlight b,.report .weather-highlight p,
+.report .weather-highlight small,.report .sea-reasons-box b,
+.report .model-comparison b,.report .model-comparison small{
+  color:#e0f2fe!important;line-height:1.6;
+}
+.report .sea-best-window strong{color:#67e8f9!important;font-size:20px}
+.report .sea-best-window p{color:#67e8f9!important;font-size:22px;font-weight:800}
+.report .sea-hour-strip{
+  display:flex!important;gap:9px!important;overflow-x:auto!important;
+  padding:4px 1px 10px!important;background:transparent!important;
+  scroll-snap-type:x proximity;overscroll-behavior-inline:contain;
+}
+.report .sea-hour-card{
+  flex:0 0 126px!important;min-width:126px;padding:12px!important;
+  border:1px solid var(--cc-line)!important;border-radius:15px!important;
+  background:linear-gradient(180deg,#0b2032,#061321)!important;
+  color:#e0f2fe!important;scroll-snap-align:start;
+}
+.report .sea-hour-card .sea-hour-time{color:#a7c4d8!important;font-weight:700}
+.report .sea-hour-card strong{color:#67e8f9!important;font-size:24px!important}
+.report .sea-hour-card strong small{color:#8ca5bb!important;font-size:11px}
+.report .sea-hour-card b,.report .sea-hour-card span{color:#d5eaf7!important}
+.report .sea-hour-card.excellent,.report .sea-hour-card.good{border-top:2px solid #22c55e!important}
+.report .sea-hour-card.caution{border-top:2px solid #f59e0b!important}
+.report .sea-hour-card.danger{border-top:2px solid #ef4444!important}
+.report .sea-section-toggle{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;padding:12px;margin:8px 0;border:1px solid var(--cc-line);
+  border-radius:13px;background:#081b2c;color:#e0f2fe;font-weight:750;
+}
+.report .sea-reasons li{color:#b9cedd!important;line-height:1.7}
+.report .sea-source{
+  margin-top:12px;padding-top:10px;border-top:1px solid #ffffff12;
+  color:#8ca5bb!important;font-size:11px;
+}
+.report .tide-event{
+  background:#0b2032!important;color:#e0f2fe!important;
+  border:1px solid var(--cc-line)!important;border-radius:13px!important;
+}
+.report .tide-event b,.report .tide-event strong,.report .tide-event small{color:#e0f2fe!important}
+.report .weekly-sea-card,.report .model-compare-card{
+  background:linear-gradient(145deg,#0b2032,#061321)!important;
+  border:1px solid var(--cc-line)!important;border-radius:15px!important;
+  color:#e0f2fe!important;
+}
+.report .weekly-sea-card b,.report .weekly-sea-card strong,
+.report .weekly-sea-card span,.report .model-compare-card b,
+.report .model-compare-card strong,.report .model-compare-card span{color:#dff5ff!important}
+.report .weekly-sea-values span,.report .model-compare-grid span{
+  background:#071525!important;border:1px solid #164e63!important;
+  color:#a9c6d9!important;border-radius:10px!important;
+}
+.report .weekly-sea-values b,.report .model-compare-grid b{color:#e0f2fe!important}
+.report .sea-loading{padding:26px 10px;color:#9dc9dc!important}
+@media(max-width:700px){
+  .report{
+    right:8px!important;left:8px!important;bottom:calc(80px + env(safe-area-inset-bottom,0px))!important;
+    width:auto!important;max-height:calc(100dvh - 155px)!important;
+    padding:12px!important;border-radius:20px!important;
+  }
+  .report .report-head{top:-12px;margin:-12px -12px 10px!important;padding:12px!important}
+  .report .sea-overview{gap:7px!important}
+  .report .sea-overview>div{min-height:78px;padding:10px!important}
+  .report .sea-hour-card{flex-basis:116px!important;min-width:116px!important}
+  .pkf-bottom-nav{z-index:60!important}
+}
+@media(min-width:701px){
+  .report{right:18px!important;bottom:18px!important}
+}
+
+/* The daily-weather panel is a six-metric grid, not a single fishing-score hero. */
+.report .weather-overview>div:first-child{
+  grid-column:auto!important;min-height:86px!important;
+  background:linear-gradient(145deg,#0b2032,#061321)!important;
+  border-color:var(--cc-line)!important;
+}
+.report .weather-overview>div:first-child>strong{
+  font-size:clamp(15px,3.7vw,21px)!important;line-height:1.35!important;
+  color:#ecfeff!important;letter-spacing:0;
+}
+.report .weather-overview>div:first-child>strong small{font-size:inherit!important;color:inherit!important}
+
+
+/* Restored original-style hourly marine graph and additional observed metrics. */
+.report .dashboard-chart-card{
+  margin:12px 0;padding:13px;border:1px solid var(--cc-line);
+  border-radius:16px;background:linear-gradient(145deg,#081d2e,#04111e);
+  color:var(--cc-text);overflow:hidden;
+}
+.report .dashboard-chart-card .dashboard-section-title{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;
+}
+.report .dashboard-chart-card .dashboard-section-title b{font-size:14px;color:#e0f2fe}
+.report .dashboard-chart-card .dashboard-section-title small{font-size:10px;color:var(--cc-muted);text-align:end}
+.report .dashboard-hourly-chart{width:100%;min-height:120px;overflow:hidden}
+.report .dashboard-chart-svg{display:block;width:100%;height:auto;overflow:visible}
+.report .chart-grid-line{stroke:rgba(148,190,214,.17);stroke-width:1;stroke-dasharray:3 4}
+.report .chart-axis-label{fill:#8ca5bb;font-size:11px;font-variant-numeric:tabular-nums}
+.report .chart-axis-caption{fill:#a8c5d8;font-size:11px;font-weight:700}
+.report .chart-line-wind,.report .chart-line-gust,.report .chart-line-wave{
+  fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:2.8;
+}
+.report .chart-line-wind{stroke:#38bdf8}
+.report .chart-line-gust{stroke:#a78bfa;stroke-width:2.2;stroke-dasharray:5 4}
+.report .chart-line-wave{stroke:#2dd4bf}
+.report .dashboard-chart-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:7px;color:#b7ccdc;font-size:11px}
+.report .dashboard-chart-legend span{display:inline-flex;align-items:center;gap:6px}
+.report .dashboard-chart-legend i{display:inline-block;width:18px;height:3px;border-radius:3px}
+.report .chart-key-wind{background:#38bdf8}
+.report .chart-key-gust{background:#a78bfa}
+.report .chart-key-wave{background:#2dd4bf}
+.report .dashboard-chart-empty{padding:20px 8px;text-align:center;color:var(--cc-muted);font-size:12px}
+@media(max-width:380px){
+  .report .dashboard-chart-card{padding:10px}
+  .report .dashboard-chart-legend{font-size:10px;gap:7px 10px}
+}

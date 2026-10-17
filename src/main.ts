@@ -2,6 +2,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './app/app.css';
 import './app/light-theme.css';
 import './updates/updates.css';
+// CurrentCast template adaptation is intentionally loaded last so its visual tokens win.
+import './app/currentcast-template.css';
 import { createApp } from './app/createApp';
 import { Capacitor } from '@capacitor/core';
 import { registerOffline, watchConnection } from './offline/registerOffline';

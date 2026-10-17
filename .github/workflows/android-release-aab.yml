@@ -1,0 +1,264 @@
+name: Android Release AAB
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [currentcast-template-adaptation]
+    paths:
+      - '.github/workflows/android-release-aab.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  android-aab:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_PATH: /tmp/upload-keystore.jks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Validate signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: redline-fishing
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing secret: ANDROID_KEYSTORE_BASE64" && exit 1)
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$ANDROID_KEY_ALIAS" || (echo "Upload key alias is not configured" && exit 1)
+          test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing secret: ANDROID_KEYSTORE_PASSWORD" && exit 1)
+          mkdir -p "$(dirname "$ANDROID_KEYSTORE_PATH")"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          test -s "$ANDROID_KEYSTORE_PATH"
+          keytool -list -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Generate Android project if missing
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: Prepare app branding assets
+        run: |
+          mkdir -p assets
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/icon.png
+          cp public/brand/file_00000000540c820abaeb6846e360276e.png assets/splash.png
+
+      - name: Generate Android icon and splash assets
+        run: npx @capacitor/assets@3.0.5 generate --android --assetPath assets --iconBackgroundColor '#edf5fa' --iconBackgroundColorDark '#edf5fa' --splashBackgroundColor '#edf5fa' --splashBackgroundColorDark '#edf5fa'
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Remove unnecessary background location permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          if not path.is_file():
+              raise SystemExit("Android app manifest was not generated.")
+          text = path.read_text()
+          if "xmlns:tools=" not in text:
+              text, count = re.subn(r"<manifest\b", '<manifest xmlns:tools="http://schemas.android.com/tools"', text, count=1)
+              if count != 1:
+                  raise SystemExit("Could not find the manifest root element.")
+          permission = '    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove" />'
+          if "android.permission.ACCESS_BACKGROUND_LOCATION" not in text:
+              text = text.replace("</manifest>", permission + "\n</manifest>")
+          elif 'tools:node="remove"' not in text:
+              text = re.sub(
+                  r'\s*<uses-permission\b(?=[^>]*android:name="android\.permission\.ACCESS_BACKGROUND_LOCATION")[^>]*/>',
+                  "",
+                  text,
+              )
+              text = text.replace("</manifest>", permission + "\n</manifest>")
+          path.write_text(text)
+          print("Configured manifest merger to remove ACCESS_BACKGROUND_LOCATION.")
+          PY
+
+      - name: Set unique Android version for Google Play
+        env:
+          BUILD_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          path = Path("android/app/build.gradle")
+          text = path.read_text()
+          # Alpha currently has versionCode 19. Do not use github.run_number: it restarts per workflow.
+          code = 20
+          text, count = re.subn(r"(versionCode\s+)\d+", lambda m: m.group(1) + str(code), text, count=1)
+          if count != 1:
+              raise SystemExit("Could not find versionCode in android/app/build.gradle")
+          name = f"1.0.{code}"
+          text, count = re.subn(r'(versionName\s+")([^"]+)(")', lambda m: m.group(1) + name + m.group(3), text, count=1)
+          if count != 1:
+              raise SystemExit("Could not find versionName in android/app/build.gradle")
+          path.write_text(text)
+          print(f"Configured versionCode {code} and versionName {name}")
+          PY
+          grep -nE "versionCode|versionName" android/app/build.gradle
+      - name: Set minimum Android SDK to 24 for Play App Signing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/variables.gradle")
+          if not path.is_file():
+              raise SystemExit("Expected android/variables.gradle was not generated.")
+          content = path.read_text()
+          updated, count = re.subn(r"(minSdkVersion\s*=\s*)\d+", r"\g<1>24", content, count=1)
+          if count != 1:
+              raise SystemExit("Could not find minSdkVersion in android/variables.gradle.")
+          path.write_text(updated)
+          print("Configured minSdkVersion = 24")
+          PY
+          grep -n "minSdkVersion" android/variables.gradle
+
+      - name: Set target Android SDK to 36 for Google Play
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/variables.gradle")
+          content = path.read_text()
+          updated, count = re.subn(r"(targetSdkVersion\s*=\s*)\d+", r"\g<1>36", content, count=1)
+          if count != 1:
+              raise SystemExit("Could not find targetSdkVersion in android/variables.gradle.")
+          path.write_text(updated)
+          print("Configured targetSdkVersion = 36")
+          PY
+          grep -nE "minSdkVersion|targetSdkVersion" android/variables.gradle
+
+      - name: Configure Background Runner AAR repository
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          gradle_file = Path("android/app/build.gradle")
+          content = gradle_file.read_text()
+          required = "dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'"
+          if required not in content:
+              pattern = r"dirs\s+['\"]\.\./capacitor-cordova-android-plugins/src/main/libs['\"],\s*['\"]libs['\"]"
+              updated, count = re.subn(pattern, lambda m: m.group(0) + "\n            " + required, content, count=1)
+              if count != 1:
+                  raise SystemExit("Could not find the expected flatDir repository in android/app/build.gradle")
+              content = updated
+              gradle_file.write_text(content)
+          aar = Path("node_modules/@capacitor/background-runner/android/src/main/libs/android-js-engine-release.aar")
+          if not aar.is_file():
+              raise SystemExit(f"Required background-runner AAR is missing: {aar}")
+          print("Background Runner AAR found.")
+          PY
+
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: redline-fishing
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/app/build.gradle")
+          text = path.read_text()
+          if "signingConfigs" in text and "signingConfigs.release" in text:
+              raise SystemExit("Release signing already configured; refusing to duplicate it.")
+          signing = """
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))
+                      storeType "PKCS12"
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+
+          """
+          if not re.search(r"\bbuildTypes\s*\{\s*release\s*\{", text):
+              raise SystemExit("Could not find the generated release buildTypes block.")
+          text = re.sub(r"\bbuildTypes\s*\{", signing + "    buildTypes {", text, count=1)
+          text, count = re.subn(r"(buildTypes\s*\{\s*release\s*\{)", r"\1\n            signingConfig signingConfigs.release", text, count=1)
+          if count != 1:
+              raise SystemExit("Could not attach the upload signing config to the release build.")
+          path.write_text(text)
+          PY
+
+      - name: Verify package ID and min SDK
+        run: |
+          grep -q "com.prokayakfishing.app" capacitor.config.ts
+          grep -q "com.prokayakfishing.app" android/app/build.gradle || true
+          grep -q "minSdkVersion = 24" android/variables.gradle
+
+      - name: Build signed Android App Bundle
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: redline-fishing
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          test -s "$ANDROID_KEYSTORE_PATH"
+          cd android
+          ./gradlew bundleRelease --stacktrace
+
+      - name: Verify final AAB metadata before publishing artifact
+        run: |
+          set -euo pipefail
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$AAB"
+          curl --fail --silent --show-error --location \
+            https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar \
+            --output /tmp/bundletool.jar
+          ACTUAL_CODE="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB" --xpath='/manifest/@android:versionCode')"
+          ACTUAL_PACKAGE="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB" --xpath='/manifest/@package')"
+          EXPECTED_CODE="20"
+          echo "Final AAB package: $ACTUAL_PACKAGE"
+          echo "Final AAB versionCode: $ACTUAL_CODE"
+          echo "Expected versionCode: $EXPECTED_CODE"
+          test "$ACTUAL_PACKAGE" = "com.prokayakfishing.app" || (echo "ERROR: unexpected package ID" && exit 1)
+          test "$ACTUAL_CODE" = "$EXPECTED_CODE" || (echo "ERROR: AAB versionCode does not match expected version" && exit 1)
+          MANIFEST_XML="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB")"
+          if printf '%s' "$MANIFEST_XML" | grep -q 'android.permission.ACCESS_BACKGROUND_LOCATION'; then
+            echo "ERROR: AAB still requests ACCESS_BACKGROUND_LOCATION"
+            exit 1
+          fi
+          echo "Verified: AAB does not request ACCESS_BACKGROUND_LOCATION."
+          echo "AAB metadata verified; safe to publish artifact."
+
+      - name: Give verified AAB a unique filename
+        run: |
+          set -euo pipefail
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          CODE="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB" --xpath='/manifest/@android:versionCode')"
+          NAME="$(java -jar /tmp/bundletool.jar dump manifest --bundle="$AAB" --xpath='/manifest/@android:versionName')"
+          mkdir -p release-artifact
+          cp "$AAB" "release-artifact/PRO-KAYAK-FISHING-v${NAME}-code${CODE}.aab"
+          ls -lh release-artifact/
+      - name: Upload signed AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pro-kayak-fishing-v2-verified-aab
+          path: release-artifact/*.aab
+          if-no-files-found: error
+          retention-days: 14

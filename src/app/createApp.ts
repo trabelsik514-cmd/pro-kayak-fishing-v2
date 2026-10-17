@@ -602,6 +602,13 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
     <section class="dashboard-metrics">
       <div><span>💨 ${t('الرياح')}</span><b>${value(data.weather.windSpeed,' km/h')}</b></div><div><span>🌬️ ${t('الهبات')}</span><b>${value(data.weather.windGusts,' km/h')}</b></div><div><span>🌊 ${t('ارتفاع الموج')}</span><b>${value(data.sea.waveHeight,' m')}</b></div><div><span>⏱️ ${t('فترة الموج')}</span><b>${value(data.sea.wavePeriod,' s')}</b></div><div><span>🧭 ${t('اتجاه الرياح')}</span><b>${directionValue(data.weather.windDirection,data.weather.windSpeed)}</b></div>
       <div><span>🧭 ${t('اتجاه الموج')}</span><b>${value(data.sea.waveDirection,'°')}</b></div><div><span>🌡️ ${t('الهواء')}</span><b>${value(data.weather.temperature,' °C')}</b></div><div><span>📈 ${t('الضغط')}</span><b>${value(data.weather.pressure,' hPa')}</b></div><div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div><div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div><div><span>↔️ ${getLang()==='fr'?'Courant':'التيار البحري'}</span><b>${value(data.sea.currentVelocity,' km/h')}</b></div><div><span>🧭 ${getLang()==='fr'?'Direction du courant':'اتجاه التيار'}</span><b>${directionValue(data.sea.currentDirection,data.sea.currentVelocity)}</b></div>
+    
+      <div><span>💧 ${t('الرطوبة')}</span><b>${value(data.weather.humidity,'%')}</b></div><div><span>🌧️ ${t('الأمطار')}</span><b>${value(data.weather.precipitation,' mm')}</b></div>
+    </section>
+    <section class="dashboard-chart-card" aria-label="${t('الرسم البياني لتوقعات البحر والرياح')}">
+      <div class="dashboard-section-title"><b>📈 ${t('الرسم البياني للـ 24 ساعة القادمة')}</b><small>${t('توقعات كل ساعة للموقع المحدد')}</small></div>
+      <div id="dashboard-hourly-chart" class="dashboard-hourly-chart"><span>${t('جاري تجهيز الرسم البياني…')}</span></div>
+      <div class="dashboard-chart-legend"><span><i class="chart-key-wind"></i>${t('سرعة الرياح')}</span><span><i class="chart-key-gust"></i>${t('هبات الرياح')}</span><span><i class="chart-key-wave"></i>${t('ارتفاع الموج')}</span></div>
     </section>
     <section class="dashboard-fishing-intelligence-slot"><div class="fishing-intelligence-loading">🎣 ${t('جاري تحليل الإشارة البيئية…')}</div></section>
      <section class="dashboard-advisor-slot"><div class="advisor-loading">🎯 ${t('جاري بناء تحليل الصيد المتقدم…')}</div></section>
@@ -618,7 +625,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
 export function createApp(root: HTMLElement) {
   setDocumentLanguage();
   void initSeaNotifications();
-  root.innerHTML = `<main class="shell"><header class="topbar">
+  root.innerHTML = `<main class="shell"><div id="map" class="map" role="application" aria-label="${getLang()==="fr"?"Carte marine interactive de Tunisie":"الخريطة البحرية التفاعلية لتونس"}"></div><header class="topbar">
     <a class="brand" href="#" aria-label="PRO KAYAK FISHING V2"><img class="brand-logo" src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/><span class="brand-name"><span>PRO KAYAK</span><b>FISHING <i>V2</i></b><small>${getLang()==="fr"?"MÉTÉO • MER • KAYAK":"الطقس • البحر • الكاياك"}</small></span></a>
     <div class="header-controls"><button id="lang-toggle" class="lang-toggle" type="button" aria-label="Changer de langue / تغيير اللغة"><span class="lang-code">${getLang() === "ar" ? "FR" : "AR"}</span><span class="lang-globe" aria-hidden="true">🌐</span></button></div>
     <form id="search-form" class="search"><input id="search-input" placeholder="${t("ابحث عن مدينة أو ساحل تونسي")}" autocomplete="off"/><button type="submit">${t("بحث")}</button></form>
@@ -685,6 +692,10 @@ export function createApp(root: HTMLElement) {
         <span class="pkf-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3.2-4.5 7.3-6.2 12.2-5 2.2.6 4.1 2 5.8 5-1.7 3-3.6 4.4-5.8 5C10.3 18.2 6.2 16.5 3 12Z"></path><path d="M21 12 24 9v6l-3-3Z"></path><circle cx="15" cy="10.2" r="1.05"></circle><path d="M8 16.2 5.8 19"></path></svg></span>
         <b>${getLang()==='fr'?'Pêche':'الصيد'}</b>
       </button>
+      <button id="pkf-nav-forecast" type="button">
+        <span class="pkf-nav-icon">📈</span>
+        <b>${getLang()==='fr'?'Forecast':'التوقعات'}</b>
+      </button>
       <button id="pkf-nav-waypoints" type="button">
         <span class="pkf-nav-icon">📍</span>
         <b>${getLang()==='fr'?'Mes points':'نقاطي'}</b>
@@ -746,18 +757,47 @@ export function createApp(root: HTMLElement) {
     </aside>
     <aside class="route-view hidden" id="route-view" aria-live="polite"></aside>
     <aside class="report" id="report"><div class="report-head"><b>${t('حالة البحر')}</b><button id="close-report" aria-label="${t('إغلاق')}">×</button></div>
-    <p>${t('اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.')}</p></aside><div class="search-results hidden" id="search-results"></div></main>`;
+    <p>${t('اضغط على أي نقطة للحصول على قراءة مستقلة للطقس والبحر.')}</p></aside>
+    <aside class="pkf-forecast-panel hidden" id="pkf-forecast-panel" aria-live="polite" dir="${getLang()==='fr'?'ltr':'rtl'}">
+      <div class="pkf-forecast-head"><div><small>PRO KAYAK FISHING V2</small><h2>${getLang()==='fr'?'Prévisions météo & marines':'توقعات الطقس والبحر'}</h2><p id="pkf-forecast-location">${getLang()==='fr'?'Point sélectionné sur la carte':'النقطة المحددة على الخريطة'}</p></div><button id="pkf-forecast-close" type="button" aria-label="${t('إغلاق')}">×</button></div>
+      <div class="pkf-forecast-tabs" role="tablist"><button class="active" data-forecast-tab="hourly" type="button">${getLang()==='fr'?'Heures':'بالساعات'}</button><button data-forecast-tab="days" type="button">${getLang()==='fr'?'7 jours':'7 أيام'}</button></div>
+      <div id="pkf-forecast-content"><p class="sea-loading">${getLang()==='fr'?'Chargement des prévisions…':'جاري تحميل التوقعات…'}</p></div>
+      <footer>${getLang()==='fr'?'Source : Open-Meteo • Prévisions indicatives, vérifiez les conditions avant toute sortie.':'المصدر: Open-Meteo • توقعات إرشادية؛ تحقق من الظروف قبل الانطلاق.'}</footer>
+    </aside>
+    <style>
+      .pkf-forecast-panel{position:absolute;z-index:30;inset-inline-start:12px;top:calc(var(--topbar-height,70px) + 66px);bottom:82px;width:min(510px,calc(100% - 24px));max-height:calc(100% - 160px);overflow:auto;background:rgba(10,24,37,.97);color:#eef6fb;border:1px solid rgba(148,190,211,.24);border-radius:18px;box-shadow:0 18px 48px #0008;padding:16px;backdrop-filter:blur(16px)}
+      .pkf-forecast-panel.hidden{display:none}.pkf-forecast-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.pkf-forecast-head small{color:#72d5d0;letter-spacing:.12em;font-size:10px}.pkf-forecast-head h2{font-size:19px;margin:5px 0}.pkf-forecast-head p{font-size:12px;color:#a9bdc9;margin:0}.pkf-forecast-head>button{border:1px solid #456071;background:#1b3445;color:white;border-radius:10px;width:36px;height:36px;font-size:22px}
+      .pkf-forecast-tabs{display:flex;gap:8px;margin:16px 0 12px}.pkf-forecast-tabs button{flex:1;border:1px solid #344e60;border-radius:10px;background:#152d3e;color:#bcd0db;padding:10px}.pkf-forecast-tabs button.active{background:#146b70;border-color:#4ab9b6;color:white}
+      .pkf-forecast-charts{display:grid;grid-template-columns:1fr;gap:10px;margin:10px 0 18px}.pkf-forecast-chart{background:#102432;border:1px solid #294454;border-radius:12px;padding:10px 12px;min-width:0}.pkf-forecast-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.pkf-forecast-chart h3{font-size:12px;font-weight:600;margin:0;color:#dbeaf1}.pkf-forecast-chart-head strong{font-size:12px;color:#fff;font-variant-numeric:tabular-nums}.pkf-forecast-chart svg{width:100%;height:80px;display:block;overflow:visible}.pkf-forecast-chart-range,.pkf-forecast-chart-times{display:flex;justify-content:space-between;color:#91a9b6;font-size:10px;margin-top:4px}.pkf-forecast-subhead{font-size:13px;margin:14px 0 6px;color:#d9e9f1}.pkf-forecast-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}.pkf-forecast-metric{background:#142b3a;border:1px solid #294454;border-radius:12px;padding:11px}.pkf-forecast-metric small{display:block;color:#9fb8c6;font-size:11px}.pkf-forecast-metric strong{display:block;font-size:20px;margin-top:4px;font-variant-numeric:tabular-nums}.pkf-forecast-hour{display:grid;grid-template-columns:54px 1fr 1fr;gap:8px;align-items:center;border-bottom:1px solid #29404f;padding:10px 2px;font-size:12px}.pkf-forecast-hour b{font-variant-numeric:tabular-nums}.pkf-forecast-days{display:grid;gap:9px}.pkf-forecast-day{display:grid;grid-template-columns:1.25fr 1fr;gap:7px;background:#142b3a;border:1px solid #294454;border-radius:12px;padding:11px}.pkf-forecast-day h3{font-size:13px;margin:0 0 6px}.pkf-forecast-day p{font-size:11px;color:#b2c6d1;margin:4px 0}.pkf-forecast-day strong{font-size:15px}.pkf-forecast-panel footer{color:#8fa8b6;font-size:10px;line-height:1.6;margin-top:14px}.pkf-forecast-empty{padding:20px;text-align:center;color:#b2c6d1}
+      @media(max-width:600px){.pkf-forecast-panel{top:116px;bottom:76px;inset-inline-start:8px;width:calc(100% - 16px);padding:12px}.pkf-forecast-head h2{font-size:17px}}
+    </style>
+    <div class="search-results hidden" id="search-results"></div></main>`;
 
   initUpdateManager(root);
 
-  if (!sessionStorage.getItem('pkf-v2-splash-seen')) {
+  // The splash is decorative only: it must never intercept taps or stop
+  // app initialization if WebView storage is unavailable.
+  let shouldShowSplash = true;
+  try {
+    shouldShowSplash = sessionStorage.getItem('pkf-v2-splash-seen') !== '1';
+  } catch (error) {
+    console.warn('PKF splash session storage unavailable', error);
+  }
+  if (shouldShowSplash) {
     const splash = document.createElement('div');
     splash.className = 'brand-splash';
+    splash.style.pointerEvents = 'none';
     splash.innerHTML = '<div class="brand-splash-card"><img src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/></div>';
     root.appendChild(splash);
-    sessionStorage.setItem('pkf-v2-splash-seen', '1');
+    // Schedule removal before writing to storage so a storage exception can
+    // never leave a full-screen overlay above the interactive app.
     window.setTimeout(() => splash.classList.add('brand-splash-hide'), 1600);
     window.setTimeout(() => splash.remove(), 2200);
+    try {
+      sessionStorage.setItem('pkf-v2-splash-seen', '1');
+    } catch (error) {
+      console.warn('PKF splash session storage write failed', error);
+    }
   }
 
   root.querySelector<HTMLButtonElement>('#lang-toggle')?.addEventListener('click', () => {
@@ -1896,6 +1936,62 @@ export function createApp(root: HTMLElement) {
           ? `<div class="sea-wave-warning dashboard-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
           : '');
       report.innerHTML = reportBase;
+      // Rebuild the hourly chart from the same selected-point forecast as the report.
+      const chartSlot = report.querySelector<HTMLElement>('#dashboard-hourly-chart');
+      if (chartSlot) {
+        const chartPoints = hourlyForecast.slice(0, 24);
+        const hasWind = chartPoints.some(p => p.windSpeed != null || p.windGusts != null);
+        const hasWaves = chartPoints.some(p => p.waveHeight != null);
+        if (!hasWind && !hasWaves) {
+          chartSlot.innerHTML = '<div class="dashboard-chart-empty">' + t('لا تتوفر بيانات ساعية كافية للرسم البياني') + '</div>';
+        } else {
+          const W = 640, H = 270, L = 48, R = 48;
+          const plotW = W - L - R;
+          const windTop = 24, windH = 78, waveTop = 145, waveH = 74;
+          const x = (i:number) => L + (chartPoints.length <= 1 ? 0 : i / (chartPoints.length - 1)) * plotW;
+          const windValues = chartPoints.flatMap(p => [p.windSpeed, p.windGusts]).filter((v):v is number => v != null && Number.isFinite(v));
+          const waveValues = chartPoints.map(p => p.waveHeight).filter((v):v is number => v != null && Number.isFinite(v));
+          const windMax = Math.max(10, Math.ceil(Math.max(...windValues, 0) / 5) * 5);
+          const waveMax = Math.max(0.5, Math.ceil(Math.max(...waveValues, 0) * 2) / 2);
+          const yWind = (v:number) => windTop + windH - Math.max(0, Math.min(windMax, v)) / windMax * windH;
+          const yWave = (v:number) => waveTop + waveH - Math.max(0, Math.min(waveMax, v)) / waveMax * waveH;
+          const linePath = (getValue:(p:HourlyKayakPoint)=>number|null, y:(v:number)=>number) => {
+            let d = '', drawing = false;
+            chartPoints.forEach((p,i) => {
+              const v = getValue(p);
+              if (v == null || !Number.isFinite(v)) { drawing = false; return; }
+              d += (drawing ? ' L ' : ' M ') + x(i).toFixed(1) + ' ' + y(v).toFixed(1);
+              drawing = true;
+            });
+            return d;
+          };
+          const gridLines = [0,0.5,1].map(f => {
+            const wy = windTop + windH * f, sy = waveTop + waveH * f;
+            return '<line x1="'+L+'" y1="'+wy+'" x2="'+(W-R)+'" y2="'+wy+'" class="chart-grid-line"/>' +
+              '<line x1="'+L+'" y1="'+sy+'" x2="'+(W-R)+'" y2="'+sy+'" class="chart-grid-line"/>';
+          }).join('');
+          const windAxis = [0,windMax/2,windMax].map(v =>
+            '<text x="'+(L-8)+'" y="'+(yWind(v)+4)+'" text-anchor="end" class="chart-axis-label">'+Math.round(v)+'</text>').join('');
+          const waveAxis = [0,waveMax/2,waveMax].map(v =>
+            '<text x="'+(W-R+8)+'" y="'+(yWave(v)+4)+'" text-anchor="start" class="chart-axis-label">'+v.toFixed(1)+'</text>').join('');
+          const tickIndices = [0, Math.round((chartPoints.length-1)/4), Math.round((chartPoints.length-1)/2), Math.round((chartPoints.length-1)*3/4), chartPoints.length-1]
+            .filter((v,i,a) => v >= 0 && a.indexOf(v) === i);
+          const xLabels = tickIndices.map(i => {
+            const d = new Date(chartPoints[i].time);
+            const label = Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false});
+            return '<text x="'+x(i)+'" y="'+(H-10)+'" text-anchor="middle" class="chart-axis-label">'+label+'</text>';
+          }).join('');
+          chartSlot.innerHTML = '<svg class="dashboard-chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+t('الرسم البياني للرياح والهبات وارتفاع الموج خلال 24 ساعة')+'">' +
+            gridLines +
+            '<text x="5" y="'+(windTop+11)+'" class="chart-axis-caption">'+t('رياح')+'</text>' +
+            '<text x="5" y="'+(waveTop+11)+'" class="chart-axis-caption">'+t('موج')+'</text>' +
+            windAxis + waveAxis +
+            (hasWind && linePath(p=>p.windSpeed,yWind) ? '<path d="'+linePath(p=>p.windSpeed,yWind)+'" class="chart-line-wind"/>' : '') +
+            (hasWind && linePath(p=>p.windGusts,yWind) ? '<path d="'+linePath(p=>p.windGusts,yWind)+'" class="chart-line-gust"/>' : '') +
+            (hasWaves && linePath(p=>p.waveHeight,yWave) ? '<path d="'+linePath(p=>p.waveHeight,yWave)+'" class="chart-line-wave"/>' : '') +
+            xLabels + '</svg>';
+        }
+      }
       // Open every newly selected point at the top of the dashboard.
       report.scrollTop = 0;
       bindClose();
@@ -2496,6 +2592,114 @@ export function createApp(root: HTMLElement) {
       document.querySelector('#close-report')?.addEventListener('click', closeReport);
     }
   };
+
+  // Dedicated CurrentCast-inspired forecast section. All values come from the selected Tunisian map point.
+  const forecastPanel = document.querySelector<HTMLElement>('#pkf-forecast-panel')!;
+  let forecastHourly: HourlyKayakPoint[] = [];
+  let forecastDays: WeeklySeaSummary[] = [];
+  let forecastTides: {time:string;type:'high'|'low';height:number|null;source:'Open Waters'|'Open-Meteo'}[] = [];
+  let forecastTab: 'hourly'|'days' = 'hourly';
+  const forecastNum = (n:number|null, unit:string, digits=1) => n==null ? '—' : `${n.toFixed(digits)}${unit}`;
+  const forecastDirection = (n:number|null) => n==null ? '—' : `${Math.round(n)}°`;
+  const forecastDate = (v:string) => new Intl.DateTimeFormat(getLang()==='fr'?'fr-FR':'ar-TN',{weekday:'short',day:'numeric',month:'short'}).format(new Date(v+'T12:00:00'));
+  const forecastGraph = (title:string, icon:string, data:(number|null)[], unit:string, color:string, mode:'line'|'bar'='line') => {
+    const clean=data.filter((v):v is number=>v!=null&&Number.isFinite(v));
+    if(clean.length<2) return `<section class="pkf-forecast-chart"><h3>${icon} ${title}</h3><p class="pkf-forecast-empty">${getLang()==='fr'?'Données insuffisantes pour tracer ce graphique.':'بيانات غير كافية لرسم هذا المخطط.'}</p></section>`;
+    const width=320,height=78,pad=7,min=Math.min(...clean),max=Math.max(...clean),range=Math.max(max-min,0.01);
+    const points=data.map((v,i)=>v==null?null:{x:pad+i*(width-2*pad)/Math.max(1,data.length-1),y:height-pad-((v-min)/range)*(height-2*pad),v}).filter((p):p is {x:number;y:number;v:number}=>p!==null);
+    const marks=mode==='bar'
+      ? points.map(p=>`<rect x="${p.x-2.5}" y="${p.y}" width="5" height="${height-pad-p.y}" rx="1.5" fill="${color}" opacity=".88"><title>${p.v.toFixed(1)}${unit}</title></rect>`).join('')
+      : `<polyline points="${points.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`+`<polygon points="${points[0].x},${height-pad} ${points.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')} ${points[points.length-1].x},${height-pad}" fill="${color}" opacity=".13"/>`;
+    const last=clean[clean.length-1];
+    return `<section class="pkf-forecast-chart"><div class="pkf-forecast-chart-head"><h3>${icon} ${title}</h3><strong>${last.toFixed(1)}${unit}</strong></div><div class="pkf-forecast-chart-range"><span>${Math.min(...clean).toFixed(1)}${unit}</span><span>${Math.max(...clean).toFixed(1)}${unit}</span></div><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)}" preserveAspectRatio="none"><line x1="0" y1="${height/2}" x2="${width}" y2="${height/2}" stroke="#355061" stroke-dasharray="3 4"/>${marks}</svg><div class="pkf-forecast-chart-times"><span>${escapeHtml(forecastHourly[0]?.time.slice(11,16)??'')}</span><span>${escapeHtml(forecastHourly[Math.floor((forecastHourly.length-1)/2)]?.time.slice(11,16)??'')}</span><span>${escapeHtml(forecastHourly[forecastHourly.length-1]?.time.slice(11,16)??'')}</span></div></section>`;
+  };
+  const fishingScore = (x:HourlyKayakPoint,index:number,all:HourlyKayakPoint[]) => {
+    let score=60;
+    if(x.windSpeed!=null) score += x.windSpeed<=8?12:x.windSpeed<=15?5:x.windSpeed<=22?-8:-22;
+    if(x.windGusts!=null) score += x.windGusts<=15?5:x.windGusts<=25?-5:-15;
+    if(x.waveHeight!=null) score += x.waveHeight<=0.4?12:x.waveHeight<=0.8?3:x.waveHeight<=1.2?-12:-25;
+    if(x.pressure!=null) score += x.pressure>=1008&&x.pressure<=1022?5:x.pressure<1000?-8:0;
+    if(x.cloudCover!=null) score += x.cloudCover>=50&&x.cloudCover<=90?4:0;
+    if(x.pressure!=null&&index>0&&all[index-1].pressure!=null) {
+      const delta=x.pressure-all[index-1].pressure!;
+      score+=delta>0.7?4:delta< -1.2?-6:0;
+    }
+    return Math.max(0,Math.min(100,Math.round(score)));
+  };
+  const renderForecast = () => {
+    const content = document.querySelector<HTMLElement>('#pkf-forecast-content')!;
+    document.querySelectorAll<HTMLButtonElement>('[data-forecast-tab]').forEach(b=>b.classList.toggle('active',b.dataset.forecastTab===forecastTab));
+    if(forecastTab==='hourly'){
+      const next = forecastHourly.slice(0,24);
+      const vals = next.filter(x=>x.windSpeed!=null || x.waveHeight!=null || x.temperature!=null);
+      if(!vals.length){content.innerHTML='<div class="pkf-forecast-empty">'+(getLang()==='fr'?'Aucune donnée horaire disponible pour ce point.':'لا تتوفر بيانات ساعية لهذه النقطة.')+'</div>';return;}
+      const windMax=Math.max(...vals.map(x=>x.windSpeed??0));
+      const waveMax=Math.max(...vals.map(x=>x.waveHeight??0));
+      const gustMax=Math.max(...vals.map(x=>x.windGusts??0));
+      const labels=getLang()==='fr'
+        ? {temp:'Température horaire',sst:'Température de la mer (SST)',cloud:'Couverture nuageuse',rain:'Probabilité de pluie',wind:'Vitesse du vent',pressure:'Pression barométrique',score:'Prévision de pêche'}
+        : {temp:'درجة الحرارة بالساعة',sst:'حرارة سطح البحر (SST)',cloud:'الغطاء السحابي',rain:'احتمال الأمطار',wind:'سرعة الرياح',pressure:'الضغط الجوي',score:'توقعات الصيد'};
+      const charts=[
+        forecastGraph(labels.temp,'🌡️',next.map(x=>x.temperature),'°C','#fb923c','line'),
+        forecastGraph(labels.sst,'🌊',next.map(x=>x.seaTemperature),'°C','#22d3ee','line'),
+        forecastGraph(labels.cloud,'☁️',next.map(x=>x.cloudCover),'%','#a78bfa','bar'),
+        forecastGraph(labels.rain,'🌧️',next.map(x=>x.precipitationProbability),'%','#38bdf8','bar'),
+        forecastGraph(labels.wind,'💨',next.map(x=>x.windSpeed),' km/h','#4ade80','bar'),
+        forecastGraph(labels.pressure,'🔵',next.map(x=>x.pressure),' hPa','#818cf8','line'),
+        forecastGraph(labels.score,'🐟',next.map((x,i)=>fishingScore(x,i,next)),'/100','#34d399','bar')
+      ].join('');
+      content.innerHTML=`<div class="pkf-forecast-metrics">
+        <div class="pkf-forecast-metric"><small>${getLang()==='fr'?'Vent max. • 24 h':'أقصى رياح • 24 ساعة'}</small><strong>${forecastNum(windMax,' km/h')}</strong></div>
+        <div class="pkf-forecast-metric"><small>${getLang()==='fr'?'Rafales max.':'أقصى هبات'}</small><strong>${forecastNum(gustMax,' km/h')}</strong></div>
+        <div class="pkf-forecast-metric"><small>${getLang()==='fr'?'Vagues max.':'أقصى موج'}</small><strong>${forecastNum(waveMax,' m')}</strong></div>
+        <div class="pkf-forecast-metric"><small>${getLang()==='fr'?'Heures affichées':'الساعات المعروضة'}</small><strong>${vals.length}</strong></div></div>
+        <div class="pkf-forecast-charts">${charts}</div>
+        <h3 class="pkf-forecast-subhead">${getLang()==='fr'?'Détail horaire vent & mer':'التفاصيل الساعية للرياح والبحر'}</h3>
+        ${next.map(x=>`<div class="pkf-forecast-hour"><b>${escapeHtml(x.time.slice(11,16))}</b><span>💨 ${forecastNum(x.windSpeed,' km/h')} <small>${forecastDirection(x.windDirection)}</small></span><span>🌊 ${forecastNum(x.waveHeight,' m')} <small>${forecastNum(x.wavePeriod,' s')}</small></span></div>`).join('')}`;
+    } else {
+      if(!forecastDays.length){content.innerHTML='<div class="pkf-forecast-empty">'+(getLang()==='fr'?'Aucune prévision sur 7 jours disponible.':'لا تتوفر توقعات الأيام السبعة.')+'</div>';return;}
+      const weeklyCharts = [forecastGraph(getLang()==='fr'?'Température max. (7 jours)':'أقصى الحرارة (7 أيام)','🌡️',forecastDays.map(d=>d.temperatureMax),'°C','#fb923c','line'),forecastGraph(getLang()==='fr'?'Vent max. (7 jours)':'أقصى الرياح (7 أيام)','💨',forecastDays.map(d=>d.windMax),' km/h','#4ade80','bar'),forecastGraph(getLang()==='fr'?'Vagues max. (7 jours)':'أقصى الموج (7 أيام)','🌊',forecastDays.map(d=>d.waveMax),' m','#22d3ee','line'),forecastGraph(getLang()==='fr'?'Probabilité de pluie (7 jours)':'احتمال الأمطار (7 أيام)','🌧️',forecastDays.map(d=>d.precipitationProbabilityMax),'%','#38bdf8','bar')].join('');
+      const tideValues=forecastTides.filter(t=>t.height!=null).slice(0,8);
+      const tideChart=tideValues.length>=2 ? (()=>{ const values=tideValues.map(t=>t.height as number); const min=Math.min(...values), max=Math.max(...values), span=Math.max(max-min,.05); const pts=values.map((v,i)=>({x:12+i*296/Math.max(1,values.length-1),y:66-((v-min)/span)*52,v})); return '<section class="pkf-forecast-chart"><div class="pkf-forecast-chart-head"><h3>🌊 '+(getLang()==='fr'?'Marées — extrêmes disponibles':'المد والجزر — القمم والقيعان المتاحة')+'</h3><strong>'+(getLang()==='fr'?'Station':'المحطة')+'</strong></div><svg viewBox="0 0 320 78" role="img" aria-label="Tide extrema" preserveAspectRatio="none"><line x1="0" y1="66" x2="320" y2="66" stroke="#355061" stroke-dasharray="3 4"/><polyline points="'+pts.map(p=>p.x+','+p.y).join(' ')+'" fill="none" stroke="#22d3ee" stroke-width="2.5"/>'+pts.map((p,i)=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="'+(tideValues[i].type==='high'?'#22d3ee':'#94a3b8')+'"><title>'+tideValues[i].type+': '+p.v.toFixed(2)+' m</title></circle>').join('')+'</svg><div class="pkf-forecast-chart-times">'+tideValues.map(t=>'<span>'+(t.type==='high'?'↑':'↓')+' '+escapeHtml(t.time.slice(11,16))+'</span>').join('')+'</div><p class="pkf-forecast-note">'+(getLang()==='fr'?'Extrêmes fournis par la source; la ligne entre eux est indicative.':'النقاط تمثل قمم وقيعان المد المتاحة؛ الخط الواصل بينها إرشادي.')+'</p></section>'; })() : '';
+      content.innerHTML=`<div class="pkf-forecast-charts">${weeklyCharts}${tideChart}</div><div class="pkf-forecast-days">${forecastDays.map((d,i)=>`<article class="pkf-forecast-day"><div><h3>${i===0?(getLang()==='fr'?'Aujourd’hui':'اليوم'):i===1?(getLang()==='fr'?'Demain':'غداً'):forecastDate(d.date)}</h3><strong>${forecastNum(d.temperatureMax,'°')} / ${forecastNum(d.temperatureMin,'°')}</strong><p>🌧️ ${forecastNum(d.precipitationProbabilityMax,'% ',0)} • 💧 ${forecastNum(d.humidityMean,'% ',0)}</p></div><div><p>💨 ${getLang()==='fr'?'Vent':'الرياح'}: <b>${forecastNum(d.windMax,' km/h')}</b></p><p>🌬️ ${getLang()==='fr'?'Rafales':'الهبات'}: <b>${forecastNum(d.gustMax,' km/h')}</b></p><p>🌊 ${getLang()==='fr'?'Vagues':'الموج'}: <b>${forecastNum(d.waveMax,' m')}</b></p><p>↗ ${getLang()==='fr'?'Courant max.':'أقصى تيار'}: <b>${forecastNum(d.currentMax,' m/s')}</b></p></div></article>`).join('')}</div>`;
+    }
+  };
+  const openForecast = async (lat:number,lng:number) => {
+    report.classList.add('hidden'); setReportOpen(false); tripPanel.classList.add('hidden'); measurePanel.classList.add('hidden'); measuring=false;
+    forecastPanel.classList.remove('hidden'); forecastPanel.dir=getLang()==='fr'?'ltr':'rtl'; forecastPanel.lang=getLang(); setBottomNav('forecast');
+    const content=document.querySelector<HTMLElement>('#pkf-forecast-content')!;
+    content.innerHTML=`<p class="sea-loading">${getLang()==='fr'?'Chargement des prévisions météo et marines…':'جاري تحميل توقعات الطقس والبحر…'}</p>`;
+    const location=document.querySelector<HTMLElement>('#pkf-forecast-location')!;
+    location.textContent=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    const requestId=Date.now(); forecastPanel.dataset.requestId=String(requestId);
+    try {
+      const [days,hours,tides,place]=await Promise.all([
+        marine.getWeeklySeaSummary(lat,lng),
+        marine.getHourlyKayakForecast(lat,lng),
+        marine.getTideExtremes(lat,lng).catch(()=>[]),
+        reverseCoastalName(lat,lng,getLang()).catch(()=>null)
+      ]);
+      if(forecastPanel.dataset.requestId!==String(requestId)) return;
+      forecastDays=days; forecastHourly=hours; forecastTides=tides;
+      if(place) location.textContent=place;
+      forecastTab='hourly'; renderForecast();
+    } catch {
+      content.innerHTML=`<div class="pkf-forecast-empty">${getLang()==='fr'?'Impossible de charger les prévisions. Vérifiez la connexion puis réessayez.':'تعذر تحميل التوقعات. تحقق من الاتصال ثم أعد المحاولة.'}<p><button id="pkf-forecast-retry" type="button">${getLang()==='fr'?'Réessayer':'إعادة المحاولة'}</button></p></div>`;
+      document.querySelector('#pkf-forecast-retry')?.addEventListener('click',()=>openForecast(lat,lng));
+    }
+  };
+  document.querySelector('#pkf-nav-forecast')?.addEventListener('click',()=>{
+    const p=marker?.getLngLat();
+    const target=selectedLocation??(p?{lat:p.lat,lng:p.lng}:null);
+    if(target) void openForecast(target.lat,target.lng);
+    else void getDeviceLocation().then(pos=>{selectedLocation={lat:pos.lat,lng:pos.lng,label:null};void openForecast(pos.lat,pos.lng);}).catch(()=>{forecastPanel.classList.remove('hidden');document.querySelector<HTMLElement>('#pkf-forecast-content')!.innerHTML='<div class="pkf-forecast-empty">'+(getLang()==='fr'?'Sélectionnez un point sur la carte ou activez le GPS.':'حدد نقطة على الخريطة أو فعّل GPS.')+'</div>';setBottomNav('forecast');});
+  });
+  document.querySelector('#pkf-forecast-close')?.addEventListener('click',()=>{forecastPanel.classList.add('hidden');setBottomNav('map');});
+  document.querySelectorAll<HTMLButtonElement>('[data-forecast-tab]').forEach(b=>b.addEventListener('click',()=>{forecastTab=b.dataset.forecastTab==='days'?'days':'hourly';renderForecast();}));
+  document.querySelector('#pkf-nav-map')?.addEventListener('click',()=>forecastPanel.classList.add('hidden'));
+  document.querySelector('#pkf-nav-sea')?.addEventListener('click',()=>forecastPanel.classList.add('hidden'));
+  document.querySelector('#pkf-nav-fish')?.addEventListener('click',()=>forecastPanel.classList.add('hidden'));
+  document.querySelector('#pkf-nav-waypoints')?.addEventListener('click',()=>forecastPanel.classList.add('hidden'));
 
   document.querySelector('#weekly-sea')?.addEventListener('click', () => {
     const markerPoint = marker?.getLngLat();
