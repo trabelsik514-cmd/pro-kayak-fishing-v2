@@ -1,0 +1,124 @@
+/* CurrentCast-inspired template adaptation for Tunisia.
+   Visual layer only: preserves the existing MapLibre, marine-data and kayak services. */
+:root{
+  --cc-bg:#020a14;
+  --cc-panel:rgba(4,15,28,.96);
+  --cc-panel-solid:#071525;
+  --cc-line:rgba(56,189,248,.18);
+  --cc-text:#e5f3ff;
+  --cc-muted:#8ca5bb;
+  --cc-accent:#06b6d4;
+  --cc-accent-strong:#0ea5e9;
+}
+html,body,#app{background:var(--cc-bg);color:var(--cc-text)}
+.shell{background:transparent}
+.topbar{
+  background:rgba(2,10,20,.94)!important;
+  border-bottom:1px solid var(--cc-line)!important;
+  box-shadow:0 8px 28px rgba(0,0,0,.3)!important;
+  backdrop-filter:blur(18px)!important;
+}
+.topbar .brand-name,.topbar .brand-name span,.topbar .brand-name b{color:var(--cc-text)!important}
+.topbar .brand-name small{color:var(--cc-muted)!important}
+.topbar .lang-toggle{
+  color:var(--cc-text)!important;background:#0b1b2b!important;
+  border-color:var(--cc-line)!important;
+}
+.topbar .lang-toggle:focus-visible{outline-color:var(--cc-accent)!important}
+.topbar .search input{
+  background:#020a14!important;color:var(--cc-text)!important;
+  border-color:#1c3448!important;box-shadow:inset 0 1px 2px #0005;
+}
+.topbar .search input:focus{border-color:var(--cc-accent)!important;box-shadow:0 0 0 3px #06b6d422}
+.topbar .search button,.map-action-sea,.today-sea,.trip-toggle,.trip-primary,
+.group-toggle,.safety-toggle,.pkf-tool-gps{
+  background:linear-gradient(135deg,#0891b2,#0284c7)!important;color:#fff!important;
+  border-color:#22d3ee55!important;
+}
+.topbar .pkf-updates-button{background:#071525!important;color:#7dd3fc!important;border-color:var(--cc-line)!important}
+.search-results,.pkf-layer-panel,.saved-waypoints-panel,.route-view,.report,.trip-panel,.group-panel,.safety-panel,.measure-panel,.ki-panel,.weekly-sea-panel{
+  color:var(--cc-text)!important;background:var(--cc-panel)!important;
+  border:1px solid var(--cc-line)!important;box-shadow:0 18px 48px #0008!important;
+  backdrop-filter:blur(18px)!important;
+}
+.search-results button,.search-results div{color:var(--cc-text)!important;border-color:#ffffff12!important}
+.search-results button:hover{background:#0ea5e91c!important}
+.report-head,.trip-head,.saved-waypoints-head,.pkf-layer-head{
+  border-color:var(--cc-line)!important;color:var(--cc-text)!important;
+}
+.report p,.report small,.updated,.safety-note,.assessment-details small{color:var(--cc-muted)!important}
+.report h4,.place-title{color:var(--cc-text)!important}
+.report-grid span,.kayak-summary,.assessment-details,.depth-card,
+.trip-recording,.trip-idle,.safety-grid span,.safety-grid label,
+.ki-hero,.ki-metric,.ki-stat,.ki-card,.ki-row,.ki-item,
+.sea-overview>div,.sea-hour-card,.sea-best-window,.sea-reasons-box,
+.weekly-sea-card,.model-compare-card,.model-comparison,.weather-highlight{
+  background:#071525!important;border-color:var(--cc-line)!important;color:var(--cc-text)!important;
+}
+.report-grid span{box-shadow:inset 0 1px 0 #ffffff05}
+.report-grid b,.depth-card b{color:#f0f9ff!important}
+.report button:not(#close-report),.trip-panel button:not(.trip-head button),.saved-waypoints-panel button:not(.saved-waypoints-head button){
+  border-color:#22d3ee33;
+}
+.report button:not(#close-report),.trip-primary,.saved-waypoints-add{
+  background:linear-gradient(135deg,#0891b2,#0284c7)!important;color:#fff!important;
+}
+.report-head button,.trip-head button,.saved-waypoints-head button,.pkf-layer-head button{
+  color:#d7f3ff!important;background:#0b1b2b!important;border:1px solid #ffffff12!important;border-radius:10px!important;
+}
+.map-actions{
+  background:rgba(2,10,20,.92)!important;border:1px solid var(--cc-line)!important;
+  box-shadow:0 12px 32px #0007!important;backdrop-filter:blur(16px)!important;
+}
+.map-action{
+  color:#c8dced!important;background:#0b1b2b!important;border-color:#203a50!important;
+}
+.map-action:hover{background:#102b40!important;border-color:#155e75!important}
+.map-action-trip{background:#0b2638!important;color:#7dd3fc!important}
+.map-action-intelligence{background:#10233a!important;color:#bae6fd!important}
+.pkf-map-toolbar{
+  background:rgba(2,10,20,.94)!important;border:1px solid var(--cc-line)!important;
+  box-shadow:0 12px 32px #0008!important;backdrop-filter:blur(16px)!important;
+}
+.pkf-tool,.pkf-toolbar-toggle{
+  color:#c8dced!important;background:#081827!important;border-color:#1c3448!important;
+}
+.pkf-tool:hover,.pkf-toolbar-toggle:hover{background:#0d2a3e!important;border-color:#0e7490!important}
+.pkf-tool svg{stroke:currentColor!important}
+.pkf-layer-row{color:var(--cc-text)!important;border-color:#ffffff10!important}
+.pkf-layer-note{color:var(--cc-muted)!important}
+.pkf-bottom-nav{
+  background:rgba(2,10,20,.96)!important;border:1px solid var(--cc-line)!important;
+  box-shadow:0 12px 32px #0009!important;backdrop-filter:blur(20px)!important;
+}
+.pkf-bottom-nav button{color:#91a9bd!important}
+.pkf-bottom-nav button.active{
+  color:#67e8f9!important;background:linear-gradient(180deg,#08344a,#082336)!important;
+  border:1px solid #06b6d433!important;box-shadow:inset 0 1px 0 #67e8f922!important;
+}
+.pkf-bottom-nav button.active .pkf-nav-icon{color:#22d3ee!important}
+.pkf-bottom-nav .pkf-nav-icon{color:#94a3b8!important}
+.pkf-bottom-nav button b{font-weight:700!important}
+.pkf-layer-row input{accent-color:var(--cc-accent)!important}
+.safety-warning{background:#451a1a!important;border-color:#ef444455!important}
+.safety-ok{background:#052e2b!important;border-color:#14b8a655!important}
+.kayak-summary.safe,.kayak-summary.good{border-inline-start:4px solid #22c55e!important;border-right-color:#22c55e!important}
+.kayak-summary.caution{border-right-color:#f59e0b!important}
+.kayak-summary.danger{border-right-color:#ef4444!important}
+.trip-recording{border-right-color:var(--cc-accent)!important}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #22d3ee!important;outline-offset:2px}
+@media(max-width:700px){
+  .topbar{background:rgba(2,10,20,.97)!important}
+  .topbar .search input{min-width:0}
+  .map-actions{max-width:calc(100vw - 24px)!important}
+  .pkf-bottom-nav{bottom:calc(8px + env(safe-area-inset-bottom,0px))!important}
+  .report,.trip-panel,.group-panel,.safety-panel,.measure-panel,.saved-waypoints-panel,.route-view{
+    background:rgba(4,15,28,.985)!important;border-color:var(--cc-line)!important;
+    max-height:calc(100dvh - 150px)!important;
+  }
+  .report-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .report-grid span{min-width:0;overflow-wrap:anywhere}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
