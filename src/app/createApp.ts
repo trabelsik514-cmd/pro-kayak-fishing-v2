@@ -2597,6 +2597,7 @@ export function createApp(root: HTMLElement) {
   const forecastPanel = document.querySelector<HTMLElement>('#pkf-forecast-panel')!;
   let forecastHourly: HourlyKayakPoint[] = [];
   let forecastDays: WeeklySeaSummary[] = [];
+  let forecastTides: {time:string;type:'high'|'low';height:number|null;source:'Open Waters'|'Open-Meteo'}[] = [];
   let forecastTab: 'hourly'|'days' = 'hourly';
   const forecastNum = (n:number|null, unit:string, digits=1) => n==null ? '—' : `${n.toFixed(digits)}${unit}`;
   const forecastDirection = (n:number|null) => n==null ? '—' : `${Math.round(n)}°`;
@@ -2658,7 +2659,9 @@ export function createApp(root: HTMLElement) {
     } else {
       if(!forecastDays.length){content.innerHTML='<div class="pkf-forecast-empty">'+(getLang()==='fr'?'Aucune prévision sur 7 jours disponible.':'لا تتوفر توقعات الأيام السبعة.')+'</div>';return;}
       const weeklyCharts = [forecastGraph(getLang()==='fr'?'Température max. (7 jours)':'أقصى الحرارة (7 أيام)','🌡️',forecastDays.map(d=>d.temperatureMax),'°C','#fb923c','line'),forecastGraph(getLang()==='fr'?'Vent max. (7 jours)':'أقصى الرياح (7 أيام)','💨',forecastDays.map(d=>d.windMax),' km/h','#4ade80','bar'),forecastGraph(getLang()==='fr'?'Vagues max. (7 jours)':'أقصى الموج (7 أيام)','🌊',forecastDays.map(d=>d.waveMax),' m','#22d3ee','line'),forecastGraph(getLang()==='fr'?'Probabilité de pluie (7 jours)':'احتمال الأمطار (7 أيام)','🌧️',forecastDays.map(d=>d.precipitationProbabilityMax),'%','#38bdf8','bar')].join('');
-      content.innerHTML=`<div class="pkf-forecast-charts">${weeklyCharts}</div><div class="pkf-forecast-days">${forecastDays.map((d,i)=>`<article class="pkf-forecast-day"><div><h3>${i===0?(getLang()==='fr'?'Aujourd’hui':'اليوم'):i===1?(getLang()==='fr'?'Demain':'غداً'):forecastDate(d.date)}</h3><strong>${forecastNum(d.temperatureMax,'°')} / ${forecastNum(d.temperatureMin,'°')}</strong><p>🌧️ ${forecastNum(d.precipitationProbabilityMax,'% ',0)} • 💧 ${forecastNum(d.humidityMean,'% ',0)}</p></div><div><p>💨 ${getLang()==='fr'?'Vent':'الرياح'}: <b>${forecastNum(d.windMax,' km/h')}</b></p><p>🌬️ ${getLang()==='fr'?'Rafales':'الهبات'}: <b>${forecastNum(d.gustMax,' km/h')}</b></p><p>🌊 ${getLang()==='fr'?'Vagues':'الموج'}: <b>${forecastNum(d.waveMax,' m')}</b></p><p>↗ ${getLang()==='fr'?'Courant max.':'أقصى تيار'}: <b>${forecastNum(d.currentMax,' m/s')}</b></p></div></article>`).join('')}</div>`;
+      const tideValues=forecastTides.filter(t=>t.height!=null).slice(0,8);
+      const tideChart=tideValues.length>=2 ? (()=>{ const values=tideValues.map(t=>t.height as number); const min=Math.min(...values), max=Math.max(...values), span=Math.max(max-min,.05); const pts=values.map((v,i)=>({x:12+i*296/Math.max(1,values.length-1),y:66-((v-min)/span)*52,v})); return '<section class="pkf-forecast-chart"><div class="pkf-forecast-chart-head"><h3>🌊 '+(getLang()==='fr'?'Marées — extrêmes disponibles':'المد والجزر — القمم والقيعان المتاحة')+'</h3><strong>'+(getLang()==='fr'?'Station':'المحطة')+'</strong></div><svg viewBox="0 0 320 78" role="img" aria-label="Tide extrema" preserveAspectRatio="none"><line x1="0" y1="66" x2="320" y2="66" stroke="#355061" stroke-dasharray="3 4"/><polyline points="'+pts.map(p=>p.x+','+p.y).join(' ')+'" fill="none" stroke="#22d3ee" stroke-width="2.5"/>'+pts.map((p,i)=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="'+(tideValues[i].type==='high'?'#22d3ee':'#94a3b8')+'"><title>'+tideValues[i].type+': '+p.v.toFixed(2)+' m</title></circle>').join('')+'</svg><div class="pkf-forecast-chart-times">'+tideValues.map(t=>'<span>'+(t.type==='high'?'↑':'↓')+' '+escapeHtml(t.time.slice(11,16))+'</span>').join('')+'</div><p class="pkf-forecast-note">'+(getLang()==='fr'?'Extrêmes fournis par la source; la ligne entre eux est indicative.':'النقاط تمثل قمم وقيعان المد المتاحة؛ الخط الواصل بينها إرشادي.')+'</p></section>'; })() : '';
+      content.innerHTML=`<div class="pkf-forecast-charts">${weeklyCharts}${tideChart}</div><div class="pkf-forecast-days">${forecastDays.map((d,i)=>`<article class="pkf-forecast-day"><div><h3>${i===0?(getLang()==='fr'?'Aujourd’hui':'اليوم'):i===1?(getLang()==='fr'?'Demain':'غداً'):forecastDate(d.date)}</h3><strong>${forecastNum(d.temperatureMax,'°')} / ${forecastNum(d.temperatureMin,'°')}</strong><p>🌧️ ${forecastNum(d.precipitationProbabilityMax,'% ',0)} • 💧 ${forecastNum(d.humidityMean,'% ',0)}</p></div><div><p>💨 ${getLang()==='fr'?'Vent':'الرياح'}: <b>${forecastNum(d.windMax,' km/h')}</b></p><p>🌬️ ${getLang()==='fr'?'Rafales':'الهبات'}: <b>${forecastNum(d.gustMax,' km/h')}</b></p><p>🌊 ${getLang()==='fr'?'Vagues':'الموج'}: <b>${forecastNum(d.waveMax,' m')}</b></p><p>↗ ${getLang()==='fr'?'Courant max.':'أقصى تيار'}: <b>${forecastNum(d.currentMax,' m/s')}</b></p></div></article>`).join('')}</div>`;
     }
   };
   const openForecast = async (lat:number,lng:number) => {
@@ -2670,13 +2673,14 @@ export function createApp(root: HTMLElement) {
     location.textContent=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     const requestId=Date.now(); forecastPanel.dataset.requestId=String(requestId);
     try {
-      const [days,hours,place]=await Promise.all([
+      const [days,hours,tides,place]=await Promise.all([
         marine.getWeeklySeaSummary(lat,lng),
         marine.getHourlyKayakForecast(lat,lng),
+        marine.getTideExtremes(lat,lng).catch(()=>[]),
         reverseCoastalName(lat,lng,getLang()).catch(()=>null)
       ]);
       if(forecastPanel.dataset.requestId!==String(requestId)) return;
-      forecastDays=days; forecastHourly=hours;
+      forecastDays=days; forecastHourly=hours; forecastTides=tides;
       if(place) location.textContent=place;
       forecastTab='hourly'; renderForecast();
     } catch {
