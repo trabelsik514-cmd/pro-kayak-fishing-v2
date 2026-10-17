@@ -750,14 +750,29 @@ export function createApp(root: HTMLElement) {
 
   initUpdateManager(root);
 
-  if (!sessionStorage.getItem('pkf-v2-splash-seen')) {
+  // The splash is decorative only: it must never intercept taps or stop
+  // app initialization if WebView storage is unavailable.
+  let shouldShowSplash = true;
+  try {
+    shouldShowSplash = sessionStorage.getItem('pkf-v2-splash-seen') !== '1';
+  } catch (error) {
+    console.warn('PKF splash session storage unavailable', error);
+  }
+  if (shouldShowSplash) {
     const splash = document.createElement('div');
     splash.className = 'brand-splash';
+    splash.style.pointerEvents = 'none';
     splash.innerHTML = '<div class="brand-splash-card"><img src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/></div>';
     root.appendChild(splash);
-    sessionStorage.setItem('pkf-v2-splash-seen', '1');
+    // Schedule removal before writing to storage so a storage exception can
+    // never leave a full-screen overlay above the interactive app.
     window.setTimeout(() => splash.classList.add('brand-splash-hide'), 1600);
     window.setTimeout(() => splash.remove(), 2200);
+    try {
+      sessionStorage.setItem('pkf-v2-splash-seen', '1');
+    } catch (error) {
+      console.warn('PKF splash session storage write failed', error);
+    }
   }
 
   root.querySelector<HTMLButtonElement>('#lang-toggle')?.addEventListener('click', () => {
