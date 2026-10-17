@@ -275,3 +275,38 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   color:#ecfeff!important;letter-spacing:0;
 }
 .report .weather-overview>div:first-child>strong small{font-size:inherit!important;color:inherit!important}
+
+
+/* Restored original-style hourly marine graph and additional observed metrics. */
+.report .dashboard-chart-card{
+  margin:12px 0;padding:13px;border:1px solid var(--cc-line);
+  border-radius:16px;background:linear-gradient(145deg,#081d2e,#04111e);
+  color:var(--cc-text);overflow:hidden;
+}
+.report .dashboard-chart-card .dashboard-section-title{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;
+}
+.report .dashboard-chart-card .dashboard-section-title b{font-size:14px;color:#e0f2fe}
+.report .dashboard-chart-card .dashboard-section-title small{font-size:10px;color:var(--cc-muted);text-align:end}
+.report .dashboard-hourly-chart{width:100%;min-height:120px;overflow:hidden}
+.report .dashboard-chart-svg{display:block;width:100%;height:auto;overflow:visible}
+.report .chart-grid-line{stroke:rgba(148,190,214,.17);stroke-width:1;stroke-dasharray:3 4}
+.report .chart-axis-label{fill:#8ca5bb;font-size:11px;font-variant-numeric:tabular-nums}
+.report .chart-axis-caption{fill:#a8c5d8;font-size:11px;font-weight:700}
+.report .chart-line-wind,.report .chart-line-gust,.report .chart-line-wave{
+  fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:2.8;
+}
+.report .chart-line-wind{stroke:#38bdf8}
+.report .chart-line-gust{stroke:#a78bfa;stroke-width:2.2;stroke-dasharray:5 4}
+.report .chart-line-wave{stroke:#2dd4bf}
+.report .dashboard-chart-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:7px;color:#b7ccdc;font-size:11px}
+.report .dashboard-chart-legend span{display:inline-flex;align-items:center;gap:6px}
+.report .dashboard-chart-legend i{display:inline-block;width:18px;height:3px;border-radius:3px}
+.report .chart-key-wind{background:#38bdf8}
+.report .chart-key-gust{background:#a78bfa}
+.report .chart-key-wave{background:#2dd4bf}
+.report .dashboard-chart-empty{padding:20px 8px;text-align:center;color:var(--cc-muted);font-size:12px}
+@media(max-width:380px){
+  .report .dashboard-chart-card{padding:10px}
+  .report .dashboard-chart-legend{font-size:10px;gap:7px 10px}
+}
