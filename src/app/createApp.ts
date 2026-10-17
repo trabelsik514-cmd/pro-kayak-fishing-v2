@@ -1918,6 +1918,62 @@ export function createApp(root: HTMLElement) {
           ? `<div class="sea-wave-warning dashboard-warning">⚠️ <b>${t('قد يرتفع الموج خلال اليوم')}</b><span>${value(data.sea.waveHeight,' m')} → ${value(data.sea.maxWaveHeightToday,' m')}</span></div>`
           : '');
       report.innerHTML = reportBase;
+      // Rebuild the hourly chart from the same selected-point forecast as the report.
+      const chartSlot = report.querySelector<HTMLElement>('#dashboard-hourly-chart');
+      if (chartSlot) {
+        const chartPoints = hourlyForecast.slice(0, 24);
+        const hasWind = chartPoints.some(p => p.windSpeed != null || p.windGusts != null);
+        const hasWaves = chartPoints.some(p => p.waveHeight != null);
+        if (!hasWind && !hasWaves) {
+          chartSlot.innerHTML = '<div class="dashboard-chart-empty">' + t('لا تتوفر بيانات ساعية كافية للرسم البياني') + '</div>';
+        } else {
+          const W = 640, H = 270, L = 48, R = 48;
+          const plotW = W - L - R;
+          const windTop = 24, windH = 78, waveTop = 145, waveH = 74;
+          const x = (i:number) => L + (chartPoints.length <= 1 ? 0 : i / (chartPoints.length - 1)) * plotW;
+          const windValues = chartPoints.flatMap(p => [p.windSpeed, p.windGusts]).filter((v):v is number => v != null && Number.isFinite(v));
+          const waveValues = chartPoints.map(p => p.waveHeight).filter((v):v is number => v != null && Number.isFinite(v));
+          const windMax = Math.max(10, Math.ceil(Math.max(...windValues, 0) / 5) * 5);
+          const waveMax = Math.max(0.5, Math.ceil(Math.max(...waveValues, 0) * 2) / 2);
+          const yWind = (v:number) => windTop + windH - Math.max(0, Math.min(windMax, v)) / windMax * windH;
+          const yWave = (v:number) => waveTop + waveH - Math.max(0, Math.min(waveMax, v)) / waveMax * waveH;
+          const linePath = (getValue:(p:HourlyKayakPoint)=>number|null, y:(v:number)=>number) => {
+            let d = '', drawing = false;
+            chartPoints.forEach((p,i) => {
+              const v = getValue(p);
+              if (v == null || !Number.isFinite(v)) { drawing = false; return; }
+              d += (drawing ? ' L ' : ' M ') + x(i).toFixed(1) + ' ' + y(v).toFixed(1);
+              drawing = true;
+            });
+            return d;
+          };
+          const gridLines = [0,0.5,1].map(f => {
+            const wy = windTop + windH * f, sy = waveTop + waveH * f;
+            return '<line x1="'+L+'" y1="'+wy+'" x2="'+(W-R)+'" y2="'+wy+'" class="chart-grid-line"/>' +
+              '<line x1="'+L+'" y1="'+sy+'" x2="'+(W-R)+'" y2="'+sy+'" class="chart-grid-line"/>';
+          }).join('');
+          const windAxis = [0,windMax/2,windMax].map(v =>
+            '<text x="'+(L-8)+'" y="'+(yWind(v)+4)+'" text-anchor="end" class="chart-axis-label">'+Math.round(v)+'</text>').join('');
+          const waveAxis = [0,waveMax/2,waveMax].map(v =>
+            '<text x="'+(W-R+8)+'" y="'+(yWave(v)+4)+'" text-anchor="start" class="chart-axis-label">'+v.toFixed(1)+'</text>').join('');
+          const tickIndices = [0, Math.round((chartPoints.length-1)/4), Math.round((chartPoints.length-1)/2), Math.round((chartPoints.length-1)*3/4), chartPoints.length-1]
+            .filter((v,i,a) => v >= 0 && a.indexOf(v) === i);
+          const xLabels = tickIndices.map(i => {
+            const d = new Date(chartPoints[i].time);
+            const label = Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString((getLang()==='fr'?'fr-FR':'ar-TN'),{hour:'2-digit',minute:'2-digit',hour12:false});
+            return '<text x="'+x(i)+'" y="'+(H-10)+'" text-anchor="middle" class="chart-axis-label">'+label+'</text>';
+          }).join('');
+          chartSlot.innerHTML = '<svg class="dashboard-chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+t('الرسم البياني للرياح والهبات وارتفاع الموج خلال 24 ساعة')+'">' +
+            gridLines +
+            '<text x="5" y="'+(windTop+11)+'" class="chart-axis-caption">'+t('رياح')+'</text>' +
+            '<text x="5" y="'+(waveTop+11)+'" class="chart-axis-caption">'+t('موج')+'</text>' +
+            windAxis + waveAxis +
+            (hasWind && linePath(p=>p.windSpeed,yWind) ? '<path d="'+linePath(p=>p.windSpeed,yWind)+'" class="chart-line-wind"/>' : '') +
+            (hasWind && linePath(p=>p.windGusts,yWind) ? '<path d="'+linePath(p=>p.windGusts,yWind)+'" class="chart-line-gust"/>' : '') +
+            (hasWaves && linePath(p=>p.waveHeight,yWave) ? '<path d="'+linePath(p=>p.waveHeight,yWave)+'" class="chart-line-wave"/>' : '') +
+            xLabels + '</svg>';
+        }
+      }
       // Open every newly selected point at the top of the dashboard.
       report.scrollTop = 0;
       bindClose();
