@@ -122,3 +122,144 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+
+/* CurrentCast-style forecast cards and report sheet, adapted to existing Tunisia data. */
+.report{
+  width:min(490px,calc(100% - 28px))!important;
+  max-height:min(78dvh,900px)!important;
+  padding:14px!important;
+  border:1px solid rgba(34,211,238,.22)!important;
+  border-radius:22px!important;
+  background:linear-gradient(180deg,rgba(5,18,32,.985),rgba(2,10,20,.985))!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  scrollbar-width:thin;
+  scrollbar-color:#164e63 transparent;
+}
+.report .report-head{
+  position:sticky;top:-14px;z-index:3;
+  margin:-14px -14px 12px!important;
+  padding:14px 14px 12px!important;
+  min-height:48px;
+  background:rgba(4,15,28,.97)!important;
+  border-bottom:1px solid var(--cc-line)!important;
+  backdrop-filter:blur(16px);
+}
+.report .report-head b{color:#f0f9ff!important;font-size:16px;letter-spacing:.01em}
+.report .report-head button{
+  width:34px;height:34px;display:grid;place-items:center;
+  border-radius:11px!important;background:#0b1b2b!important;
+  color:#bae6fd!important;border:1px solid #164e63!important;
+}
+.report .sea-location,.report .weather-location-banner{
+  border-radius:13px!important;margin:8px 0 12px!important;
+  padding:10px 12px!important;background:#071b2c!important;
+  border:1px solid var(--cc-line)!important;color:#d9f2ff!important;
+}
+.report .sea-overview{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;margin:10px 0 12px!important;
+}
+.report .sea-overview>div{
+  min-width:0;min-height:86px;padding:12px!important;
+  border:1px solid var(--cc-line)!important;border-radius:15px!important;
+  background:linear-gradient(145deg,#0b2032,#061321)!important;
+  display:flex;flex-direction:column;justify-content:center;gap:7px;
+}
+.report .sea-overview>div:first-child{
+  grid-column:1/-1;min-height:112px;
+  background:radial-gradient(circle at 92% 12%,rgba(6,182,212,.17),transparent 42%),linear-gradient(135deg,#0b2a40,#071525)!important;
+  border-color:#0891b255!important;
+}
+.report .sea-overview>div>span,.report .sea-overview>div>small{
+  color:#8ca5bb!important;font-size:12px;line-height:1.45;
+}
+.report .sea-overview>div>b,.report .sea-overview>div>strong,
+.report .sea-overview .weather-number{
+  color:#ecfeff!important;font-size:clamp(15px,3.7vw,21px)!important;
+  font-weight:800!important;line-height:1.35!important;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+.report .sea-overview>div:first-child>strong{
+  font-size:clamp(32px,8vw,44px)!important;color:#67e8f9!important;
+  letter-spacing:-.04em;line-height:1!important;
+}
+.report .sea-overview>div:first-child>strong small{
+  color:#8ca5bb!important;font-size:13px!important;letter-spacing:0;
+}
+.report .sea-best-window,.report .weather-highlight,.report .sea-reasons-box,
+.report .model-comparison,.report .weather-highlight{
+  border:1px solid var(--cc-line)!important;border-radius:16px!important;
+  background:linear-gradient(145deg,#092239,#071525)!important;
+  color:#e0f2fe!important;padding:13px!important;margin:10px 0!important;
+}
+.report .sea-best-window b,.report .sea-best-window strong,
+.report .weather-highlight b,.report .weather-highlight p,
+.report .weather-highlight small,.report .sea-reasons-box b,
+.report .model-comparison b,.report .model-comparison small{
+  color:#e0f2fe!important;line-height:1.6;
+}
+.report .sea-best-window strong{color:#67e8f9!important;font-size:20px}
+.report .sea-best-window p{color:#67e8f9!important;font-size:22px;font-weight:800}
+.report .sea-hour-strip{
+  display:flex!important;gap:9px!important;overflow-x:auto!important;
+  padding:4px 1px 10px!important;background:transparent!important;
+  scroll-snap-type:x proximity;overscroll-behavior-inline:contain;
+}
+.report .sea-hour-card{
+  flex:0 0 126px!important;min-width:126px;padding:12px!important;
+  border:1px solid var(--cc-line)!important;border-radius:15px!important;
+  background:linear-gradient(180deg,#0b2032,#061321)!important;
+  color:#e0f2fe!important;scroll-snap-align:start;
+}
+.report .sea-hour-card .sea-hour-time{color:#a7c4d8!important;font-weight:700}
+.report .sea-hour-card strong{color:#67e8f9!important;font-size:24px!important}
+.report .sea-hour-card strong small{color:#8ca5bb!important;font-size:11px}
+.report .sea-hour-card b,.report .sea-hour-card span{color:#d5eaf7!important}
+.report .sea-hour-card.excellent,.report .sea-hour-card.good{border-top:2px solid #22c55e!important}
+.report .sea-hour-card.caution{border-top:2px solid #f59e0b!important}
+.report .sea-hour-card.danger{border-top:2px solid #ef4444!important}
+.report .sea-section-toggle{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;padding:12px;margin:8px 0;border:1px solid var(--cc-line);
+  border-radius:13px;background:#081b2c;color:#e0f2fe;font-weight:750;
+}
+.report .sea-reasons li{color:#b9cedd!important;line-height:1.7}
+.report .sea-source{
+  margin-top:12px;padding-top:10px;border-top:1px solid #ffffff12;
+  color:#8ca5bb!important;font-size:11px;
+}
+.report .tide-event{
+  background:#0b2032!important;color:#e0f2fe!important;
+  border:1px solid var(--cc-line)!important;border-radius:13px!important;
+}
+.report .tide-event b,.report .tide-event strong,.report .tide-event small{color:#e0f2fe!important}
+.report .weekly-sea-card,.report .model-compare-card{
+  background:linear-gradient(145deg,#0b2032,#061321)!important;
+  border:1px solid var(--cc-line)!important;border-radius:15px!important;
+  color:#e0f2fe!important;
+}
+.report .weekly-sea-card b,.report .weekly-sea-card strong,
+.report .weekly-sea-card span,.report .model-compare-card b,
+.report .model-compare-card strong,.report .model-compare-card span{color:#dff5ff!important}
+.report .weekly-sea-values span,.report .model-compare-grid span{
+  background:#071525!important;border:1px solid #164e63!important;
+  color:#a9c6d9!important;border-radius:10px!important;
+}
+.report .weekly-sea-values b,.report .model-compare-grid b{color:#e0f2fe!important}
+.report .sea-loading{padding:26px 10px;color:#9dc9dc!important}
+@media(max-width:700px){
+  .report{
+    right:8px!important;left:8px!important;bottom:calc(80px + env(safe-area-inset-bottom,0px))!important;
+    width:auto!important;max-height:calc(100dvh - 155px)!important;
+    padding:12px!important;border-radius:20px!important;
+  }
+  .report .report-head{top:-12px;margin:-12px -12px 10px!important;padding:12px!important}
+  .report .sea-overview{gap:7px!important}
+  .report .sea-overview>div{min-height:78px;padding:10px!important}
+  .report .sea-hour-card{flex-basis:116px!important;min-width:116px!important}
+  .pkf-bottom-nav{z-index:60!important}
+}
+@media(min-width:701px){
+  .report{right:18px!important;bottom:18px!important}
+}
