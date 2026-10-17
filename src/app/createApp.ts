@@ -602,6 +602,13 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
     <section class="dashboard-metrics">
       <div><span>💨 ${t('الرياح')}</span><b>${value(data.weather.windSpeed,' km/h')}</b></div><div><span>🌬️ ${t('الهبات')}</span><b>${value(data.weather.windGusts,' km/h')}</b></div><div><span>🌊 ${t('ارتفاع الموج')}</span><b>${value(data.sea.waveHeight,' m')}</b></div><div><span>⏱️ ${t('فترة الموج')}</span><b>${value(data.sea.wavePeriod,' s')}</b></div><div><span>🧭 ${t('اتجاه الرياح')}</span><b>${directionValue(data.weather.windDirection,data.weather.windSpeed)}</b></div>
       <div><span>🧭 ${t('اتجاه الموج')}</span><b>${value(data.sea.waveDirection,'°')}</b></div><div><span>🌡️ ${t('الهواء')}</span><b>${value(data.weather.temperature,' °C')}</b></div><div><span>📈 ${t('الضغط')}</span><b>${value(data.weather.pressure,' hPa')}</b></div><div><span>🌊 ${t('حرارة البحر')}</span><b>${value(data.sea.seaTemperature,' °C')}</b></div><div><span>〰️ ${t('Swell')}</span><b>${value(data.sea.swellHeight,' m')}</b></div><div><span>↔️ ${getLang()==='fr'?'Courant':'التيار البحري'}</span><b>${value(data.sea.currentVelocity,' km/h')}</b></div><div><span>🧭 ${getLang()==='fr'?'Direction du courant':'اتجاه التيار'}</span><b>${directionValue(data.sea.currentDirection,data.sea.currentVelocity)}</b></div>
+    
+      <div><span>💧 ${t('الرطوبة')}</span><b>${value(data.weather.humidity,'%')}</b></div><div><span>🌧️ ${t('الأمطار')}</span><b>${value(data.weather.precipitation,' mm')}</b></div>
+    </section>
+    <section class="dashboard-chart-card" aria-label="${t('الرسم البياني لتوقعات البحر والرياح')}">
+      <div class="dashboard-section-title"><b>📈 ${t('الرسم البياني للـ 24 ساعة القادمة')}</b><small>${t('توقعات كل ساعة للموقع المحدد')}</small></div>
+      <div id="dashboard-hourly-chart" class="dashboard-hourly-chart"><span>${t('جاري تجهيز الرسم البياني…')}</span></div>
+      <div class="dashboard-chart-legend"><span><i class="chart-key-wind"></i>${t('سرعة الرياح')}</span><span><i class="chart-key-gust"></i>${t('هبات الرياح')}</span><span><i class="chart-key-wave"></i>${t('ارتفاع الموج')}</span></div>
     </section>
     <section class="dashboard-fishing-intelligence-slot"><div class="fishing-intelligence-loading">🎣 ${t('جاري تحليل الإشارة البيئية…')}</div></section>
      <section class="dashboard-advisor-slot"><div class="advisor-loading">🎯 ${t('جاري بناء تحليل الصيد المتقدم…')}</div></section>
