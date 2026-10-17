@@ -625,7 +625,7 @@ function reportHtml(data: Awaited<ReturnType<MarineService['getPointConditions']
 export function createApp(root: HTMLElement) {
   setDocumentLanguage();
   void initSeaNotifications();
-  root.innerHTML = `<main class="shell"><header class="topbar">
+  root.innerHTML = `<main class="shell"><div id="map" class="map" role="application" aria-label="${getLang()==="fr"?"Carte marine interactive de Tunisie":"الخريطة البحرية التفاعلية لتونس"}"></div><header class="topbar">
     <a class="brand" href="#" aria-label="PRO KAYAK FISHING V2"><img class="brand-logo" src="/brand/file_00000000540c820abaeb6846e360276e.png?v=20261005-2238" alt="PRO KAYAK FISHING V2"/><span class="brand-name"><span>PRO KAYAK</span><b>FISHING <i>V2</i></b><small>${getLang()==="fr"?"MÉTÉO • MER • KAYAK":"الطقس • البحر • الكاياك"}</small></span></a>
     <div class="header-controls"><button id="lang-toggle" class="lang-toggle" type="button" aria-label="Changer de langue / تغيير اللغة"><span class="lang-code">${getLang() === "ar" ? "FR" : "AR"}</span><span class="lang-globe" aria-hidden="true">🌐</span></button></div>
     <form id="search-form" class="search"><input id="search-input" placeholder="${t("ابحث عن مدينة أو ساحل تونسي")}" autocomplete="off"/><button type="submit">${t("بحث")}</button></form>
