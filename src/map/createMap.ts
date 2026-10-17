@@ -15,6 +15,15 @@ export function createMap(container: string) {
     style: {
       version: 8,
       sources: {
+        // Always keep a conventional street-map layer underneath satellite imagery.
+        // If Esri imagery is unavailable on a mobile network, the map remains usable.
+        'osm-fallback': {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '© OpenStreetMap contributors',
+          maxzoom: 19
+        },
         'esri-satellite': {
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
@@ -42,12 +51,19 @@ export function createMap(container: string) {
       },
       layers: [
         { id: 'nautical-background', type: 'background', paint: { 'background-color': '#062b3a' } },
+        // Fallback is deliberately underneath satellite tiles.
+        { id: 'osm-fallback-layer', type: 'raster', source: 'osm-fallback', paint: { 'raster-opacity': 1 } },
         { id: 'satellite', type: 'raster', source: 'esri-satellite' },
         { id: 'nautical-bathymetry', type: 'raster', source: 'emodnet-bathymetry', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.82 } },
         { id: 'nautical-contours', type: 'raster', source: 'emodnet-contours', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.92 } },
         { id: 'place-labels', type: 'raster', source: 'esri-reference', paint: { 'raster-opacity': 0.82 } }
       ]
     }
+  });
+
+  // Surface diagnostics instead of silently leaving a blank map when a tile server fails.
+  map.on('error', (event) => {
+    console.warn('[PKF map]', event.error?.message ?? event.error ?? 'Map rendering error');
   });
 
   const geolocate = new maplibregl.GeolocateControl({
