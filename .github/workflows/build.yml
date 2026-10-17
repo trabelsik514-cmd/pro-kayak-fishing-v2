@@ -2,7 +2,7 @@ name: TypeScript Build Check
 
 on:
   push:
-    branches: [main]
+    branches: [main, currentcast-template-adaptation]
   workflow_dispatch:
 
 jobs:
