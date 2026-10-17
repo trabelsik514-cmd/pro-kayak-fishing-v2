@@ -50,8 +50,8 @@ jobs:
           s = p.read_text()
           required = "dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'"
           if required not in s:
-              pattern = r"(dirs\\s+['\\"]\\.\\./capacitor-cordova-android-plugins/src/main/libs['\\"],\\s*['\\"]libs['\\"])"
-              s, n = re.subn(pattern, r"\\1\\n            " + required, s, count=1)
+              pattern = r"(dirs\s+['\"]\.\./capacitor-cordova-android-plugins/src/main/libs['\"],\s*['\"]libs['\"])"
+              s, n = re.subn(pattern, r"\1\n            " + required, s, count=1)
               if n != 1:
                   raise SystemExit("Could not configure the BackgroundRunner AAR repository")
               p.write_text(s)
@@ -78,10 +78,10 @@ jobs:
           p = Path("android/app/build.gradle")
           s = p.read_text()
           if "versionCode 20" not in s:
-              s, n = re.subn(r'versionCode\\s+\\d+', 'versionCode 20', s, count=1)
+              s, n = re.subn(r'versionCode\s+\d+', 'versionCode 20', s, count=1)
               if n != 1: raise SystemExit("Could not set versionCode 20")
           if "versionName \"1.0.20\"" not in s:
-              s, n = re.subn(r'versionName\\s+["\\'][^"\\']+["\\']', 'versionName "1.0.20"', s, count=1)
+              s, n = re.subn(r'versionName\s+["\'][^"\']+["\']', 'versionName "1.0.20"', s, count=1)
               if n != 1: raise SystemExit("Could not set versionName 1.0.20")
           signing = '''
               signingConfigs {
@@ -94,8 +94,8 @@ jobs:
               }
           '''
           if "signingConfigs {" not in s:
-              s = s.replace("android {", "android {\\n" + signing, 1)
-          s, n = re.subn(r'buildTypes\\s*\\{\\s*release\\s*\\{', 'buildTypes {\\n        release {\\n            signingConfig signingConfigs.release', s, count=1)
+              s = s.replace("android {", "android {\n" + signing, 1)
+          s, n = re.subn(r'buildTypes\s*\{\s*release\s*\{', 'buildTypes {\n        release {\n            signingConfig signingConfigs.release', s, count=1)
           if n != 1: raise SystemExit("Could not attach release signing config")
           p.write_text(s)
           print("Configured version 1.0.20 (20) and release signing.")
